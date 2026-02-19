@@ -1,0 +1,128 @@
+"""
+Shared pytest fixtures.
+
+Pebble fixture
+--------------
+The `pebble_settings` fixture patches the module-level `config.settings`
+singleton so every node in the graph talks to a local Pebble instance instead
+of DigiCert.  It also patches the three LLM nodes so no Anthropic API key is
+needed for the integration tests.
+"""
+from __future__ import annotations
+
+import json
+import os
+import socket
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+from langchain_core.messages import AIMessage
+
+import pytest
+
+
+# ─── Pebble availability check ────────────────────────────────────────────────
+
+def _pebble_running(host: str = "localhost", port: int = 14000) -> bool:
+    """Return True if Pebble's ACME port is open."""
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
+requires_pebble = pytest.mark.skipif(
+    not _pebble_running(),
+    reason="Pebble not running — start with: docker compose -f docker-compose.pebble.yml up -d",
+)
+
+
+# ─── Settings patch ───────────────────────────────────────────────────────────
+
+@pytest.fixture()
+def pebble_settings(tmp_path: Path):
+    """
+    Mutate the live settings singleton to point at local Pebble,
+    restore original values after the test.
+    """
+    from config import settings
+
+    originals = {
+        "DIGICERT_ACME_DIRECTORY": settings.DIGICERT_ACME_DIRECTORY,
+        "DIGICERT_EAB_KEY_ID": settings.DIGICERT_EAB_KEY_ID,
+        "DIGICERT_EAB_HMAC_KEY": settings.DIGICERT_EAB_HMAC_KEY,
+        "MANAGED_DOMAINS": settings.MANAGED_DOMAINS,
+        "CERT_STORE_PATH": settings.CERT_STORE_PATH,
+        "ACCOUNT_KEY_PATH": settings.ACCOUNT_KEY_PATH,
+        "HTTP_CHALLENGE_MODE": settings.HTTP_CHALLENGE_MODE,
+        "WEBROOT_PATH": settings.WEBROOT_PATH,
+        "ACME_INSECURE": settings.ACME_INSECURE,
+        "ACME_CA_BUNDLE": settings.ACME_CA_BUNDLE,
+        "MAX_RETRIES": settings.MAX_RETRIES,
+    }
+
+    webroot = tmp_path / "webroot"
+    webroot.mkdir()
+    cert_store = tmp_path / "certs"
+    cert_store.mkdir()
+    account_key = tmp_path / "account.key"
+
+    settings.DIGICERT_ACME_DIRECTORY = "https://localhost:14000/dir"
+    settings.DIGICERT_EAB_KEY_ID = ""
+    settings.DIGICERT_EAB_HMAC_KEY = ""
+    settings.MANAGED_DOMAINS = ["acme-test.localhost"]
+    settings.CERT_STORE_PATH = str(cert_store)
+    settings.ACCOUNT_KEY_PATH = str(account_key)
+    settings.HTTP_CHALLENGE_MODE = "webroot"
+    settings.WEBROOT_PATH = str(webroot)
+    settings.ACME_INSECURE = True
+    settings.ACME_CA_BUNDLE = ""
+    settings.MAX_RETRIES = 1
+
+    yield settings
+
+    for k, v in originals.items():
+        setattr(settings, k, v)
+
+
+# ─── LLM mock helpers ─────────────────────────────────────────────────────────
+
+def _mock_llm_response(content: str) -> MagicMock:
+    """Return a mock that behaves like a ChatAnthropic instance.
+
+    llm.invoke() must return a real AIMessage so LangGraph's add_messages
+    reducer can accept it — MagicMock is not a BaseMessage subclass.
+    """
+    llm = MagicMock()
+    llm.invoke.return_value = AIMessage(content=content)
+    return llm
+
+
+PLANNER_RESPONSE = json.dumps({
+    "urgent": [],
+    "routine": ["acme-test.localhost"],
+    "skip": [],
+    "notes": "Test run — renew acme-test.localhost",
+})
+
+REPORTER_RESPONSE = "Test run complete. Certificate renewed successfully."
+
+
+@pytest.fixture()
+def mock_llm_nodes():
+    """
+    Patch ChatAnthropic in the three LLM nodes so tests don't need an API key.
+    The planner returns valid JSON; the reporter returns a plain-text summary.
+    """
+    with (
+        patch(
+            "agent.nodes.planner.ChatAnthropic",
+            return_value=_mock_llm_response(PLANNER_RESPONSE),
+        ),
+        patch(
+            "agent.nodes.reporter.ChatAnthropic",
+            return_value=_mock_llm_response(REPORTER_RESPONSE),
+        ),
+    ):
+        yield
