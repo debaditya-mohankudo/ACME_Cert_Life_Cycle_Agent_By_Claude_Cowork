@@ -1,0 +1,14 @@
+services:
+  pebble:
+    image: ghcr.io/letsencrypt/pebble:latest
+    ports:
+      - "14000:14000"   # ACME directory  →  https://localhost:14000/dir
+      - "15000:15000"   # Management API  →  https://localhost:15000
+    environment:
+      # Skip the artificial sleep between validation retries
+      PEBBLE_VA_NOSLEEP: "1"
+      # Auto-approve all HTTP-01 challenges without making real HTTP requests.
+      # This lets the full agent flow run without DNS or port-80 access.
+      PEBBLE_VA_ALWAYS_VALID: "1"
+    # Pebble's built-in test certs & config are bundled in the image.
+    # No volume mounts needed for the default configuration.
