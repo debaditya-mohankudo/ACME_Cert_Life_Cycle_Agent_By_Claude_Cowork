@@ -1,0 +1,356 @@
+# ACME Certificate Lifecycle Agent
+
+An intelligent, agentic TLS certificate manager built on **LangGraph** and **Claude**. It monitors certificate expiry across multiple domains, uses an LLM to plan and prioritize renewals, executes the full **ACME RFC 8555** flow against **DigiCert**, and stores issued certificates as PEM files on the local filesystem — all on a configurable daily schedule.
+
+Designed for the coming **47-day TLS mandate (2029)**, where automated renewal is not optional.
+
+---
+
+## How it works
+
+The agent is a LangGraph `StateGraph` that walks through the ACME protocol step-by-step, with three LLM decision points:
+
+```
+START
+  │
+  ▼
+[certificate_scanner]     — reads ./certs/<domain>/cert.pem, parses expiry
+  │
+  ▼
+[renewal_planner] (LLM)   — classifies domains: urgent / routine / skip
+  │
+  ├── no renewals needed ──────────────────────────────────► [summary_reporter] ──► END
+  │
+  ▼
+[acme_account_setup]      — registers or retrieves DigiCert ACME account (EAB)
+  │
+  ▼
+[pick_next_domain] ◄──────────────────────────────────────────────────────────┐
+  │                                                                            │
+  ▼                                                                            │
+[order_initializer]       — POST /newOrder, fetch HTTP-01 challenge tokens    │
+  │                                                                            │
+  ▼                                                                            │
+[challenge_setup]         — serve token (standalone server or webroot)        │
+  │                                                                            │
+  ▼                                                                            │
+[challenge_verifier]      — trigger CA verification, poll until valid         │
+  │                                                                            │
+  ├── failed ──► [error_handler] (LLM) ─── retry ──────────────────────────── ┤
+  │                                    ├── skip  ─────────────────────────────►│
+  │                                    └── abort ──────────────────────────► [summary_reporter]
+  ▼                                                                            │
+[csr_generator]           — generate RSA-2048 private key + CSR               │
+  │                                                                            │
+  ▼                                                                            │
+[order_finalizer]         — POST CSR to /finalize, poll for certificate URL   │
+  │                                                                            │
+  ▼                                                                            │
+[cert_downloader]         — POST-as-GET certificate chain (PEM)               │
+  │                                                                            │
+  ▼                                                                            │
+[storage_manager]         — write cert.pem, chain.pem, fullchain.pem,        │
+  │                          privkey.pem, metadata.json to ./certs/<domain>/  │
+  │                                                                            │
+  ├── more domains ────────────────────────────────────────────────────────────┘
+  │
+  └── all done ──► [summary_reporter] (LLM) ──► END
+```
+
+---
+
+## Project structure
+
+```
+acme-agent/
+├── main.py                      # CLI entry point
+├── config.py                    # Pydantic settings (all env vars)
+├── requirements.txt
+├── .env.example                 # Copy to .env and fill in credentials
+│
+├── acme/
+│   ├── client.py                # Stateless ACME RFC 8555 HTTP client
+│   ├── crypto.py                # Domain key generation + CSR creation
+│   ├── jws.py                   # JWK / JWS / EAB signing (josepy)
+│   └── http_challenge.py        # Standalone HTTP-01 server + webroot writer
+│
+├── storage/
+│   └── filesystem.py            # PEM read/write, expiry parsing, metadata
+│
+├── agent/
+│   ├── state.py                 # AgentState, CertRecord, AcmeOrder TypedDicts
+│   ├── graph.py                 # StateGraph builder + initial_state helper
+│   ├── prompts.py               # LLM prompts for planner, error handler, reporter
+│   └── nodes/
+│       ├── scanner.py           # certificate_scanner
+│       ├── planner.py           # renewal_planner (LLM)
+│       ├── account.py           # acme_account_setup
+│       ├── order.py             # order_initializer
+│       ├── challenge.py         # challenge_setup + challenge_verifier
+│       ├── csr.py               # csr_generator
+│       ├── finalizer.py         # order_finalizer + cert_downloader
+│       ├── storage.py           # storage_manager
+│       ├── router.py            # routing functions for conditional edges
+│       ├── error_handler.py     # error_handler (LLM)
+│       └── reporter.py          # summary_reporter (LLM)
+│
+└── certs/                       # Generated PEM files (gitignored)
+    └── api.example.com/
+        ├── cert.pem
+        ├── chain.pem
+        ├── fullchain.pem
+        ├── privkey.pem          # chmod 600
+        └── metadata.json
+```
+
+---
+
+## Prerequisites
+
+- **Python 3.11+**
+- **Port 80 available** (for standalone HTTP-01 challenge mode). On Linux, use `authbind` or `sudo` to bind port 80 as a non-root user. See [Port 80 note](#port-80-note) below.
+- A **DigiCert account** with ACME enabled (DigiCert Console → Automation → ACME). Obtain your `EAB_KEY_ID` and `EAB_HMAC_KEY`.
+- An **Anthropic API key** for Claude.
+
+---
+
+## Setup
+
+### 1. Clone and install dependencies
+
+```bash
+git clone <repo-url>
+cd acme-agent
+
+# Using uv (recommended)
+uv pip install -r requirements.txt
+
+# Or with pip in a virtualenv
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your credentials:
+
+```dotenv
+# DigiCert ACME (required)
+DIGICERT_EAB_KEY_ID=your-eab-key-id
+DIGICERT_EAB_HMAC_KEY=your-base64url-hmac-key
+
+# Domains to monitor (comma-separated)
+MANAGED_DOMAINS=api.example.com,shop.example.com
+
+# Anthropic Claude (required)
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+All available options are documented in [`.env.example`](.env.example).
+
+---
+
+## Usage
+
+### Run one renewal cycle immediately
+
+```bash
+python main.py --once
+```
+
+### Run on a daily schedule
+
+```bash
+python main.py --schedule
+```
+
+Runs immediately on start, then repeats daily at `SCHEDULE_TIME` (default `06:00` UTC).
+
+### Override domains for a single run
+
+```bash
+python main.py --once --domains api.example.com shop.example.com
+```
+
+### Enable checkpointing (resume interrupted runs)
+
+```bash
+python main.py --once --checkpoint
+```
+
+Uses LangGraph's `MemorySaver` to checkpoint state after each node. If a run is interrupted mid-flow (e.g., a network failure during finalization), the graph can resume from the last completed node.
+
+---
+
+## Configuration reference
+
+All settings are read from environment variables or `.env`. Any variable can be overridden by setting it in the shell before running.
+
+| Variable | Default | Description |
+|---|---|---|
+| `DIGICERT_ACME_DIRECTORY` | `https://acme.digicert.com/v2/DV/directory` | ACME directory URL (DV / OV / EV) |
+| `DIGICERT_EAB_KEY_ID` | *(required)* | EAB key identifier from DigiCert Console |
+| `DIGICERT_EAB_HMAC_KEY` | *(required)* | Base64url-encoded HMAC key |
+| `MANAGED_DOMAINS` | *(required)* | Comma-separated list of domains to monitor |
+| `RENEWAL_THRESHOLD_DAYS` | `30` | Renew when fewer than N days remain |
+| `CERT_STORE_PATH` | `./certs` | Root directory for PEM files |
+| `ACCOUNT_KEY_PATH` | `./account.key` | Path to persist the ACME account key |
+| `HTTP_CHALLENGE_MODE` | `standalone` | `standalone` or `webroot` |
+| `HTTP_CHALLENGE_PORT` | `80` | Port for the standalone HTTP-01 server |
+| `WEBROOT_PATH` | — | Required when `HTTP_CHALLENGE_MODE=webroot` |
+| `ANTHROPIC_API_KEY` | *(required)* | Claude API key |
+| `LLM_MODEL_PLANNER` | `claude-haiku-4-5-20251001` | Model for renewal planning |
+| `LLM_MODEL_ERROR_HANDLER` | `claude-sonnet-4-6` | Model for error analysis |
+| `LLM_MODEL_REPORTER` | `claude-haiku-4-5-20251001` | Model for run summary |
+| `SCHEDULE_TIME` | `06:00` | Daily run time (HH:MM, UTC) |
+| `MAX_RETRIES` | `3` | Per-domain retry attempts before skipping |
+
+---
+
+## Certificate storage layout
+
+Each renewed domain gets its own subdirectory:
+
+```
+./certs/api.example.com/
+├── cert.pem        # Leaf certificate (end-entity only)
+├── chain.pem       # Intermediate CA chain
+├── fullchain.pem   # cert.pem + chain.pem — use this in nginx/apache
+├── privkey.pem     # RSA-2048 private key (mode 0o600)
+└── metadata.json   # {"issued_at", "expires_at", "acme_order_url", "renewed_by"}
+```
+
+Point your web server at `fullchain.pem` and `privkey.pem`:
+
+```nginx
+ssl_certificate     /path/to/certs/api.example.com/fullchain.pem;
+ssl_certificate_key /path/to/certs/api.example.com/privkey.pem;
+```
+
+---
+
+## HTTP-01 challenge modes
+
+### Standalone (default)
+
+The agent spins up a minimal HTTP server on port 80 for the duration of each challenge. No existing web server is required. Port 80 must not already be in use during the renewal window.
+
+### Webroot
+
+If nginx or Apache is already serving on port 80, set:
+
+```dotenv
+HTTP_CHALLENGE_MODE=webroot
+WEBROOT_PATH=/var/www/html
+```
+
+The agent writes the token file to `<WEBROOT_PATH>/.well-known/acme-challenge/<token>` and cleans it up after verification.
+
+### Port 80 note
+
+On Linux, non-root processes cannot bind port 80 by default. Options:
+
+```bash
+# Option 1: authbind
+sudo apt install authbind
+sudo touch /etc/authbind/byport/80
+sudo chmod 500 /etc/authbind/byport/80
+sudo chown $(whoami) /etc/authbind/byport/80
+authbind --deep python main.py --once
+
+# Option 2: grant capability to the Python binary
+sudo setcap 'cap_net_bind_service=+ep' $(which python3)
+
+# Option 3: non-privileged port + iptables redirect
+HTTP_CHALLENGE_PORT=8080
+sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+```
+
+---
+
+## LLM nodes
+
+| Node | Model | Responsibility |
+|---|---|---|
+| `renewal_planner` | Haiku | Classify domains as urgent / routine / skip; output is validated JSON |
+| `error_handler` | Sonnet | Diagnose ACME failures; decide retry / skip / abort with exponential backoff |
+| `summary_reporter` | Haiku | Generate a human-readable run summary for ops teams |
+
+The planner validates its own output: any domain name the LLM returns that is not in `MANAGED_DOMAINS` is stripped before use, preventing hallucinated domains from triggering unintended renewals.
+
+---
+
+## Testing against Let's Encrypt staging
+
+Before configuring DigiCert credentials you can validate the full ACME flow for free against Let's Encrypt staging (no EAB required; certificates are not browser-trusted):
+
+```dotenv
+DIGICERT_ACME_DIRECTORY=https://acme-staging-v02.api.letsencrypt.org/directory
+DIGICERT_EAB_KEY_ID=
+DIGICERT_EAB_HMAC_KEY=
+```
+
+```bash
+python main.py --once --domains your-domain.example.com
+```
+
+This exercises every node in the graph including HTTP-01 verification and certificate download.
+
+---
+
+## Observability
+
+### Log output
+
+All nodes emit structured log lines via Python's standard `logging`:
+
+```
+2026-02-19 06:00:01 INFO  agent.nodes.scanner   — api.example.com → expires 2026-02-24 (5 days) — URGENT
+2026-02-19 06:00:03 INFO  agent.nodes.account   — Retrieved existing ACME account: https://acme.digicert.com/...
+2026-02-19 06:00:07 INFO  agent.nodes.challenge — Authorization https://... is VALID
+2026-02-19 06:00:12 INFO  agent.nodes.storage   — Stored PEM files for api.example.com (expires 2026-05-20)
+```
+
+### LangSmith tracing (optional)
+
+Add to `.env` to trace every LLM call and node transition in the LangSmith UI:
+
+```dotenv
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=ls__...
+LANGCHAIN_PROJECT=acme-cert-agent
+```
+
+> **Security:** The ACME account private key is never stored in `AgentState` and will not appear in LangSmith traces. It is loaded from disk only within the node functions that need it.
+
+---
+
+## Security considerations
+
+| Concern | Mitigation |
+|---|---|
+| Private key exposure | `privkey.pem` and `account.key` are written with `chmod 600` immediately after creation |
+| EAB credential leakage | Stored in `.env` only — `.gitignore` excludes `.env` |
+| LangSmith trace exposure | Account key is never placed in `AgentState` |
+| Port 80 attack surface | Standalone server binds only during the challenge window, then shuts down |
+| LLM hallucination | Planner output is validated against `MANAGED_DOMAINS` before any domain is acted upon |
+
+---
+
+## Dependencies
+
+| Package | Purpose |
+|---|---|
+| `langgraph` | Stateful agent graph execution |
+| `langchain-anthropic` | Claude LLM integration |
+| `josepy` | JWK / JWS signing (Certbot's battle-tested library) |
+| `cryptography` | Key generation, CSR creation, certificate parsing |
+| `requests` | ACME HTTP client |
+| `pydantic-settings` | Environment-based configuration with validation |
+| `schedule` | Lightweight daily scheduler |
+| `structlog` | Structured logging |
+| `pytest` + `responses` | Unit testing with mocked HTTP |
