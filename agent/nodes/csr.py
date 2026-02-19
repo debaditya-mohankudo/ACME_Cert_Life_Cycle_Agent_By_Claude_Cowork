@@ -27,6 +27,8 @@ def csr_generator(state: AgentState) -> dict:
     import stat
 
     domain = state["current_domain"]
+    if not domain:
+        return {"error_log": ["csr_generator called with no current_domain"]}
     cert_store_path = state["cert_store_path"]
 
     logger.info("Generating RSA-2048 key and CSR for %s", domain)
@@ -34,8 +36,11 @@ def csr_generator(state: AgentState) -> dict:
     domain_key = generate_rsa_key(key_size=2048)
     key_pem = private_key_to_pem(domain_key)
 
-    # Write the private key to disk immediately (before CSR)
-    key_dir = Path(cert_store_path) / domain
+    # Sanitize domain for use as a directory name:
+    #   - wildcards: "*.example.com" → "wildcard.example.com"
+    #   - strip any path separators to prevent traversal
+    safe_domain = domain.replace("*.", "wildcard.").replace("/", "").replace("\\", "")
+    key_dir = Path(cert_store_path) / safe_domain
     key_dir.mkdir(parents=True, exist_ok=True)
     key_path = key_dir / "privkey.pem"
     key_path.write_text(key_pem, encoding="utf-8")
