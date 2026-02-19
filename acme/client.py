@@ -18,7 +18,7 @@ from __future__ import annotations
 import time
 from typing import Any, Optional
 
-import josepy as jose
+from josepy.jwk import JWKRSA
 import requests
 
 from acme import jws as jwslib
@@ -29,9 +29,10 @@ _NONCE_RETRIES = 3
 class AcmeError(Exception):
     """Raised when the ACME server returns an error response."""
 
-    def __init__(self, status_code: int, body: dict) -> None:
+    def __init__(self, status_code: int, body: dict, new_nonce: str = "") -> None:
         self.status_code = status_code
         self.body = body
+        self.new_nonce = new_nonce
         problem_type = body.get("type", "unknown")
         detail = body.get("detail", str(body))
         super().__init__(f"ACME {status_code}: {problem_type} — {detail}")
@@ -86,7 +87,7 @@ class DigiCertAcmeClient:
 
     def create_account(
         self,
-        account_key: jose.JWKRSA,
+        account_key: JWKRSA,
         eab_key_id: str,
         eab_hmac_key: str,
         nonce: str,
@@ -110,7 +111,7 @@ class DigiCertAcmeClient:
 
     def lookup_account(
         self,
-        account_key: jose.JWKRSA,
+        account_key: JWKRSA,
         nonce: str,
         directory: dict,
     ) -> tuple[Optional[str], str]:
@@ -126,7 +127,7 @@ class DigiCertAcmeClient:
             return resp.headers.get("Location"), resp.headers.get("Replay-Nonce", "")
         except AcmeError as e:
             if e.status_code == 400:
-                return None, ""
+                return None, e.new_nonce
             raise
 
     # ── Orders ────────────────────────────────────────────────────────────
@@ -134,7 +135,7 @@ class DigiCertAcmeClient:
     def create_order(
         self,
         domains: list[str],
-        account_key: jose.JWKRSA,
+        account_key: JWKRSA,
         account_url: str,
         nonce: str,
         directory: dict,
@@ -151,7 +152,7 @@ class DigiCertAcmeClient:
     def get_order(
         self,
         order_url: str,
-        account_key: jose.JWKRSA | None = None,
+        account_key: JWKRSA | None = None,
         account_url: str | None = None,
     ) -> dict:
         """
@@ -172,7 +173,7 @@ class DigiCertAcmeClient:
     def get_authorization(
         self,
         auth_url: str,
-        account_key: jose.JWKRSA | None = None,
+        account_key: JWKRSA | None = None,
         account_url: str | None = None,
     ) -> dict:
         """
@@ -196,7 +197,7 @@ class DigiCertAcmeClient:
     def respond_to_challenge(
         self,
         challenge_url: str,
-        account_key: jose.JWKRSA,
+        account_key: JWKRSA,
         account_url: str,
         nonce: str,
     ) -> tuple[dict, str]:
@@ -210,7 +211,7 @@ class DigiCertAcmeClient:
     def poll_authorization(
         self,
         auth_url: str,
-        account_key: jose.JWKRSA | None = None,
+        account_key: JWKRSA | None = None,
         account_url: str | None = None,
         max_attempts: int = 10,
         poll_interval: float = 2.0,
@@ -252,7 +253,7 @@ class DigiCertAcmeClient:
         self,
         finalize_url: str,
         csr_der: bytes,
-        account_key: jose.JWKRSA,
+        account_key: JWKRSA,
         account_url: str,
         nonce: str,
     ) -> tuple[dict, str]:
@@ -268,7 +269,7 @@ class DigiCertAcmeClient:
     def poll_order_for_certificate(
         self,
         order_url: str,
-        account_key: jose.JWKRSA | None = None,
+        account_key: JWKRSA | None = None,
         account_url: str | None = None,
         max_attempts: int = 20,
         poll_interval: float = 3.0,
@@ -301,7 +302,7 @@ class DigiCertAcmeClient:
     def download_certificate(
         self,
         cert_url: str,
-        account_key: jose.JWKRSA,
+        account_key: JWKRSA,
         account_url: str,
         nonce: str,
     ) -> tuple[str, str]:
@@ -320,7 +321,7 @@ class DigiCertAcmeClient:
     def _post_signed(
         self,
         payload: dict | None,
-        account_key: jose.JWKRSA,
+        account_key: JWKRSA,
         nonce: str,
         url: str,
         account_url: str | None = None,
@@ -367,7 +368,7 @@ class DigiCertAcmeClient:
                 current_nonce = self.get_nonce(directory)
                 continue
 
-            raise AcmeError(resp.status_code, error_body)
+            raise AcmeError(resp.status_code, error_body, resp.headers.get("Replay-Nonce", ""))
 
         # Should never reach here, but satisfy the type checker
         raise AcmeError(0, {"detail": "Exceeded nonce retry limit"})

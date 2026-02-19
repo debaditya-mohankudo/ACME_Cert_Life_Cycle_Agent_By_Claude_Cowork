@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-import josepy as jose
+from josepy.jwk import JWKRSA
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -28,17 +28,17 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 # ─── Account key I/O ──────────────────────────────────────────────────────────
 
 
-def generate_account_key(key_size: int = 2048) -> jose.JWKRSA:
+def generate_account_key(key_size: int = 2048) -> JWKRSA:
     """Generate a new RSA account key wrapped in a josepy JWKRSA."""
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=key_size,
         backend=default_backend(),
     )
-    return jose.JWKRSA(key=private_key)
+    return JWKRSA(key=private_key)
 
 
-def save_account_key(jwk: jose.JWKRSA, path: str) -> None:
+def save_account_key(jwk: JWKRSA, path: str) -> None:
     """Persist account key as PEM (PKCS8).  Caller should chmod 600."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -51,11 +51,11 @@ def save_account_key(jwk: jose.JWKRSA, path: str) -> None:
     os.chmod(path, 0o600)
 
 
-def load_account_key(path: str) -> jose.JWKRSA:
+def load_account_key(path: str) -> JWKRSA:
     """Load an RSA account key from a PEM file."""
     pem = Path(path).read_bytes()
     private_key = serialization.load_pem_private_key(pem, password=None, backend=default_backend())
-    return jose.JWKRSA(key=private_key)
+    return JWKRSA(key=private_key)
 
 
 def account_key_exists(path: str) -> bool:
@@ -65,7 +65,7 @@ def account_key_exists(path: str) -> bool:
 # ─── JWK thumbprint ───────────────────────────────────────────────────────────
 
 
-def compute_jwk_thumbprint(jwk: jose.JWKRSA) -> str:
+def compute_jwk_thumbprint(jwk: JWKRSA) -> str:
     """
     Compute the base64url SHA-256 thumbprint of the public JWK.
     Used to construct the HTTP-01 key-authorization:
@@ -80,7 +80,7 @@ def compute_jwk_thumbprint(jwk: jose.JWKRSA) -> str:
     return _b64url(digest)
 
 
-def compute_key_authorization(token: str, jwk: jose.JWKRSA) -> str:
+def compute_key_authorization(token: str, jwk: JWKRSA) -> str:
     """Return the HTTP-01 key-authorization string for *token*."""
     return f"{token}.{compute_jwk_thumbprint(jwk)}"
 
@@ -90,7 +90,7 @@ def compute_key_authorization(token: str, jwk: jose.JWKRSA) -> str:
 
 def sign_request(
     payload: dict | None,
-    account_key: jose.JWKRSA,
+    account_key: JWKRSA,
     nonce: str,
     url: str,
     account_url: str | None = None,
@@ -134,7 +134,7 @@ def sign_request(
 
 
 def create_eab_jws(
-    account_jwk: jose.JWKRSA,
+    account_jwk: JWKRSA,
     eab_kid: str,
     eab_hmac_key_b64url: str,
     new_account_url: str,
@@ -187,7 +187,7 @@ def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s)
 
 
-def _sign_rsa(jwk: jose.JWKRSA, data: bytes) -> bytes:
+def _sign_rsa(jwk: JWKRSA, data: bytes) -> bytes:
     """Sign *data* with the RSA private key using PKCS1v15 + SHA-256."""
     from cryptography.hazmat.primitives.asymmetric import padding
     from cryptography.hazmat.primitives import hashes
