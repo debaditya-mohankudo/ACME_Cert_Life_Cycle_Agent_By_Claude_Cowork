@@ -1,0 +1,25 @@
+# LangGraph / LangChain
+langgraph==0.2.73
+langchain==0.3.19
+langchain-anthropic==0.3.10
+# langchain-core is a transitive dep — version is resolved by langchain-anthropic (>=0.3.45)
+
+# ACME Protocol
+josepy==1.14.0                  # JWS/JWK signing (from Certbot)
+cryptography==44.0.0            # Key gen, CSR, cert parsing
+requests==2.32.3                # HTTP client for ACME calls
+
+# Configuration & Settings
+pydantic-settings==2.8.0
+pydantic==2.10.6
+python-dotenv==1.0.1
+
+# Storage & Utils
+certifi==2024.12.14             # CA bundle
+schedule==1.2.2                 # Job scheduling
+structlog==25.1.0               # Structured logging
+
+# Dev / Testing
+pytest==8.3.5
+pytest-asyncio==0.25.3
+responses==0.25.3               # Mock HTTP for ACME client tests
