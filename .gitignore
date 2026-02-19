@@ -1,0 +1,42 @@
+# Environment & secrets
+.env
+*.pem
+*.key
+*.p12
+
+# Certificate store (generated)
+certs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# LangSmith / LangChain cache
+.langchain.db
+
+# Logs
+*.log
+logs/
