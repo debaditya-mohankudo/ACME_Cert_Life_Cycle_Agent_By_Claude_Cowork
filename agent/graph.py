@@ -1,0 +1,177 @@
+"""
+LangGraph StateGraph builder for the ACME certificate lifecycle agent.
+
+Graph topology:
+  START
+    → certificate_scanner
+    → renewal_planner (LLM)
+    → [conditional: no_renewals → summary_reporter → END]
+    → acme_account_setup
+    → pick_next_domain          ← loop entry point
+    → order_initializer
+    → challenge_setup
+    → challenge_verifier
+    → [conditional: challenge_failed → error_handler (LLM)]
+         error_handler → [conditional: retry → pick_next_domain (reset)]
+                                        skip  → domain_loop_router
+                                        abort → summary_reporter
+    → csr_generator
+    → order_finalizer
+    → cert_downloader
+    → storage_manager
+    → domain_loop_router
+    → [conditional: next_domain → pick_next_domain]
+                   all_done   → summary_reporter
+    → END
+"""
+from __future__ import annotations
+
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, START, StateGraph
+
+from agent.nodes.account import acme_account_setup
+from agent.nodes.challenge import challenge_setup, challenge_verifier
+from agent.nodes.csr import csr_generator
+from agent.nodes.error_handler import error_handler
+from agent.nodes.finalizer import cert_downloader, order_finalizer
+from agent.nodes.order import order_initializer
+from agent.nodes.planner import renewal_planner
+from agent.nodes.reporter import summary_reporter
+from agent.nodes.router import (
+    challenge_router,
+    domain_loop_router,
+    error_action_router,
+    pick_next_domain,
+    renewal_router,
+)
+from agent.nodes.scanner import certificate_scanner
+from agent.nodes.storage import storage_manager
+from agent.state import AgentState
+
+
+def build_graph(use_checkpointing: bool = False):
+    """
+    Build and compile the ACME agent StateGraph.
+
+    Args:
+        use_checkpointing: If True, attach a MemorySaver for resumable runs.
+
+    Returns:
+        CompiledGraph ready to invoke / stream.
+    """
+    builder = StateGraph(AgentState)
+
+    # ── Register nodes ────────────────────────────────────────────────────
+    builder.add_node("certificate_scanner", certificate_scanner)
+    builder.add_node("renewal_planner", renewal_planner)
+    builder.add_node("acme_account_setup", acme_account_setup)
+    builder.add_node("pick_next_domain", pick_next_domain)
+    builder.add_node("order_initializer", order_initializer)
+    builder.add_node("challenge_setup", challenge_setup)
+    builder.add_node("challenge_verifier", challenge_verifier)
+    builder.add_node("csr_generator", csr_generator)
+    builder.add_node("order_finalizer", order_finalizer)
+    builder.add_node("cert_downloader", cert_downloader)
+    builder.add_node("storage_manager", storage_manager)
+    builder.add_node("error_handler", error_handler)
+    builder.add_node("summary_reporter", summary_reporter)
+
+    # ── Deterministic edges ───────────────────────────────────────────────
+    builder.add_edge(START, "certificate_scanner")
+    builder.add_edge("certificate_scanner", "renewal_planner")
+
+    # After planner: route on whether renewals are needed
+    builder.add_conditional_edges(
+        "renewal_planner",
+        renewal_router,
+        {
+            "renewals_needed": "acme_account_setup",
+            "no_renewals": "summary_reporter",
+        },
+    )
+
+    builder.add_edge("acme_account_setup", "pick_next_domain")
+
+    # pick_next_domain feeds into the per-domain renewal pipeline
+    builder.add_edge("pick_next_domain", "order_initializer")
+    builder.add_edge("order_initializer", "challenge_setup")
+    builder.add_edge("challenge_setup", "challenge_verifier")
+
+    # After challenge verification: success or failure
+    builder.add_conditional_edges(
+        "challenge_verifier",
+        challenge_router,
+        {
+            "challenge_ok": "csr_generator",
+            "challenge_failed": "error_handler",
+        },
+    )
+
+    # Happy path: CSR → finalize → download → store
+    builder.add_edge("csr_generator", "order_finalizer")
+    builder.add_edge("order_finalizer", "cert_downloader")
+    builder.add_edge("cert_downloader", "storage_manager")
+
+    # After storage: loop router decides next domain or done
+    builder.add_conditional_edges(
+        "storage_manager",
+        domain_loop_router,
+        {
+            "next_domain": "pick_next_domain",
+            "all_done": "summary_reporter",
+        },
+    )
+
+    # Error handler routing
+    builder.add_conditional_edges(
+        "error_handler",
+        error_action_router,
+        {
+            "retry": "pick_next_domain",      # retry resets current_domain and loops
+            "skip_domain": "pick_next_domain", # skip pops next domain
+            "abort": "summary_reporter",
+        },
+    )
+
+    builder.add_edge("summary_reporter", END)
+
+    # ── Compile ───────────────────────────────────────────────────────────
+    checkpointer = MemorySaver() if use_checkpointing else None
+    return builder.compile(checkpointer=checkpointer)
+
+
+def initial_state(
+    managed_domains: list[str],
+    cert_store_path: str = "./certs",
+    account_key_path: str = "./account.key",
+    renewal_threshold_days: int = 30,
+    max_retries: int = 3,
+    webroot_path: str | None = None,
+) -> dict:
+    """
+    Build the initial AgentState dict for a fresh agent run.
+    Callers can override any field by merging the returned dict.
+    """
+    return {
+        "managed_domains": managed_domains,
+        "renewal_threshold_days": renewal_threshold_days,
+        "cert_store_path": cert_store_path,
+        "account_key_path": account_key_path,
+        "webroot_path": webroot_path,
+        "cert_records": [],
+        "pending_renewals": [],
+        "current_domain": None,
+        "current_order": None,
+        "acme_account_url": None,
+        "current_nonce": None,
+        "messages": [],
+        "renewal_plan": None,
+        "error_analysis": None,
+        "completed_renewals": [],
+        "failed_renewals": [],
+        "error_log": [],
+        "retry_count": 0,
+        "retry_delay_seconds": 5,
+        "max_retries": max_retries,
+        "cert_metadata": {},
+    }
