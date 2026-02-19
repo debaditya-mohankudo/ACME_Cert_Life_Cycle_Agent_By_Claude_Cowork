@@ -11,8 +11,6 @@ Splits the full PEM chain from DigiCert into:
 from __future__ import annotations
 
 import logging
-import os
-import stat
 from pathlib import Path
 
 from storage import filesystem as fs
@@ -28,6 +26,8 @@ def storage_manager(state: AgentState) -> dict:
     Returns updates to: completed_renewals, cert_metadata, error_log on failure.
     """
     domain = state["current_domain"]
+    if not domain:
+        return {"error_log": state.get("error_log", []) + ["storage_manager called with no current_domain"]}
     cert_store_path = state["cert_store_path"]
     order = state.get("current_order") or {}
 
