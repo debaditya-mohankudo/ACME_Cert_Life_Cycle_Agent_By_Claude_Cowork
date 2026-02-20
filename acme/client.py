@@ -38,24 +38,24 @@ class AcmeError(Exception):
         super().__init__(f"ACME {status_code}: {problem_type} — {detail}")
 
 
-class DigiCertAcmeClient:
+class AcmeClient:
     """
-    Implements the RFC 8555 ACME protocol against DigiCert's endpoint.
-    Also tested against Pebble (local stub) and Let's Encrypt staging.
+    Base RFC 8555 client. Subclass to add CA-specific behaviour (EAB, preset URLs).
+
+    Implements the full ACME protocol: directory discovery, nonce management,
+    account registration, order creation, authorization handling, finalization,
+    and certificate download.  All methods are intentionally stateless — callers
+    pass nonce and account credentials on each call.
     """
 
     def __init__(
         self,
         directory_url: str,
-        eab_key_id: str = "",
-        eab_hmac_key: str = "",
         timeout: int = 30,
         ca_bundle: str = "",
         insecure: bool = False,
     ) -> None:
         self.directory_url = directory_url
-        self.eab_key_id = eab_key_id
-        self.eab_hmac_key = eab_hmac_key
         self.timeout = timeout
         self._session = requests.Session()
         self._session.headers.update({"User-Agent": "acme-cert-agent/1.0"})
@@ -88,25 +88,17 @@ class DigiCertAcmeClient:
     def create_account(
         self,
         account_key: JWKRSA,
-        eab_key_id: str,
-        eab_hmac_key: str,
         nonce: str,
         directory: dict,
     ) -> tuple[str, str]:
         """
-        POST /newAccount, with EAB binding when credentials are provided.
-        DigiCert requires EAB; Pebble and Let's Encrypt staging do not.
+        POST /newAccount with plain termsOfServiceAgreed payload.
         Returns (account_url, new_nonce).
+
+        Override in subclasses to inject EAB or other CA-specific fields.
         """
-        new_account_url = directory["newAccount"]
-        payload: dict = {"termsOfServiceAgreed": True}
-
-        if eab_key_id and eab_hmac_key:
-            payload["externalAccountBinding"] = jwslib.create_eab_jws(
-                account_key, eab_key_id, eab_hmac_key, new_account_url
-            )
-
-        resp = self._post_signed(payload, account_key, nonce, new_account_url, directory=directory)
+        payload = {"termsOfServiceAgreed": True}
+        resp = self._post_signed(payload, account_key, nonce, directory["newAccount"], directory=directory)
         return resp.headers.get("Location", ""), resp.headers.get("Replay-Nonce", "")
 
     def lookup_account(
@@ -308,7 +300,6 @@ class DigiCertAcmeClient:
     ) -> tuple[str, str]:
         """
         POST-as-GET the certificate URL and return (full_chain_pem, new_nonce).
-        The PEM chain from DigiCert is: leaf cert + intermediates.
         """
         resp = self._post_signed(
             None, account_key, nonce, cert_url, account_url,
@@ -398,17 +389,80 @@ class DigiCertAcmeClient:
         return resp
 
 
-def make_client() -> DigiCertAcmeClient:
+class DigiCertAcmeClient(AcmeClient):
+    """DigiCert ACME client — requires EAB credentials (RFC 8739)."""
+
+    DEFAULT_DIRECTORY_URL = "https://acme.digicert.com/v2/DV/directory"
+
+    def __init__(
+        self,
+        eab_key_id: str,
+        eab_hmac_key: str,
+        directory_url: str = DEFAULT_DIRECTORY_URL,
+        timeout: int = 30,
+        ca_bundle: str = "",
+        insecure: bool = False,
+    ) -> None:
+        super().__init__(directory_url, timeout, ca_bundle, insecure)
+        self.eab_key_id = eab_key_id
+        self.eab_hmac_key = eab_hmac_key
+
+    def create_account(
+        self,
+        account_key: JWKRSA,
+        nonce: str,
+        directory: dict,
+    ) -> tuple[str, str]:
+        """
+        POST /newAccount with EAB binding when credentials are provided.
+        DigiCert requires EAB; falls through to plain payload if either is empty.
+        Returns (account_url, new_nonce).
+        """
+        new_account_url = directory["newAccount"]
+        payload: dict = {"termsOfServiceAgreed": True}
+        if self.eab_key_id and self.eab_hmac_key:
+            payload["externalAccountBinding"] = jwslib.create_eab_jws(
+                account_key, self.eab_key_id, self.eab_hmac_key, new_account_url
+            )
+        resp = self._post_signed(payload, account_key, nonce, new_account_url, directory=directory)
+        return resp.headers.get("Location", ""), resp.headers.get("Replay-Nonce", "")
+
+
+class LetsEncryptAcmeClient(AcmeClient):
+    """Let's Encrypt ACME client — no EAB required."""
+
+    PRODUCTION_DIRECTORY_URL = "https://acme-v02.api.letsencrypt.org/directory"
+    STAGING_DIRECTORY_URL    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+    def __init__(
+        self,
+        staging: bool = False,
+        timeout: int = 30,
+        ca_bundle: str = "",
+        insecure: bool = False,
+    ) -> None:
+        url = self.STAGING_DIRECTORY_URL if staging else self.PRODUCTION_DIRECTORY_URL
+        super().__init__(url, timeout, ca_bundle, insecure)
+    # create_account inherited from AcmeClient (plain, no EAB)
+
+
+def make_client() -> AcmeClient:
     """
-    Create a DigiCertAcmeClient from the current application settings.
+    Instantiate the right AcmeClient subclass based on CA_PROVIDER setting.
     Late-imports config to avoid circular imports at module load time.
     """
     from config import settings  # noqa: PLC0415
 
-    return DigiCertAcmeClient(
-        directory_url=settings.DIGICERT_ACME_DIRECTORY,
-        eab_key_id=settings.DIGICERT_EAB_KEY_ID,
-        eab_hmac_key=settings.DIGICERT_EAB_HMAC_KEY,
-        ca_bundle=settings.ACME_CA_BUNDLE,
-        insecure=settings.ACME_INSECURE,
-    )
+    common = dict(ca_bundle=settings.ACME_CA_BUNDLE, insecure=settings.ACME_INSECURE)
+    if settings.CA_PROVIDER == "digicert":
+        return DigiCertAcmeClient(
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            **common,
+        )
+    if settings.CA_PROVIDER == "letsencrypt":
+        return LetsEncryptAcmeClient(**common)
+    if settings.CA_PROVIDER == "letsencrypt_staging":
+        return LetsEncryptAcmeClient(staging=True, **common)
+    # CA_PROVIDER == "custom"
+    return AcmeClient(directory_url=settings.ACME_DIRECTORY_URL, **common)
