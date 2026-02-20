@@ -61,6 +61,7 @@ def pebble_settings(tmp_path: Path):
         "ACME_INSECURE": settings.ACME_INSECURE,
         "ACME_CA_BUNDLE": settings.ACME_CA_BUNDLE,
         "MAX_RETRIES": settings.MAX_RETRIES,
+        "ANTHROPIC_API_KEY": settings.ANTHROPIC_API_KEY,
     }
 
     webroot = tmp_path / "webroot"
@@ -81,6 +82,7 @@ def pebble_settings(tmp_path: Path):
     settings.ACME_INSECURE = True
     settings.ACME_CA_BUNDLE = ""
     settings.MAX_RETRIES = 1
+    settings.ANTHROPIC_API_KEY = "dummy-key-for-testing"  # For LLM credential check
 
     yield settings
 
