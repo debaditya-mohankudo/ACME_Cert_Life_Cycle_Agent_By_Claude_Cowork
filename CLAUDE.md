@@ -141,6 +141,21 @@ LANGCHAIN_PROJECT=acme-cert-agent
 - Use `mock_llm_nodes` fixture to patch `ChatAnthropic` in planner/reporter — no API key needed.
 - LLM mocks must return `AIMessage` objects (not plain `MagicMock`) so LangGraph's `add_messages` reducer accepts them.
 
+## Documentation maintenance
+
+### After code changes
+When you modify the agent architecture, ACME protocol logic, or node behavior, update these files:
+- **`ACME_Agent_Plan.md`** — if architecture, topology, or phase design changes
+- **`README.md`** — if usage, configuration, or CLI changes
+- **`CLAUDE.md`** — if project structure, commands, or key decisions change
+
+### After running tests
+Always update test documentation:
+- **`TEST_RESULTS.md`** — run `pytest -v` and paste full output; update summary table
+- **`TEST_SUMMARY.md`** — update test counts, duration, and prose descriptions of what each suite validates
+
+Keep these synchronized so future sessions (yours or others') have accurate, current documentation.
+
 ## What NOT to do
 - Do not put the account key or any private key material into `AgentState`.
 - Do not set `ACME_INSECURE=true` in production.
