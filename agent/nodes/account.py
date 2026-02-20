@@ -1,5 +1,5 @@
 """
-acme_account_setup node — register or retrieve a DigiCert ACME account.
+acme_account_setup node — register or retrieve an ACME account.
 
 Security note: the account key is never stored in AgentState (which could
 leak into LangSmith traces).  Instead the key path is stored in state and
@@ -12,14 +12,13 @@ import logging
 from acme import jws as jwslib
 from acme.client import make_client
 from agent.state import AgentState
-from config import settings
 
 logger = logging.getLogger(__name__)
 
 
 def acme_account_setup(state: AgentState) -> dict:
     """
-    Ensures a DigiCert ACME account exists and state["acme_account_url"] is set.
+    Ensures an ACME account exists and state["acme_account_url"] is set.
 
     If an account key already exists at account_key_path:
       - Attempts to look up the existing account (POST /newAccount onlyReturnExisting)
@@ -52,11 +51,9 @@ def acme_account_setup(state: AgentState) -> dict:
         account_key = jwslib.generate_account_key()
         jwslib.save_account_key(account_key, account_key_path)
 
-    # Register new account (EAB included only when credentials are configured)
+    # Register new account (EAB injected by the client subclass when required)
     account_url, new_nonce = client.create_account(
         account_key=account_key,
-        eab_key_id=settings.DIGICERT_EAB_KEY_ID,
-        eab_hmac_key=settings.DIGICERT_EAB_HMAC_KEY,
         nonce=nonce,
         directory=directory,
     )
