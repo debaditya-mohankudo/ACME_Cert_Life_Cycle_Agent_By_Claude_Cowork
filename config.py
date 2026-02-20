@@ -74,8 +74,11 @@ class Settings(BaseSettings):
     HTTP_CHALLENGE_PORT: int = 80
     WEBROOT_PATH: Optional[str] = None
 
-    # ── LLM (Anthropic) ────────────────────────────────────────────────────
+    # ── LLM ────────────────────────────────────────────────────────────────
+    LLM_PROVIDER: Literal["anthropic", "openai", "ollama"] = "anthropic"
     ANTHROPIC_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
     LLM_MODEL_PLANNER: str = "claude-haiku-4-5-20251001"
     LLM_MODEL_ERROR_HANDLER: str = "claude-sonnet-4-6"
     LLM_MODEL_REPORTER: str = "claude-haiku-4-5-20251001"

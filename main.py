@@ -47,8 +47,13 @@ def run_once(domains: list[str] | None = None, use_checkpoint: bool = False) -> 
         log.error("No managed domains configured. Set MANAGED_DOMAINS in .env or pass --domains.")
         sys.exit(1)
 
-    if not settings.ANTHROPIC_API_KEY:
-        log.error("ANTHROPIC_API_KEY is not set. Set it in .env or as an environment variable.")
+    _required_keys = {"anthropic": settings.ANTHROPIC_API_KEY, "openai": settings.OPENAI_API_KEY}
+    if settings.LLM_PROVIDER in _required_keys and not _required_keys[settings.LLM_PROVIDER]:
+        log.error(
+            "%s_API_KEY is not set for LLM_PROVIDER=%r. Add it to .env.",
+            settings.LLM_PROVIDER.upper(),
+            settings.LLM_PROVIDER,
+        )
         sys.exit(1)
 
     log.info("Starting certificate lifecycle agent for %d domain(s): %s",

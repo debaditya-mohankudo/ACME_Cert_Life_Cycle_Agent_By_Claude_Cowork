@@ -7,12 +7,12 @@ import json
 import logging
 import time
 
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from agent.prompts import ERROR_HANDLER_SYSTEM, ERROR_HANDLER_USER
 from agent.state import AgentState
 from config import settings
+from llm.factory import make_llm
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +24,6 @@ def error_handler(state: AgentState) -> dict:
     Returns updates to: error_analysis, retry_count, retry_delay_seconds, messages,
                         failed_renewals (if skipping).
     """
-    if not settings.ANTHROPIC_API_KEY:
-        raise ValueError(
-            "ANTHROPIC_API_KEY is not set. Please set the ANTHROPIC_API_KEY environment variable or in .env"
-        )
-
     domain = state.get("current_domain", "unknown")
     order = state.get("current_order") or {}
     error_log = state.get("error_log", [])
@@ -37,11 +32,7 @@ def error_handler(state: AgentState) -> dict:
     max_retries = state.get("max_retries", 3)
     retry_delay = state.get("retry_delay_seconds", 5)
 
-    llm = ChatAnthropic(
-        model=settings.LLM_MODEL_ERROR_HANDLER,
-        anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=256,
-    )
+    llm = make_llm(model=settings.LLM_MODEL_ERROR_HANDLER, max_tokens=256)
 
     messages = [
         SystemMessage(content=ERROR_HANDLER_SYSTEM),

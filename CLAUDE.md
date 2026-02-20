@@ -37,6 +37,9 @@ pytest -v
 ```
 config.py                   # Pydantic Settings singleton (import `settings`)
 main.py                     # CLI entry point
+llm/
+  __init__.py
+  factory.py                # make_llm(model, max_tokens) — provider-agnostic factory
 agent/
   state.py                  # AgentState TypedDict + AcmeOrder dataclass
   graph.py                  # build_graph() + initial_state() helpers
@@ -51,7 +54,7 @@ agent/
     finalizer.py            # order finalization + cert download
     storage.py              # saves cert/key to CERT_STORE_PATH
     reporter.py             # LLM: generates human-readable summary
-    error_handler.py        # LLM (sonnet): handles errors, sets retry_delay
+    error_handler.py        # LLM: handles errors, sets retry_delay
     router.py               # conditional edge logic
 acme/
   client.py                 # AcmeClient base, DigiCertAcmeClient (EAB),
@@ -74,14 +77,18 @@ tests/
 - CSR is stored as a hex string in the order dict so it can travel through LangGraph state safely.
 - `current_nonce` flows through state so every node picks up a fresh nonce.
 
-### LLM models
-| Node | Model |
-|------|-------|
-| planner | `claude-haiku-4-5-20251001` |
-| reporter | `claude-haiku-4-5-20251001` |
-| error_handler | `claude-sonnet-4-6` |
+### LLM provider and models
+All nodes use a single `LLM_PROVIDER` (default `anthropic`). The factory lives in `llm/factory.py`
+and is called as `make_llm(model, max_tokens)` — nodes never import a provider class directly.
 
-Models are overridable via `.env`: `LLM_MODEL_PLANNER`, `LLM_MODEL_REPORTER`, `LLM_MODEL_ERROR_HANDLER`.
+| Node | Default model (Anthropic) | `max_tokens` |
+|------|--------------------------|-------------|
+| planner | `claude-haiku-4-5-20251001` | 512 |
+| reporter | `claude-haiku-4-5-20251001` | 512 |
+| error_handler | `claude-sonnet-4-6` | 256 |
+
+Override via `.env`: `LLM_PROVIDER`, `LLM_MODEL_PLANNER`, `LLM_MODEL_REPORTER`, `LLM_MODEL_ERROR_HANDLER`.
+When switching providers, set the corresponding model names (e.g. `LLM_MODEL_PLANNER=gpt-4o-mini` for OpenAI).
 
 ### Retry / resilience
 - `retry_delay_seconds` doubles on each retry (exponential backoff via `error_handler` node).
@@ -115,8 +122,16 @@ HTTP_CHALLENGE_MODE=standalone   # standalone | webroot
 HTTP_CHALLENGE_PORT=80
 WEBROOT_PATH=                    # required if HTTP_CHALLENGE_MODE=webroot
 
-# LLM
-ANTHROPIC_API_KEY=
+# LLM provider (anthropic | openai | ollama)
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=               # required when LLM_PROVIDER=anthropic
+OPENAI_API_KEY=                  # required when LLM_PROVIDER=openai
+OLLAMA_BASE_URL=http://localhost:11434  # used when LLM_PROVIDER=ollama
+
+# LLM models (set provider-appropriate model names when switching LLM_PROVIDER)
+# LLM_MODEL_PLANNER=claude-haiku-4-5-20251001
+# LLM_MODEL_REPORTER=claude-haiku-4-5-20251001
+# LLM_MODEL_ERROR_HANDLER=claude-sonnet-4-6
 
 # Scheduling
 SCHEDULE_TIME=06:00              # HH:MM UTC
@@ -138,7 +153,7 @@ LANGCHAIN_PROJECT=acme-cert-agent
 ## Testing conventions
 - Pebble integration tests are auto-skipped when Pebble isn't running (`requires_pebble` marker).
 - Use `pebble_settings` fixture to mutate the `settings` singleton for a test; it restores originals via teardown.
-- Use `mock_llm_nodes` fixture to patch `ChatAnthropic` in planner/reporter — no API key needed.
+- Use `mock_llm_nodes` fixture to patch `llm.factory.init_chat_model` — no API key needed for any provider.
 - LLM mocks must return `AIMessage` objects (not plain `MagicMock`) so LangGraph's `add_messages` reducer accepts them.
 
 ## Documentation maintenance

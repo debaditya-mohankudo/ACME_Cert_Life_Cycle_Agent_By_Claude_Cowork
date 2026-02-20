@@ -91,7 +91,7 @@ def pebble_settings(tmp_path: Path):
 # ─── LLM mock helpers ─────────────────────────────────────────────────────────
 
 def _mock_llm_response(content: str) -> MagicMock:
-    """Return a mock that behaves like a ChatAnthropic instance.
+    """Return a mock that behaves like a chat model instance.
 
     llm.invoke() must return a real AIMessage so LangGraph's add_messages
     reducer can accept it — MagicMock is not a BaseMessage subclass.
@@ -114,17 +114,11 @@ REPORTER_RESPONSE = "Test run complete. Certificate renewed successfully."
 @pytest.fixture()
 def mock_llm_nodes():
     """
-    Patch ChatAnthropic in the three LLM nodes so tests don't need an API key.
-    The planner returns valid JSON; the reporter returns a plain-text summary.
+    Patch init_chat_model in llm.factory so tests don't need an API key.
+    Returns a planner-compatible response for all LLM nodes.
     """
-    with (
-        patch(
-            "agent.nodes.planner.ChatAnthropic",
-            return_value=_mock_llm_response(PLANNER_RESPONSE),
-        ),
-        patch(
-            "agent.nodes.reporter.ChatAnthropic",
-            return_value=_mock_llm_response(REPORTER_RESPONSE),
-        ),
+    with patch(
+        "llm.factory.init_chat_model",
+        return_value=_mock_llm_response(PLANNER_RESPONSE),
     ):
         yield

@@ -2,6 +2,8 @@
 langgraph==0.2.73
 langchain==0.3.19
 langchain-anthropic==0.3.10
+langchain-openai>=0.3.0          # OpenAI provider for init_chat_model
+langchain-ollama>=0.2.0          # Ollama provider for init_chat_model
 # langchain-core is a transitive dep — version is resolved by langchain-anthropic (>=0.3.45)
 
 # ACME Protocol

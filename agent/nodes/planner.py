@@ -10,12 +10,12 @@ import json
 import logging
 from typing import Any
 
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from agent.prompts import PLANNER_SYSTEM, PLANNER_USER
 from agent.state import AgentState
 from config import settings
+from llm.factory import make_llm
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +25,6 @@ def renewal_planner(state: AgentState) -> dict:
     LLM node: produce a JSON renewal plan from cert_records.
     Returns: renewal_plan (str), pending_renewals (list[str]), messages update.
     """
-    if not settings.ANTHROPIC_API_KEY:
-        raise ValueError(
-            "ANTHROPIC_API_KEY is not set. Please set the ANTHROPIC_API_KEY environment variable or in .env"
-        )
-
     cert_records = state["cert_records"]
     managed_domains = set(state["managed_domains"])
     threshold = state["renewal_threshold_days"]
@@ -46,11 +41,7 @@ def renewal_planner(state: AgentState) -> dict:
             )
     cert_summary = "\n".join(lines)
 
-    llm = ChatAnthropic(
-        model=settings.LLM_MODEL_PLANNER,
-        anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=512,
-    )
+    llm = make_llm(model=settings.LLM_MODEL_PLANNER, max_tokens=512)
 
     messages = [
         SystemMessage(content=PLANNER_SYSTEM),

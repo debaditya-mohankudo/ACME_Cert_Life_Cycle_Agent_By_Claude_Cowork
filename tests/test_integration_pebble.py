@@ -142,7 +142,7 @@ def test_no_renewal_needed(pebble_settings, mock_llm_nodes):
     mock_planner_llm = MagicMock()
     mock_planner_llm.invoke.return_value = AIMessage(content=skip_response)
 
-    with patch("agent.nodes.planner.ChatAnthropic", return_value=mock_planner_llm):
+    with patch("llm.factory.init_chat_model", return_value=mock_planner_llm):
         result2 = graph.invoke(
             initial_state(
                 managed_domains=pebble_settings.MANAGED_DOMAINS,

@@ -5,12 +5,12 @@ from __future__ import annotations
 
 import logging
 
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from agent.prompts import REPORTER_SYSTEM, REPORTER_USER
 from agent.state import AgentState
 from config import settings
+from llm.factory import make_llm
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +20,6 @@ def summary_reporter(state: AgentState) -> dict:
     LLM node: generate a final renewal run summary.
     Returns: messages update only (summary is printed/logged).
     """
-    if not settings.ANTHROPIC_API_KEY:
-        raise ValueError(
-            "ANTHROPIC_API_KEY is not set. Please set the ANTHROPIC_API_KEY environment variable or in .env"
-        )
-
     completed = state.get("completed_renewals", [])
     failed = state.get("failed_renewals", [])
     pending_renewals = state.get("pending_renewals", [])
@@ -37,11 +32,7 @@ def summary_reporter(state: AgentState) -> dict:
 
     error_summary = "\n".join(f"  - {e}" for e in error_log) if error_log else "  (none)"
 
-    llm = ChatAnthropic(
-        model=settings.LLM_MODEL_REPORTER,
-        anthropic_api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=512,
-    )
+    llm = make_llm(model=settings.LLM_MODEL_REPORTER, max_tokens=512)
 
     messages = [
         SystemMessage(content=REPORTER_SYSTEM),
