@@ -24,6 +24,11 @@ def error_handler(state: AgentState) -> dict:
     Returns updates to: error_analysis, retry_count, retry_delay_seconds, messages,
                         failed_renewals (if skipping).
     """
+    if not settings.ANTHROPIC_API_KEY:
+        raise ValueError(
+            "ANTHROPIC_API_KEY is not set. Please set the ANTHROPIC_API_KEY environment variable or in .env"
+        )
+
     domain = state.get("current_domain", "unknown")
     order = state.get("current_order") or {}
     error_log = state.get("error_log", [])

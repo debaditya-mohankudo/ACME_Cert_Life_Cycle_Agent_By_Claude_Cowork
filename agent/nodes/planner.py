@@ -25,6 +25,11 @@ def renewal_planner(state: AgentState) -> dict:
     LLM node: produce a JSON renewal plan from cert_records.
     Returns: renewal_plan (str), pending_renewals (list[str]), messages update.
     """
+    if not settings.ANTHROPIC_API_KEY:
+        raise ValueError(
+            "ANTHROPIC_API_KEY is not set. Please set the ANTHROPIC_API_KEY environment variable or in .env"
+        )
+
     cert_records = state["cert_records"]
     managed_domains = set(state["managed_domains"])
     threshold = state["renewal_threshold_days"]

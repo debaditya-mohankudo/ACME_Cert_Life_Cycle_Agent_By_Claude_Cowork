@@ -20,6 +20,11 @@ def summary_reporter(state: AgentState) -> dict:
     LLM node: generate a final renewal run summary.
     Returns: messages update only (summary is printed/logged).
     """
+    if not settings.ANTHROPIC_API_KEY:
+        raise ValueError(
+            "ANTHROPIC_API_KEY is not set. Please set the ANTHROPIC_API_KEY environment variable or in .env"
+        )
+
     completed = state.get("completed_renewals", [])
     failed = state.get("failed_renewals", [])
     pending_renewals = state.get("pending_renewals", [])

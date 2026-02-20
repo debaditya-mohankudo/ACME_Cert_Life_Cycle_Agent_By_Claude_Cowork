@@ -47,6 +47,10 @@ def run_once(domains: list[str] | None = None, use_checkpoint: bool = False) -> 
         log.error("No managed domains configured. Set MANAGED_DOMAINS in .env or pass --domains.")
         sys.exit(1)
 
+    if not settings.ANTHROPIC_API_KEY:
+        log.error("ANTHROPIC_API_KEY is not set. Set it in .env or as an environment variable.")
+        sys.exit(1)
+
     log.info("Starting certificate lifecycle agent for %d domain(s): %s",
              len(effective_domains), ", ".join(effective_domains))
 
