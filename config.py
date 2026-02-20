@@ -9,7 +9,39 @@ import warnings
 from typing import List, Literal, Optional
 
 from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    DotEnvSettingsSource,
+    EnvSettingsSource,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
+
+
+class _CommaFallbackMixin:
+    """Return the raw string when JSON parsing fails.
+
+    pydantic-settings ≥2.7 calls json.loads() on complex-typed fields
+    (e.g. List[str]) before field_validators run.  A plain comma-separated
+    value like ``api.example.com,shop.example.com`` is not valid JSON and
+    raises SettingsError before the parse_domains validator can handle it.
+    This mixin catches that ValueError and returns the raw string so the
+    field_validator receives it and can split on commas as intended.
+    """
+
+    def prepare_field_value(self, field_name, field, value, value_is_complex):  # type: ignore[override]
+        try:
+            return super().prepare_field_value(field_name, field, value, value_is_complex)  # type: ignore[misc]
+        except ValueError:
+            return value
+
+
+class _CSVEnvSource(_CommaFallbackMixin, EnvSettingsSource):
+    pass
+
+
+class _CSVDotEnvSource(_CommaFallbackMixin, DotEnvSettingsSource):
+    pass
 
 
 class Settings(BaseSettings):
@@ -62,6 +94,22 @@ class Settings(BaseSettings):
     LANGCHAIN_TRACING_V2: bool = False
     LANGCHAIN_API_KEY: str = ""
     LANGCHAIN_PROJECT: str = "acme-cert-agent"
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            init_settings,
+            _CSVEnvSource(settings_cls),
+            _CSVDotEnvSource(settings_cls),
+            file_secret_settings,
+        )
 
     @field_validator("MANAGED_DOMAINS", mode="before")
     @classmethod
