@@ -1,6 +1,6 @@
 # ACME Certificate Lifecycle Agent — Architecture & Implementation Plan
 
-**Stack:** Python · LangGraph · DigiCert ACME · HTTP-01 Challenge · PEM Filesystem Storage
+**Stack:** Python · LangGraph · Multi-CA ACME (DigiCert · Let's Encrypt · custom) · HTTP-01 Challenge · PEM Filesystem Storage
 **Author:** Deb | **Date:** February 2026
 
 ---
@@ -10,7 +10,7 @@
 An intelligent, agentic certificate lifecycle manager built on **LangGraph** that:
 - Monitors TLS certificate expiry across multiple domains
 - Uses an **LLM** to plan renewal strategy, prioritize, and reason about failures
-- Executes the full **ACME RFC 8555** flow against **DigiCert's ACME endpoint**
+- Executes the full **ACME RFC 8555** flow against **any RFC 8555-compliant CA** (DigiCert, Let's Encrypt, or custom)
 - Validates domain ownership via **HTTP-01 challenges**
 - Stores issued certificates as **PEM files** on the local filesystem
 - Runs on a schedule (e.g., daily) — critical for the upcoming **47-day TLS mandate (2029)**
@@ -52,7 +52,7 @@ These are passed during ACME account registration per **RFC 8739**.
 3. POST /newOrder           → Create certificate order for domain(s)
 4. GET  /order/challenges   → Get HTTP-01 challenge token + URL
 5. Serve token at           → http://<domain>/.well-known/acme-challenge/<token>
-6. POST /challenge          → Tell DigiCert to verify
+6. POST /challenge          → Tell the CA to verify
 7. Poll /order              → Wait for "valid" status
 8. POST /finalize           → Submit CSR (with private key generated locally)
 9. GET  /certificate        → Download cert chain (PEM)
@@ -129,13 +129,13 @@ class AgentState(TypedDict):
 |------|------|----------------|
 | `certificate_scanner` | Tool | Read all managed domain cert files, parse expiry dates, compute `days_until_expiry`, populate `cert_records` |
 | `renewal_planner` | **LLM** | Analyze scan results, write `renewal_plan` (priority order, strategy, notes), populate `pending_renewals` |
-| `acme_account_setup` | Tool | Register or retrieve ACME account at DigiCert using EAB. Store `acme_account_url` |
+| `acme_account_setup` | Tool | Register or retrieve ACME account; EAB injected by the CA client subclass. Store `acme_account_url` |
 | `order_initializer` | Tool | POST to `/newOrder` for `current_domain`. Get challenge URL and token |
 | `challenge_setup` | Tool | Write HTTP-01 token to webroot OR start standalone HTTP server on port 80 |
-| `challenge_verifier` | Tool | POST to DigiCert challenge URL, poll order status until `valid` or `invalid` |
+| `challenge_verifier` | Tool | POST to challenge URL, poll authorization status until `valid` or `invalid` |
 | `csr_generator` | Tool | Generate RSA-2048 or EC P-256 private key + CSR for `current_domain` |
 | `order_finalizer` | Tool | POST CSR to `/finalize`, poll until certificate URL is available |
-| `cert_downloader` | Tool | GET certificate chain from DigiCert, save to PEM |
+| `cert_downloader` | Tool | GET certificate chain from CA (POST-as-GET), save to PEM |
 | `storage_manager` | Tool | Write `cert.pem`, `chain.pem`, `fullchain.pem`, `privkey.pem` to `./certs/<domain>/` |
 | `domain_loop_router` | Logic | Check if more domains in `pending_renewals`, route to next or to summary |
 | `error_handler` | **LLM** | Analyze failure, decide: retry same challenge / skip domain / abort all |
@@ -162,7 +162,7 @@ START
   │
   ▼
 [acme_account_setup]
-  │  Register/retrieve DigiCert ACME account (EAB)
+  │  Register/retrieve ACME account (EAB handled by CA subclass)
   │  (Only runs once per session; subsequent domains reuse account)
   │
   ▼
@@ -175,7 +175,7 @@ START
   │                                                                 │
   ▼                                                                 │
 [challenge_verifier]                                                │
-  │  Tell DigiCert to check; poll until valid/invalid               │
+  │  Tell the CA to check; poll until valid/invalid                 │
   │                                                                 │
   ├── challenge_failed ──► [error_handler] ◄── LLM NODE            │
   │                           │                                     │
@@ -193,7 +193,7 @@ START
   │                                                     │
   ▼                                                     │
 [cert_downloader]                                       │
-  │  Download full cert chain from DigiCert             │
+  │  Download full cert chain from CA                   │
   │                                                     │
   ▼                                                     │
 [storage_manager]                                       │
@@ -218,7 +218,7 @@ acme-agent/
 ├── main.py                          # CLI entry point (run agent, schedule)
 ├── config.py                        # Pydantic settings (env vars, domains)
 ├── requirements.txt
-├── .env                             # DigiCert EAB credentials (gitignored)
+├── .env                             # ACME credentials and settings (gitignored)
 │
 ├── agent/
 │   ├── __init__.py
@@ -268,19 +268,31 @@ acme-agent/
 The ACME protocol uses **JWS (JSON Web Signatures)** for all requests. Every POST is signed with the account private key.
 
 ```python
-# Core ACME operations needed:
-class DigiCertAcmeClient:
-    def __init__(self, directory_url, eab_key_id, eab_hmac_key): ...
-    def get_directory(self) -> dict                          # GET /directory
-    def get_nonce(self) -> str                               # HEAD /newNonce
-    def create_account(self, eab_key_id, eab_hmac_key)      # POST /newAccount (EAB)
+# Class hierarchy — CA-specific details encapsulated in subclasses:
+class AcmeClient:                            # Base — all RFC 8555 protocol logic
+    def __init__(self, directory_url): ...
+    def get_directory(self) -> dict          # GET /directory
+    def get_nonce(self) -> str               # HEAD /newNonce
+    def create_account(self, account_key, nonce, directory)  # POST /newAccount (plain)
     def create_order(self, domains: List[str]) -> dict       # POST /newOrder
-    def get_challenge(self, auth_url: str) -> dict           # GET /authz-v3/<id>
+    def get_authorization(self, auth_url: str) -> dict       # POST-as-GET /authz
     def respond_to_challenge(self, challenge_url: str)       # POST challenge URL
-    def poll_authorization(self, auth_url: str) -> str       # GET (poll status)
+    def poll_authorization(self, auth_url: str) -> str       # poll until valid
     def finalize_order(self, finalize_url, csr_der) -> dict  # POST /finalize
-    def poll_order(self, order_url: str) -> dict             # GET order
-    def download_certificate(self, cert_url: str) -> str     # GET cert (PEM)
+    def poll_order_for_certificate(self, order_url) -> str   # poll until cert ready
+    def download_certificate(self, cert_url: str) -> str     # POST-as-GET cert (PEM)
+
+class DigiCertAcmeClient(AcmeClient):       # Overrides create_account → injects EAB
+    DEFAULT_DIRECTORY_URL = "https://acme.digicert.com/v2/DV/directory"
+    def __init__(self, eab_key_id, eab_hmac_key, directory_url=...): ...
+
+class LetsEncryptAcmeClient(AcmeClient):    # Preset URLs; inherits plain create_account
+    PRODUCTION_DIRECTORY_URL = "https://acme-v02.api.letsencrypt.org/directory"
+    STAGING_DIRECTORY_URL    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+    def __init__(self, staging=False): ...
+
+def make_client() -> AcmeClient:            # Factory — reads CA_PROVIDER from settings
+    ...
 ```
 
 ### 5.2 JWS Signing (`acme/jws.py`)
@@ -370,7 +382,7 @@ Respond in JSON: {{"action": "retry|skip|abort", "reason": "..."}}
 ./certs/
 └── api.example.com/
     ├── cert.pem        # Leaf certificate only
-    ├── chain.pem       # Intermediate CA chain (DigiCert CA certs)
+    ├── chain.pem       # Intermediate CA chain
     ├── fullchain.pem   # cert.pem + chain.pem (for nginx/apache)
     ├── privkey.pem     # RSA private key (chmod 600 — owner read only)
     └── metadata.json   # {issued_at, expires_at, acme_order_url, renewed_by}
@@ -384,10 +396,13 @@ Respond in JSON: {{"action": "retry|skip|abort", "reason": "..."}}
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    # DigiCert ACME
-    DIGICERT_ACME_DIRECTORY: str = "https://acme.digicert.com/v2/DV/directory"
-    DIGICERT_EAB_KEY_ID: str      # From DigiCert console
-    DIGICERT_EAB_HMAC_KEY: str    # Base64url-encoded HMAC key
+    # CA selection
+    CA_PROVIDER: Literal["digicert", "letsencrypt", "letsencrypt_staging", "custom"] = "digicert"
+    ACME_DIRECTORY_URL: str = ""  # Auto-set from CA_PROVIDER; required only for "custom"
+
+    # EAB credentials (DigiCert only; leave empty for Let's Encrypt)
+    ACME_EAB_KEY_ID: str = ""     # From DigiCert console
+    ACME_EAB_HMAC_KEY: str = ""   # Base64url-encoded HMAC key
 
     # Domain management
     MANAGED_DOMAINS: List[str]    # ["api.example.com", "shop.example.com"]
@@ -496,9 +511,9 @@ responses>=0.25.0               # Mock HTTP for ACME client tests
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| ACME library | `josepy` + manual client | Full control over DigiCert EAB specifics; Certbot's library is battle-tested |
+| ACME library | `josepy` + manual client | Full control over EAB and CA-specific behaviour; Certbot's library is battle-tested |
 | LLM model | `claude-opus-4-5-20251101` | Best reasoning for error analysis and renewal planning |
-| Key algorithm | RSA-2048 (default) / EC P-256 (optional) | RSA for broadest DigiCert compatibility; EC for performance |
+| Key algorithm | RSA-2048 (default) / EC P-256 (optional) | RSA for broadest CA compatibility; EC for performance |
 | HTTP challenge | Standalone mode (default) | Most portable — doesn't require existing web server |
 | State persistence | In-memory (start) → MemorySaver (later) | Walk before run; add checkpointing in Phase 4 |
 | Scheduling | `schedule` lib (simple cron-like) | Lightweight; replace with APScheduler or Celery Beat if needed |
@@ -528,13 +543,13 @@ responses>=0.25.0               # Mock HTTP for ACME client tests
    shop.example.com needs renewal within the week. Process second.
    blog.example.com is healthy — skip this cycle."
 
-[2026-02-19 06:00:03] 🔑 ACME Account: Retrieved existing DigiCert account
+[2026-02-19 06:00:03] 🔑 ACME Account: Retrieved existing account
 [2026-02-19 06:00:03] 📋 Creating ACME order for api.example.com...
 [2026-02-19 06:00:04] ⚡ HTTP-01 Challenge: Starting standalone server on :80
 [2026-02-19 06:00:04]   Serving: /.well-known/acme-challenge/abc123xyz...
-[2026-02-19 06:00:07] ✅ Challenge VALID — DigiCert verified api.example.com
+[2026-02-19 06:00:07] ✅ Challenge VALID — CA verified api.example.com
 [2026-02-19 06:00:07] 📝 Generating RSA-2048 private key and CSR...
-[2026-02-19 06:00:08] 🎯 Finalizing order — submitting CSR to DigiCert...
+[2026-02-19 06:00:08] 🎯 Finalizing order — submitting CSR...
 [2026-02-19 06:00:12] 📜 Certificate issued — downloading chain...
 [2026-02-19 06:00:12] 💾 Storing PEM files to ./certs/api.example.com/
 [2026-02-19 06:00:12]   ✅ cert.pem, chain.pem, fullchain.pem, privkey.pem written

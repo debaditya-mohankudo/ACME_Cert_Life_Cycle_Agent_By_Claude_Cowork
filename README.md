@@ -1,6 +1,6 @@
 # ACME Certificate Lifecycle Agent
 
-An intelligent, agentic TLS certificate manager built on **LangGraph** and **Claude**. It monitors certificate expiry across multiple domains, uses an LLM to plan and prioritize renewals, executes the full **ACME RFC 8555** flow against **DigiCert**, and stores issued certificates as PEM files on the local filesystem — all on a configurable daily schedule.
+An intelligent, agentic TLS certificate manager built on **LangGraph** and **Claude**. It monitors certificate expiry across multiple domains, uses an LLM to plan and prioritize renewals, executes the full **ACME RFC 8555** flow against **any RFC 8555-compliant CA** (DigiCert, Let's Encrypt, or custom), and stores issued certificates as PEM files on the local filesystem — all on a configurable daily schedule.
 
 Designed for the coming **47-day TLS mandate (2029)**, where automated renewal is not optional.
 
@@ -22,7 +22,7 @@ START
   ├── no renewals needed ──────────────────────────────────► [summary_reporter] ──► END
   │
   ▼
-[acme_account_setup]      — registers or retrieves DigiCert ACME account (EAB)
+[acme_account_setup]      — registers or retrieves ACME account (EAB injected by CA subclass)
   │
   ▼
 [pick_next_domain] ◄──────────────────────────────────────────────────────────┐
@@ -109,7 +109,7 @@ acme-agent/
 
 - **Python 3.11+**
 - **Port 80 available** (for standalone HTTP-01 challenge mode). On Linux, use `authbind` or `sudo` to bind port 80 as a non-root user. See [Port 80 note](#port-80-note) below.
-- A **DigiCert account** with ACME enabled (DigiCert Console → Automation → ACME). Obtain your `EAB_KEY_ID` and `EAB_HMAC_KEY`.
+- **CA credentials** — for DigiCert: a DigiCert account with ACME enabled (Console → Automation → ACME), obtain your `ACME_EAB_KEY_ID` and `ACME_EAB_HMAC_KEY`. For Let's Encrypt: no credentials needed.
 - An **Anthropic API key** for Claude.
 
 ---
@@ -139,9 +139,12 @@ cp .env.example .env
 Edit `.env` with your credentials:
 
 ```dotenv
-# DigiCert ACME (required)
-DIGICERT_EAB_KEY_ID=your-eab-key-id
-DIGICERT_EAB_HMAC_KEY=your-base64url-hmac-key
+# CA provider (digicert | letsencrypt | letsencrypt_staging | custom)
+CA_PROVIDER=digicert
+
+# EAB credentials (required for DigiCert; leave empty for Let's Encrypt)
+ACME_EAB_KEY_ID=your-eab-key-id
+ACME_EAB_HMAC_KEY=your-base64url-hmac-key
 
 # Domains to monitor (comma-separated)
 MANAGED_DOMAINS=api.example.com,shop.example.com
@@ -192,9 +195,10 @@ All settings are read from environment variables or `.env`. Any variable can be 
 
 | Variable | Default | Description |
 |---|---|---|
-| `DIGICERT_ACME_DIRECTORY` | `https://acme.digicert.com/v2/DV/directory` | ACME directory URL (DV / OV / EV) |
-| `DIGICERT_EAB_KEY_ID` | *(required)* | EAB key identifier from DigiCert Console |
-| `DIGICERT_EAB_HMAC_KEY` | *(required)* | Base64url-encoded HMAC key |
+| `CA_PROVIDER` | `digicert` | CA to use: `digicert` · `letsencrypt` · `letsencrypt_staging` · `custom` |
+| `ACME_EAB_KEY_ID` | — | EAB key identifier (DigiCert only) |
+| `ACME_EAB_HMAC_KEY` | — | Base64url-encoded HMAC key (DigiCert only) |
+| `ACME_DIRECTORY_URL` | *(auto-set)* | ACME directory URL — auto-populated from `CA_PROVIDER`; required only when `CA_PROVIDER=custom` |
 | `MANAGED_DOMAINS` | *(required)* | Comma-separated list of domains to monitor |
 | `RENEWAL_THRESHOLD_DAYS` | `30` | Renew when fewer than N days remain |
 | `CERT_STORE_PATH` | `./certs` | Root directory for PEM files |
@@ -289,16 +293,14 @@ The planner validates its own output: any domain name the LLM returns that is no
 Before configuring DigiCert credentials you can validate the full ACME flow for free against Let's Encrypt staging (no EAB required; certificates are not browser-trusted):
 
 ```dotenv
-DIGICERT_ACME_DIRECTORY=https://acme-staging-v02.api.letsencrypt.org/directory
-DIGICERT_EAB_KEY_ID=
-DIGICERT_EAB_HMAC_KEY=
+CA_PROVIDER=letsencrypt_staging
 ```
 
 ```bash
 python main.py --once --domains your-domain.example.com
 ```
 
-This exercises every node in the graph including HTTP-01 verification and certificate download.
+This exercises every node in the graph including HTTP-01 verification and certificate download. Switch to `CA_PROVIDER=letsencrypt` for production Let's Encrypt certificates.
 
 ---
 
