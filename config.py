@@ -4,7 +4,9 @@ All values can be overridden by environment variables or a .env file.
 """
 from __future__ import annotations
 
-from typing import List, Optional
+import os
+import warnings
+from typing import List, Literal, Optional
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,10 +20,14 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ── DigiCert ACME ──────────────────────────────────────────────────────
-    DIGICERT_ACME_DIRECTORY: str = "https://acme.digicert.com/v2/DV/directory"
-    DIGICERT_EAB_KEY_ID: str = ""
-    DIGICERT_EAB_HMAC_KEY: str = ""
+    # ── CA Provider ────────────────────────────────────────────────────────
+    CA_PROVIDER: Literal["digicert", "letsencrypt", "letsencrypt_staging", "custom"] = "digicert"
+
+    # ── ACME credentials (EAB — required for DigiCert, unused for Let's Encrypt) ─
+    ACME_EAB_KEY_ID: str = ""
+    ACME_EAB_HMAC_KEY: str = ""
+    # Only consulted when CA_PROVIDER="custom"
+    ACME_DIRECTORY_URL: str = ""
 
     # ── Domain management ──────────────────────────────────────────────────
     MANAGED_DOMAINS: List[str] = []
@@ -79,6 +85,29 @@ class Settings(BaseSettings):
             raise ValueError(
                 "WEBROOT_PATH must be set when HTTP_CHALLENGE_MODE='webroot'"
             )
+        return self
+
+    @model_validator(mode="after")
+    def resolve_acme_directory(self) -> "Settings":
+        if any(os.environ.get(k) for k in (
+            "DIGICERT_ACME_DIRECTORY", "DIGICERT_EAB_KEY_ID", "DIGICERT_EAB_HMAC_KEY"
+        )):
+            warnings.warn(
+                "DIGICERT_ACME_DIRECTORY/DIGICERT_EAB_KEY_ID/DIGICERT_EAB_HMAC_KEY are deprecated. "
+                "Use CA_PROVIDER + ACME_EAB_KEY_ID + ACME_EAB_HMAC_KEY instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        _PRESETS = {
+            "digicert":            "https://acme.digicert.com/v2/DV/directory",
+            "letsencrypt":         "https://acme-v02.api.letsencrypt.org/directory",
+            "letsencrypt_staging": "https://acme-staging-v02.api.letsencrypt.org/directory",
+        }
+        if self.CA_PROVIDER in _PRESETS:
+            self.ACME_DIRECTORY_URL = _PRESETS[self.CA_PROVIDER]
+        elif not self.ACME_DIRECTORY_URL:
+            raise ValueError("ACME_DIRECTORY_URL must be set when CA_PROVIDER='custom'")
         return self
 
 
