@@ -68,6 +68,10 @@ acme-agent/
 ├── requirements.txt
 ├── .env.example                 # Copy to .env and fill in credentials
 │
+├── llm/
+│   ├── __init__.py
+│   └── factory.py               # Provider-agnostic LLM factory (Anthropic, OpenAI, Ollama)
+│
 ├── acme/
 │   ├── client.py                # Stateless ACME RFC 8555 HTTP client
 │   ├── crypto.py                # Domain key generation + CSR creation
@@ -110,7 +114,7 @@ acme-agent/
 - **Python 3.11+**
 - **Port 80 available** (for standalone HTTP-01 challenge mode). On Linux, use `authbind` or `sudo` to bind port 80 as a non-root user. See [Port 80 note](#port-80-note) below.
 - **CA credentials** — for DigiCert: a DigiCert account with ACME enabled (Console → Automation → ACME), obtain your `ACME_EAB_KEY_ID` and `ACME_EAB_HMAC_KEY`. For Let's Encrypt: no credentials needed.
-- An **Anthropic API key** for Claude.
+- An **LLM API key** — supports **Anthropic Claude** (default), **OpenAI**, or **Ollama** (local). See [LLM configuration](#llm-provider-configuration) below.
 
 ---
 
@@ -149,8 +153,11 @@ ACME_EAB_HMAC_KEY=your-base64url-hmac-key
 # Domains to monitor (comma-separated)
 MANAGED_DOMAINS=api.example.com,shop.example.com
 
-# Anthropic Claude (required)
-ANTHROPIC_API_KEY=sk-ant-...
+# LLM provider (anthropic | openai | ollama)
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...      # Required when LLM_PROVIDER=anthropic
+# OPENAI_API_KEY=sk-...           # Uncomment for OpenAI
+# OLLAMA_BASE_URL=http://localhost:11434  # Ollama local server
 ```
 
 All available options are documented in [`.env.example`](.env.example).
@@ -206,8 +213,11 @@ All settings are read from environment variables or `.env`. Any variable can be 
 | `HTTP_CHALLENGE_MODE` | `standalone` | `standalone` or `webroot` |
 | `HTTP_CHALLENGE_PORT` | `80` | Port for the standalone HTTP-01 server |
 | `WEBROOT_PATH` | — | Required when `HTTP_CHALLENGE_MODE=webroot` |
-| `ANTHROPIC_API_KEY` | *(required)* | Claude API key |
-| `LLM_MODEL_PLANNER` | `claude-haiku-4-5-20251001` | Model for renewal planning |
+| `LLM_PROVIDER` | `anthropic` | LLM vendor: `anthropic` · `openai` · `ollama` |
+| `ANTHROPIC_API_KEY` | — | Claude API key (required when `LLM_PROVIDER=anthropic`) |
+| `OPENAI_API_KEY` | — | OpenAI API key (required when `LLM_PROVIDER=openai`) |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama local server URL (used when `LLM_PROVIDER=ollama`) |
+| `LLM_MODEL_PLANNER` | `claude-haiku-4-5-20251001` | Model for renewal planning (adjust based on `LLM_PROVIDER`) |
 | `LLM_MODEL_ERROR_HANDLER` | `claude-sonnet-4-6` | Model for error analysis |
 | `LLM_MODEL_REPORTER` | `claude-haiku-4-5-20251001` | Model for run summary |
 | `SCHEDULE_TIME` | `06:00` | Daily run time (HH:MM, UTC) |
@@ -276,15 +286,48 @@ sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
 
 ---
 
-## LLM nodes
+## LLM nodes and provider support
 
-| Node | Model | Responsibility |
+All three LLM decision points use a **provider-agnostic factory** (`llm.factory.make_llm()`), allowing you to switch between vendors by changing a single config variable.
+
+| Node | Default model | Responsibility |
 |---|---|---|
 | `renewal_planner` | Haiku | Classify domains as urgent / routine / skip; output is validated JSON |
 | `error_handler` | Sonnet | Diagnose ACME failures; decide retry / skip / abort with exponential backoff |
 | `summary_reporter` | Haiku | Generate a human-readable run summary for ops teams |
 
 The planner validates its own output: any domain name the LLM returns that is not in `MANAGED_DOMAINS` is stripped before use, preventing hallucinated domains from triggering unintended renewals.
+
+### LLM provider configuration
+
+The agent supports **Anthropic Claude** (default), **OpenAI**, and **Ollama**. Switch providers by setting `LLM_PROVIDER` in `.env`:
+
+#### Anthropic (default)
+```dotenv
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+LLM_MODEL_PLANNER=claude-haiku-4-5-20251001
+LLM_MODEL_REPORTER=claude-haiku-4-5-20251001
+LLM_MODEL_ERROR_HANDLER=claude-sonnet-4-6
+```
+
+#### OpenAI
+```dotenv
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+LLM_MODEL_PLANNER=gpt-4o-mini
+LLM_MODEL_REPORTER=gpt-4o-mini
+LLM_MODEL_ERROR_HANDLER=gpt-4o
+```
+
+#### Ollama (local)
+```dotenv
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL_PLANNER=llama3.2
+LLM_MODEL_REPORTER=llama3.2
+LLM_MODEL_ERROR_HANDLER=llama3.2
+```
 
 ---
 
@@ -400,7 +443,10 @@ LANGCHAIN_PROJECT=acme-cert-agent
 | Package | Purpose |
 |---|---|
 | `langgraph` | Stateful agent graph execution |
-| `langchain-anthropic` | Claude LLM integration |
+| `langchain` | LLM abstraction layer |
+| `langchain-anthropic` | Claude LLM integration (default) |
+| `langchain-openai` | OpenAI LLM integration |
+| `langchain-ollama` | Ollama LLM integration (local models) |
 | `josepy` | JWK / JWS signing (Certbot's battle-tested library) |
 | `cryptography` | Key generation, CSR creation, certificate parsing |
 | `requests` | ACME HTTP client |
