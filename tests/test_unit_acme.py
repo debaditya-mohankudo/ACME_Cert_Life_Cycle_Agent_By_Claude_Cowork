@@ -14,7 +14,7 @@ import responses as resp_lib
 
 from acme import jws as jwslib
 from acme.crypto import create_csr, generate_rsa_key, private_key_to_pem
-from acme.client import AcmeError, DigiCertAcmeClient
+from acme.client import AcmeError, AcmeClient, DigiCertAcmeClient, LetsEncryptAcmeClient
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ def test_create_csr_multi_san(domain_key):
 @resp_lib.activate
 def test_get_directory():
     resp_lib.add(resp_lib.GET, "https://acme.test/directory", json=FAKE_DIRECTORY)
-    client = DigiCertAcmeClient("https://acme.test/directory")
+    client = AcmeClient("https://acme.test/directory")
     directory = client.get_directory()
     assert directory["newAccount"] == "https://acme.test/newAccount"
 
@@ -150,7 +150,7 @@ def test_get_nonce():
         "https://acme.test/newNonce",
         headers={"Replay-Nonce": FAKE_NONCE},
     )
-    client = DigiCertAcmeClient("https://acme.test/directory")
+    client = AcmeClient("https://acme.test/directory")
     nonce = client.get_nonce(FAKE_DIRECTORY)
     assert nonce == FAKE_NONCE
 
@@ -168,11 +168,9 @@ def test_create_account_without_eab(account_key):
         },
         status=201,
     )
-    client = DigiCertAcmeClient("https://acme.test/directory")
+    client = AcmeClient("https://acme.test/directory")
     account_url, new_nonce = client.create_account(
         account_key=account_key,
-        eab_key_id="",
-        eab_hmac_key="",
         nonce=FAKE_NONCE,
         directory=FAKE_DIRECTORY,
     )
@@ -202,7 +200,7 @@ def test_create_order(account_key):
         },
         status=201,
     )
-    client = DigiCertAcmeClient("https://acme.test/directory")
+    client = AcmeClient("https://acme.test/directory")
     order, order_url, nonce = client.create_order(
         domains=["example.com"],
         account_key=account_key,
@@ -221,7 +219,7 @@ def test_poll_authorization_valid():
         "https://acme.test/authz/1",
         json={"status": "valid"},
     )
-    client = DigiCertAcmeClient("https://acme.test/directory")
+    client = AcmeClient("https://acme.test/directory")
     status = client.poll_authorization("https://acme.test/authz/1", max_attempts=3, poll_interval=0)
     assert status == "valid"
 
@@ -233,7 +231,7 @@ def test_poll_authorization_invalid_raises():
         "https://acme.test/authz/1",
         json={"status": "invalid", "challenges": []},
     )
-    client = DigiCertAcmeClient("https://acme.test/directory")
+    client = AcmeClient("https://acme.test/directory")
     with pytest.raises(AcmeError):
         client.poll_authorization("https://acme.test/authz/1", max_attempts=3, poll_interval=0)
 
@@ -248,9 +246,9 @@ def test_acme_error_on_non_2xx():
         json={"type": "urn:ietf:params:acme:error:malformed", "detail": "bad payload"},
         status=400,
     )
-    client = DigiCertAcmeClient("https://acme.test/directory")
+    client = AcmeClient("https://acme.test/directory")
     from acme import jws as jwslib
     key = jwslib.generate_account_key(key_size=2048)
     with pytest.raises(AcmeError) as exc_info:
-        client.create_account(key, "", "", FAKE_NONCE, FAKE_DIRECTORY)
+        client.create_account(key, FAKE_NONCE, FAKE_DIRECTORY)
     assert exc_info.value.status_code == 400

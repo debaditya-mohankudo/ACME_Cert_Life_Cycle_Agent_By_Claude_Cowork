@@ -5,8 +5,8 @@ Pebble fixture
 --------------
 The `pebble_settings` fixture patches the module-level `config.settings`
 singleton so every node in the graph talks to a local Pebble instance instead
-of DigiCert.  It also patches the three LLM nodes so no Anthropic API key is
-needed for the integration tests.
+of the configured CA.  It also patches the three LLM nodes so no Anthropic
+API key is needed for the integration tests.
 """
 from __future__ import annotations
 
@@ -49,9 +49,10 @@ def pebble_settings(tmp_path: Path):
     from config import settings
 
     originals = {
-        "DIGICERT_ACME_DIRECTORY": settings.DIGICERT_ACME_DIRECTORY,
-        "DIGICERT_EAB_KEY_ID": settings.DIGICERT_EAB_KEY_ID,
-        "DIGICERT_EAB_HMAC_KEY": settings.DIGICERT_EAB_HMAC_KEY,
+        "CA_PROVIDER":        settings.CA_PROVIDER,
+        "ACME_DIRECTORY_URL": settings.ACME_DIRECTORY_URL,
+        "ACME_EAB_KEY_ID":    settings.ACME_EAB_KEY_ID,
+        "ACME_EAB_HMAC_KEY":  settings.ACME_EAB_HMAC_KEY,
         "MANAGED_DOMAINS": settings.MANAGED_DOMAINS,
         "CERT_STORE_PATH": settings.CERT_STORE_PATH,
         "ACCOUNT_KEY_PATH": settings.ACCOUNT_KEY_PATH,
@@ -68,9 +69,10 @@ def pebble_settings(tmp_path: Path):
     cert_store.mkdir()
     account_key = tmp_path / "account.key"
 
-    settings.DIGICERT_ACME_DIRECTORY = "https://localhost:14000/dir"
-    settings.DIGICERT_EAB_KEY_ID = ""
-    settings.DIGICERT_EAB_HMAC_KEY = ""
+    settings.CA_PROVIDER        = "custom"
+    settings.ACME_DIRECTORY_URL = "https://localhost:14000/dir"
+    settings.ACME_EAB_KEY_ID    = ""
+    settings.ACME_EAB_HMAC_KEY  = ""
     settings.MANAGED_DOMAINS = ["acme-test.localhost"]
     settings.CERT_STORE_PATH = str(cert_store)
     settings.ACCOUNT_KEY_PATH = str(account_key)
