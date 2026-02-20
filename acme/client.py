@@ -101,6 +101,40 @@ class AcmeClient:
         resp = self._post_signed(payload, account_key, nonce, directory["newAccount"], directory=directory)
         return resp.headers.get("Location", ""), resp.headers.get("Replay-Nonce", "")
 
+    def revoke_certificate(
+        self,
+        cert_pem: str,
+        account_key: JWKRSA,
+        account_url: str,
+        nonce: str,
+        directory: dict,
+        reason: int = 0,
+    ) -> str:
+        """
+        POST /revokeCert — revoke an issued certificate (RFC 8555 §7.6).
+
+        cert_pem: PEM-encoded leaf certificate (not the full chain).
+        reason:   RFC 5280 CRL reason code (0=unspecified, 1=keyCompromise,
+                  4=superseded, 5=cessationOfOperation).
+        Returns new_nonce.
+        Raises AcmeError if the server rejects the revocation.
+        """
+        import base64
+        from cryptography import x509
+        from cryptography.hazmat.primitives.serialization import Encoding
+
+        cert = x509.load_pem_x509_certificate(cert_pem.encode())
+        cert_b64 = base64.urlsafe_b64encode(cert.public_bytes(Encoding.DER)).rstrip(b"=").decode()
+
+        payload: dict = {"certificate": cert_b64}
+        if reason != 0:
+            payload["reason"] = reason
+
+        resp = self._post_signed(
+            payload, account_key, nonce, directory["revokeCert"], account_url, directory=directory
+        )
+        return resp.headers.get("Replay-Nonce", "")
+
     def lookup_account(
         self,
         account_key: JWKRSA,
@@ -453,16 +487,18 @@ def make_client() -> AcmeClient:
     """
     from config import settings  # noqa: PLC0415
 
-    common = dict(ca_bundle=settings.ACME_CA_BUNDLE, insecure=settings.ACME_INSECURE)
+    ca_bundle: str = settings.ACME_CA_BUNDLE
+    insecure: bool = settings.ACME_INSECURE
     if settings.CA_PROVIDER == "digicert":
         return DigiCertAcmeClient(
             eab_key_id=settings.ACME_EAB_KEY_ID,
             eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
-            **common,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
         )
     if settings.CA_PROVIDER == "letsencrypt":
-        return LetsEncryptAcmeClient(**common)
+        return LetsEncryptAcmeClient(ca_bundle=ca_bundle, insecure=insecure)
     if settings.CA_PROVIDER == "letsencrypt_staging":
-        return LetsEncryptAcmeClient(staging=True, **common)
+        return LetsEncryptAcmeClient(staging=True, ca_bundle=ca_bundle, insecure=insecure)
     # CA_PROVIDER == "custom"
-    return AcmeClient(directory_url=settings.ACME_DIRECTORY_URL, **common)
+    return AcmeClient(directory_url=settings.ACME_DIRECTORY_URL, ca_bundle=ca_bundle, insecure=insecure)
