@@ -260,3 +260,37 @@ def test_invalid_directory_url_returns_404():
     client = AcmeClient("https://acme.test/bad-dir")
     with pytest.raises(requests.exceptions.HTTPError):
         client.get_directory()
+
+
+# ─── Test 6: Malformed JSON body (200 OK but invalid JSON) ──────────────────
+
+@resp_lib.activate
+def test_finalize_order_malformed_json_response(account_key, domain_key):
+    """
+    finalize_order() receives status 200 but body is not valid JSON ("not json").
+    Client's resp.json() call raises JSONDecodeError.
+    This tests robustness when ACME server returns 200 with malformed body.
+    """
+    csr_der = create_csr(domain_key, "example.com")
+
+    # Mock POST to finalize URL — 200 OK but malformed JSON body
+    resp_lib.add(
+        resp_lib.POST,
+        "https://acme.test/finalize/1",
+        body="not json",
+        status=200,
+        headers={"Replay-Nonce": FAKE_NONCE},
+    )
+
+    client = AcmeClient("https://acme.test/dir")
+    with pytest.raises(Exception) as exc_info:
+        # resp.json() will raise JSONDecodeError, which is a ValueError subclass
+        client.finalize_order(
+            "https://acme.test/finalize/1",
+            csr_der,
+            account_key,
+            "https://acme.test/acct/1",
+            FAKE_NONCE,
+        )
+    # Should be a JSON decode error
+    assert "json" in str(exc_info.value).lower() or "json" in type(exc_info.value).__name__.lower()
