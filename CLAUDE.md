@@ -98,6 +98,12 @@ When switching providers, set the corresponding model names (e.g. `LLM_MODEL_PLA
 ### Planner output validation
 - Planner output is validated to strip any domains not present in `managed_domains` (prevents LLM hallucination of out-of-scope domains).
 
+### Knowledge base storage
+- **Current:** JSON (`kb/chunks.json`) — simple, human-readable, version-control friendly
+- **Revisit when:** chunks dataset exceeds ~50k entries, or when metadata-filtered queries become necessary
+- **Future alternatives:** Qdrant (vector DB), SQLite + FAISS indices, Parquet + metadata index
+- For now: JSON is efficient (write-once, read into memory, query via FAISS semantic search)
+
 ## Configuration (`.env`)
 
 ```env
