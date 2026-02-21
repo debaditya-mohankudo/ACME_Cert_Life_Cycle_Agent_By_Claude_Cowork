@@ -6,7 +6,9 @@ __pycache__
 .pytest_cache
 .python-version
 certs/
+doc/
+kb/
 *.key
-ACME_Agent_Plan.md
 TEST_RESULTS.md
 TEST_SUMMARY.md
+
