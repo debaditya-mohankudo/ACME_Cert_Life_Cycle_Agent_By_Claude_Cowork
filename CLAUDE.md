@@ -168,6 +168,19 @@ LANGCHAIN_PROJECT=acme-cert-agent
 - Use `mock_llm_nodes` fixture to patch `llm.factory.init_chat_model` — no API key needed for any provider.
 - LLM mocks must return `AIMessage` objects (not plain `MagicMock`) so LangGraph's `add_messages` reducer accepts them.
 
+## Before planning new features
+
+Read **`doc/DESIGN_PRINCIPLES.md`** first. It is the architectural constitution for this project — 10 named principles with rationale and links to deep-dive analysis docs. Any plan that conflicts with a principle must explicitly justify the deviation.
+
+Key constraints most likely to affect feature planning:
+- **Principle 2** — Sequential domain processing; no concurrent ACME operations
+- **Principle 3** — LLM output is always validated before any action is taken
+- **Principle 5** — Retry logic belongs in `error_handler`/`retry_scheduler`, never in business nodes
+- **Principle 9** — New CA or LLM providers go in `acme/client.py` or `llm/factory.py` only; zero node changes
+- **Principle 10** — Every network call must be a named graph node, not a buried helper call
+
+---
+
 ## Documentation maintenance
 
 ### After code changes
