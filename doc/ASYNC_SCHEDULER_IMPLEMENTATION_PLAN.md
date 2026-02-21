@@ -1,8 +1,15 @@
 # Async Scheduler Implementation Plan
 
 **Date:** 2026-02-21
-**Status:** Implementation Roadmap
+**Status:** Phase 3 Implemented (Phases 1-2 complete; Phase 4-5 roadmap)
 **Category:** Scaling & Async Architecture
+
+**✅ Phase 3 Complete (2026-02-21):**
+- Created `agent/nodes/retry_scheduler.py` with both sync and async implementations
+- Modified `agent/graph.py` to integrate retry_scheduler node
+- Updated `error_handler.py` to record `retry_not_before` timestamp instead of blocking
+- Added 11 comprehensive tests in `tests/test_retry_scheduler.py`
+- All 48 tests passing; no regressions
 
 ---
 
@@ -426,13 +433,13 @@ async def run_all_domains_async():
 - [ ] Update error_handler tests (no more `patch('time.sleep')`)
 - [ ] Verify graph still routes correctly
 
-### ✅ Phase 3: Add Scheduler Node (2-3 hours)
-- [ ] Create `retry_scheduler.py` (sync version)
-- [ ] Create `retry_scheduler_async()` (async version)
-- [ ] Update graph topology (add scheduler node)
-- [ ] Update routing (error_handler → retry_scheduler → pick_next_domain)
-- [ ] Write tests for scheduler node
-- [ ] Verify no behavior change (sync version uses `time.sleep()`)
+### ✅ Phase 3: Add Scheduler Node (2-3 hours) — **COMPLETED**
+- [x] Create `retry_scheduler.py` (sync version)
+- [x] Create `retry_scheduler_async()` (async version)
+- [x] Update graph topology (add scheduler node)
+- [x] Update routing (error_handler → retry_scheduler → pick_next_domain)
+- [x] Write tests for scheduler node (11 tests, all passing)
+- [x] Verify no behavior change (sync version uses `time.sleep()`)
 
 ### ✅ Phase 4: Async Conversion (4-6 hours)
 - [ ] Create `build_graph_async()` function

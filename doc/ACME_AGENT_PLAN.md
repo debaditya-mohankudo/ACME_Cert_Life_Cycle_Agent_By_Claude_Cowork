@@ -138,7 +138,8 @@ class AgentState(TypedDict):
 | `cert_downloader` | Tool | GET certificate chain from CA (POST-as-GET), save to PEM |
 | `storage_manager` | Tool | Write `cert.pem`, `chain.pem`, `fullchain.pem`, `privkey.pem` to `./certs/<domain>/` |
 | `domain_loop_router` | Logic | Check if more domains in `pending_renewals`, route to next or to summary |
-| `error_handler` | **LLM** | Analyze failure, decide: retry same challenge / skip domain / abort all |
+| `error_handler` | **LLM** | Analyze failure, decide: retry/skip/abort; schedule retry via `retry_not_before` timestamp |
+| `retry_scheduler` | Tool | Apply backoff delay (non-blocking if async); clear `retry_not_before` before proceeding |
 | `summary_reporter` | **LLM** | Generate final renewal report (successes, failures, next check date) |
 
 ---
@@ -179,7 +180,8 @@ START
   │                                                                 │
   ├── challenge_failed ──► [error_handler] ◄── LLM NODE            │
   │                           │                                     │
-  │                           ├── retry (retry_count < max) ────────┘
+  │                           ├── retry ──► [retry_scheduler] ──────┘
+  │                           │              (applies backoff)
   │                           │
   │                           └── skip_domain ──► [domain_loop_router]
   │                                                     │

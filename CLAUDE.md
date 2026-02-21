@@ -53,7 +53,8 @@ agent/
     finalizer.py            # order finalization + cert download
     storage.py              # saves cert/key to CERT_STORE_PATH
     reporter.py             # LLM: generates human-readable summary
-    error_handler.py        # LLM: handles errors, sets retry_delay
+    error_handler.py        # LLM: handles errors, schedules retry backoff
+    retry_scheduler.py      # applies backoff delay before retry (sync + async)
     router.py               # conditional edge logic
 acme/
   client.py                 # AcmeClient base, DigiCertAcmeClient (EAB),
@@ -92,8 +93,11 @@ Override via `.env`: `LLM_PROVIDER`, `LLM_MODEL_PLANNER`, `LLM_MODEL_REPORTER`, 
 When switching providers, set the corresponding model names (e.g. `LLM_MODEL_PLANNER=gpt-4o-mini` for OpenAI).
 
 ### Retry / resilience
-- `retry_delay_seconds` doubles on each retry (exponential backoff via `error_handler` node).
+- **error_handler** (LLM) decides action (retry/skip/abort) and schedules retry time via `retry_not_before` timestamp.
+- **retry_scheduler** node applies the backoff delay before retrying (separates concerns; supports async in Phase 4).
+- `retry_delay_seconds` doubles on each retry (exponential backoff).
 - `MAX_RETRIES` (default 3) controls the retry ceiling.
+- Graph routing: `error_handler` → `retry_scheduler` → `pick_next_domain` (on retry).
 
 ### Planner output validation
 - Planner output is validated to strip any domains not present in `managed_domains` (prevents LLM hallucination of out-of-scope domains).
