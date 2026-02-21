@@ -36,8 +36,8 @@ START
   ▼                                                                            │
 [challenge_verifier]      — trigger CA verification, poll until valid         │
   │                                                                            │
-  ├── failed ──► [error_handler] (LLM) ─── retry ──────────────────────────── ┤
-  │                                    ├── skip  ─────────────────────────────►│
+  ├── failed ──► [error_handler] (LLM) ─── retry ──► [retry_scheduler] ──────┤
+  │                                    ├── skip  ────────────────────────────►│
   │                                    └── abort ──────────────────────────► [summary_reporter]
   ▼                                                                            │
 [csr_generator]           — generate RSA-2048 private key + CSR               │
@@ -97,6 +97,7 @@ acme-agent/
 │       ├── storage.py           # storage_manager
 │       ├── router.py            # routing functions for conditional edges
 │       ├── error_handler.py     # error_handler (LLM)
+│       ├── retry_scheduler.py   # retry_scheduler (applies backoff)
 │       └── reporter.py          # summary_reporter (LLM)
 │
 ├── doc/                         # Detailed documentation
@@ -405,7 +406,8 @@ All three LLM decision points use a **provider-agnostic factory** (`llm.factory.
 | Node | Default model | Responsibility |
 |---|---|---|
 | `renewal_planner` | Haiku | Classify domains as urgent / routine / skip; output is validated JSON |
-| `error_handler` | Sonnet | Diagnose ACME failures; decide retry / skip / abort with exponential backoff |
+| `error_handler` | Sonnet | Diagnose ACME failures; decide retry / skip / abort and schedule backoff via `retry_scheduler` |
+| `retry_scheduler` | — | Apply backoff delay before retrying (separates timing from error analysis) |
 | `summary_reporter` | Haiku | Generate a human-readable run summary for ops teams |
 
 The planner validates its own output: any domain name the LLM returns that is not in `MANAGED_DOMAINS` is stripped before use, preventing hallucinated domains from triggering unintended renewals.
