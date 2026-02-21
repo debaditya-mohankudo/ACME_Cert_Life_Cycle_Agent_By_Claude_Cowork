@@ -68,15 +68,22 @@ def error_handler(state: AgentState) -> dict:
     if action == "retry":
         new_retry_count = retry_count + 1
         new_delay = suggested_delay if suggested_delay > 0 else min(retry_delay * 2, 300)
+
+        # Schedule retry with backoff (to be applied by retry_scheduler node)
+        now = time.time()
+        retry_not_before = now + new_delay
+
         logger.info(
-            "Error handler: RETRY #%d for %s (waiting %ds)",
+            "Error handler: RETRY #%d for %s (backoff %ds, will retry at %d)",
             new_retry_count,
             domain,
             new_delay,
+            int(retry_not_before),
         )
-        time.sleep(new_delay)
+
         updates["retry_count"] = new_retry_count
         updates["retry_delay_seconds"] = new_delay
+        updates["retry_not_before"] = retry_not_before
     elif action == "abort":
         logger.error("Error handler: ABORT — stopping all renewals")
         # Mark all remaining pending as failed

@@ -12,8 +12,8 @@ Graph topology:
     → challenge_setup
     → challenge_verifier
     → [conditional: challenge_failed → error_handler (LLM)]
-         error_handler → [conditional: retry → pick_next_domain (reset)]
-                                        skip  → domain_loop_router
+         error_handler → [conditional: retry → retry_scheduler → pick_next_domain (reset)]
+                                        skip  → pick_next_domain
                                         abort → summary_reporter
     → csr_generator
     → order_finalizer
@@ -23,6 +23,9 @@ Graph topology:
     → [conditional: next_domain → pick_next_domain]
                    all_done   → summary_reporter
     → END
+
+Note: retry_scheduler applies backoff (time.sleep) before retrying.
+See: agent/nodes/retry_scheduler.py
 """
 from __future__ import annotations
 
@@ -37,6 +40,7 @@ from agent.nodes.finalizer import cert_downloader, order_finalizer
 from agent.nodes.order import order_initializer
 from agent.nodes.planner import renewal_planner
 from agent.nodes.reporter import summary_reporter
+from agent.nodes.retry_scheduler import retry_scheduler
 from agent.nodes.router import (
     challenge_router,
     domain_loop_router,
@@ -74,6 +78,7 @@ def build_graph(use_checkpointing: bool = False):
     builder.add_node("cert_downloader", cert_downloader)
     builder.add_node("storage_manager", storage_manager)
     builder.add_node("error_handler", error_handler)
+    builder.add_node("retry_scheduler", retry_scheduler)
     builder.add_node("summary_reporter", summary_reporter)
 
     # ── Deterministic edges ───────────────────────────────────────────────
@@ -123,15 +128,19 @@ def build_graph(use_checkpointing: bool = False):
     )
 
     # Error handler routing
+    # NOTE: On retry, route through retry_scheduler to apply backoff before retrying
     builder.add_conditional_edges(
         "error_handler",
         error_action_router,
         {
-            "retry": "pick_next_domain",      # retry resets current_domain and loops
-            "skip_domain": "pick_next_domain", # skip pops next domain
+            "retry": "retry_scheduler",       # Apply backoff via scheduler
+            "skip_domain": "pick_next_domain", # skip pops next domain (no wait)
             "abort": "summary_reporter",
         },
     )
+
+    # Retry scheduler → pick_next_domain (loop for retry)
+    builder.add_edge("retry_scheduler", "pick_next_domain")
 
     builder.add_edge("summary_reporter", END)
 
@@ -172,6 +181,7 @@ def initial_state(
         "error_log": [],
         "retry_count": 0,
         "retry_delay_seconds": 5,
+        "retry_not_before": None,
         "max_retries": max_retries,
         "cert_metadata": {},
     }
