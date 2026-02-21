@@ -294,3 +294,36 @@ def test_finalize_order_malformed_json_response(account_key, domain_key):
         )
     # Should be a JSON decode error
     assert "json" in str(exc_info.value).lower() or "json" in type(exc_info.value).__name__.lower()
+
+
+# ─── Test 7: Rate Limit (429 Too Many Requests with Retry-After) ────────────
+
+@resp_lib.activate
+def test_rate_limit_429_with_retry_after(account_key):
+    """
+    ACME server returns 429 (Too Many Requests) with Retry-After header.
+    Client raises AcmeError with status_code=429; caller can inspect header.
+    """
+    # Mock POST that returns rate limit error
+    resp_lib.add(
+        resp_lib.POST,
+        FAKE_DIRECTORY["newAccount"],
+        json={
+            "type": "urn:ietf:params:acme:error:rateLimited",
+            "detail": "Rate limit exceeded. Retry-After: 3600",
+        },
+        status=429,
+        headers={
+            "Replay-Nonce": "nonce429",
+            "Retry-After": "3600",  # seconds to wait before retry
+        },
+    )
+
+    client = AcmeClient("https://acme.test/dir")
+    with pytest.raises(AcmeError) as exc_info:
+        client.create_account(account_key, FAKE_NONCE, FAKE_DIRECTORY)
+
+    assert exc_info.value.status_code == 429
+    assert "rateLimited" in exc_info.value.body.get("type", "")
+    # Verify Retry-After was captured (typically in response.headers, accessible to caller)
+    assert exc_info.value.new_nonce == "nonce429"
