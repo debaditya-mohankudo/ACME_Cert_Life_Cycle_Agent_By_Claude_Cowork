@@ -67,6 +67,7 @@ acme-agent/
 ├── config.py                    # Pydantic settings (all env vars)
 ├── requirements.txt
 ├── .env.example                 # Copy to .env and fill in credentials
+├── CLAUDE.md                    # Development guide and conventions
 │
 ├── llm/
 │   ├── __init__.py
@@ -98,7 +99,26 @@ acme-agent/
 │       ├── error_handler.py     # error_handler (LLM)
 │       └── reporter.py          # summary_reporter (LLM)
 │
-└── certs/                       # Generated PEM files (gitignored)
+├── doc/                         # Detailed documentation
+│   ├── SECURITY.md              # 13-section security analysis (TLS, ACME, LLM validation, etc.)
+│   └── DOCKER_TEST_FLOW.md      # End-to-end Pebble integration test flow in Docker
+│
+├── kb/                          # FAISS vector knowledge base (experimental)
+│   ├── build_index.py           # Build semantic index from docs + code
+│   ├── query.py                 # CLI for natural-language semantic search
+│   ├── requirements.txt         # faiss-cpu, sentence-transformers
+│   ├── index.faiss              # Pre-built FAISS vector index (177 chunks)
+│   ├── chunks.json              # Chunk metadata and text
+│   └── __init__.py
+│
+├── tests/
+│   ├── conftest.py              # Pebble fixture, mock_llm_nodes fixture
+│   ├── test_unit_acme.py        # Unit tests (ACME, crypto, state)
+│   ├── test_integration_pebble.py
+│   ├── test_lifecycle_pebble.py
+│   └── test_kb.py               # KB chunking + FAISS search tests
+│
+├── certs/                       # Generated PEM files (gitignored)
     └── api.example.com/
         ├── cert.pem
         ├── chain.pem
