@@ -316,7 +316,7 @@ error_handler (LLM: retry/skip/abort)
 - [`agent/nodes/error_handler.py`](../agent/nodes/error_handler.py) — Schedules retry (no sleep)
 - [`agent/nodes/retry_scheduler.py`](../agent/nodes/retry_scheduler.py) — Enforces backoff timing
 - [`agent/graph.py`](../agent/graph.py) — Graph topology
-- [`ASYNC_SCHEDULER_IMPLEMENTATION_PLAN.md`](ASYNC_SCHEDULER_IMPLEMENTATION_PLAN.md) — Phase 3-4 roadmap
+- [`DESIGN_ASYNC_SCHEDULER_PLAN.md`](DESIGN_ASYNC_SCHEDULER_PLAN.md) — Phase 3-4 roadmap
 
 ---
 
@@ -366,7 +366,7 @@ There is currently no hard wall-clock limit on a single agent run. A future enha
 
 ## Related Documents
 
-- [`ASYNC_SCHEDULER_IMPLEMENTATION_PLAN.md`](ASYNC_SCHEDULER_IMPLEMENTATION_PLAN.md) — Phase 3-4 implementation plan and roadmap
+- [`DESIGN_ASYNC_SCHEDULER_PLAN.md`](DESIGN_ASYNC_SCHEDULER_PLAN.md) — Phase 3-4 implementation plan and roadmap
 - [`SECURITY.md`](SECURITY.md#11-resilience-and-retry-safety) — Security implications of retry backoff
 - [`agent/nodes/error_handler.py`](../agent/nodes/error_handler.py) — Scheduler decision logic
 - [`agent/nodes/retry_scheduler.py`](../agent/nodes/retry_scheduler.py) — Backoff enforcement (sync + async)

@@ -11,7 +11,7 @@ The `AcmeClient` holds no mutable state. Every value the client needs — the cu
 
 **Why:** A stateless client is trivially testable, reproducible, and safe to recreate across nodes or machines. Hiding nonce in a client instance breaks checkpoint/restore and makes parallelization unsafe. The small cost of passing one extra argument is worth the gains in debuggability.
 
-→ Full analysis: [STATEFUL_CLIENT_DESIGN_ANALYSIS.md](STATEFUL_CLIENT_DESIGN_ANALYSIS.md)
+→ Full analysis: [DESIGN_STATEFUL_CLIENT_ANALYSIS.md](DESIGN_STATEFUL_CLIENT_ANALYSIS.md)
 
 ---
 
@@ -21,7 +21,7 @@ Domains are renewed one at a time through the LangGraph state machine. Concurren
 
 **Why:** ACME nonces are single-use per connection. Parallel domains sharing a nonce would violate RFC 8555 § 6.5 and cause `badNonce` rejections. The sequential design keeps nonce flow simple and correct. If parallelism is ever needed, the migration path is per-domain nonce queues — not a stateful client.
 
-→ Full analysis: [NONCE_MANAGEMENT_STRATEGY.md](NONCE_MANAGEMENT_STRATEGY.md)
+→ Full analysis: [DESIGN_NONCE_MANAGEMENT_STRATEGY.md](DESIGN_NONCE_MANAGEMENT_STRATEGY.md)
 
 ---
 
@@ -31,7 +31,7 @@ The LLM (planner node) produces a renewal priority plan. Its output is always pa
 
 **Why:** LLMs can hallucinate domains not under management, drop domains silently, or return unparseable output. The validation layer strips hallucinated domains, recovers missing ones, and falls back to "renew everything" on JSON parse failure. The LLM's job is classification and observability — not access control over which domains get renewed.
 
-→ Full analysis: [RENEWAL_PLANNER_LLM_RATIONALE.md](RENEWAL_PLANNER_LLM_RATIONALE.md)
+→ Full analysis: [DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md](DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md)
 
 ---
 
@@ -41,7 +41,7 @@ The graph is safe to resume or re-run at any node boundary. A crash at any point
 
 **Why:** LangGraph checkpoints after each node. ACME operations (account creation, finalization, certificate download) are replay-safe by protocol design. Atomic writes ensure no corrupt intermediate state is ever visible on disk. Together these make the system robust for unattended, long-running ops.
 
-→ Full analysis: [STATEFUL_CLIENT_DESIGN_ANALYSIS.md — Idempotency Philosophy](STATEFUL_CLIENT_DESIGN_ANALYSIS.md#idempotency-philosophy)
+→ Full analysis: [DESIGN_STATEFUL_CLIENT_ANALYSIS.md — Idempotency Philosophy](DESIGN_STATEFUL_CLIENT_ANALYSIS.md#idempotency-philosophy)
 
 ---
 
@@ -51,7 +51,7 @@ The `error_handler` node decides *whether* to retry and *when* (sets `retry_not_
 
 **Why:** Mixing backoff sleep into ACME nodes makes them untestable without real time delays, unobservable in LangGraph traces, and impossible to interrupt cleanly. Separation means each node is a pure function of state, and the scheduler can be swapped for an async version without touching protocol code.
 
-→ Full analysis: [BACKOFF_INTEGRATION_ANALYSIS.md](BACKOFF_INTEGRATION_ANALYSIS.md)
+→ Full analysis: [DESIGN_BACKOFF_INTEGRATION_ANALYSIS.md](DESIGN_BACKOFF_INTEGRATION_ANALYSIS.md)
 
 ---
 
@@ -114,6 +114,6 @@ Every node that makes a network call is a named node in the LangGraph graph. No 
 | Isolated retry logic | error_handler → retry_scheduler | `agent/nodes/retry_scheduler.py` |
 | Atomic writes | temp + fsync + rename | `storage/atomic.py` |
 | Key off state | Account key on disk only | `agent/nodes/account.py` |
-| Sequential > parallel | Correctness first | `NONCE_MANAGEMENT_STRATEGY.md` |
+| Sequential > parallel | Correctness first | `DESIGN_NONCE_MANAGEMENT_STRATEGY.md` |
 | Factory pattern | No provider branches in nodes | `llm/factory.py` |
 | Network calls named | All side effects in graph | `agent/graph.py` |

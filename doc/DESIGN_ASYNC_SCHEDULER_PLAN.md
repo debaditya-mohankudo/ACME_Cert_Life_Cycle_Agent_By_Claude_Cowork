@@ -567,12 +567,12 @@ async def test_parallel_domain_retry():
 | **Introduce race conditions** | Per-domain state isolation; no shared mutable state |
 | **Async/await bugs** | Comprehensive async test suite; feature-flag switchover |
 | **Performance regression** | Baseline performance test before/after each phase |
-| **Distributed nonce issues** | See NONCE_MANAGEMENT_STRATEGY.md (per-domain queues) |
+| **Distributed nonce issues** | See DESIGN_NONCE_MANAGEMENT_STRATEGY.md (per-domain queues) |
 
 ---
 
 ## Related Documents
 
-- [`BACKOFF_INTEGRATION_ANALYSIS.md`](BACKOFF_INTEGRATION_ANALYSIS.md) — Current design analysis
-- [`NONCE_MANAGEMENT_STRATEGY.md`](NONCE_MANAGEMENT_STRATEGY.md) — Nonce handling for async
-- [`STATEFUL_CLIENT_DESIGN_ANALYSIS.md`](STATEFUL_CLIENT_DESIGN_ANALYSIS.md) — Why keep client stateless
+- [`DESIGN_BACKOFF_INTEGRATION_ANALYSIS.md`](DESIGN_BACKOFF_INTEGRATION_ANALYSIS.md) — Current design analysis
+- [`DESIGN_NONCE_MANAGEMENT_STRATEGY.md`](DESIGN_NONCE_MANAGEMENT_STRATEGY.md) — Nonce handling for async
+- [`DESIGN_STATEFUL_CLIENT_ANALYSIS.md`](DESIGN_STATEFUL_CLIENT_ANALYSIS.md) — Why keep client stateless

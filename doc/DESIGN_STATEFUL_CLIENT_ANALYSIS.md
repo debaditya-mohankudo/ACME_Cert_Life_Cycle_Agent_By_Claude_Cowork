@@ -547,7 +547,7 @@ Together these properties mean:
 
 ## Related Documents
 
-- [`NONCE_MANAGEMENT_STRATEGY.md`](NONCE_MANAGEMENT_STRATEGY.md) — Current design deep-dive
+- [`DESIGN_NONCE_MANAGEMENT_STRATEGY.md`](DESIGN_NONCE_MANAGEMENT_STRATEGY.md) — Current design deep-dive
 - [`CERTIFICATE_STORAGE.md`](CERTIFICATE_STORAGE.md) — Atomic write implementation
 - [`acme/client.py`](../acme/client.py) — Stateless client implementation
 - [`ACME_AGENT_PLAN.md`](ACME_AGENT_PLAN.md) — Agent architecture
