@@ -1,10 +1,10 @@
 # Test Results — ACME Certificate Lifecycle Agent
 
 **Date:** 2026-02-21
-**Time:** 14:45 UTC
+**Time:** 15:40 UTC
 **Platform:** macOS 25.3 · arm64
 **Python:** 3.12.8
-**Pebble:** Not running (tests auto-skipped)
+**Pebble:** Running (all tests executed)
 
 ---
 
@@ -12,12 +12,12 @@
 
 | Suite | Tests | Passed | Skipped | Failed | Duration |
 |---|---|---|---|---|---|
-| Unit (`test_unit_acme.py`) | 18 | 18 | 0 | 0 | — |
-| Unit Failure Scenarios (`test_unit_failure_scenarios.py`) | 7 | 7 | 0 | 0 | — |
+| Unit (`test_unit_acme.py`) | 27 | 27 | 0 | 0 | — |
+| Unit Failure Scenarios (`test_unit_failure_scenarios.py`) | 9 | 9 | 0 | 0 | — |
 | Knowledge Base (`test_kb.py`) | 5 | 5 | 0 | 0 | — |
-| Lifecycle (`test_lifecycle_pebble.py`) | 2 | 0 | 2 | 0 | — |
-| Integration (`test_integration_pebble.py`) | 3 | 0 | 3 | 0 | — |
-| **Total** | **35** | **30** | **5** | **0** | **14.65 s** |
+| Lifecycle (`test_lifecycle_pebble.py`) | 2 | 2 | 0 | 0 | — |
+| Integration (`test_integration_pebble.py`) | 3 | 3 | 0 | 0 | — |
+| **Total** | **46** | **46** | **0** | **0** | **28.62 s** |
 
 ---
 
@@ -30,45 +30,56 @@ rootdir: /Users/debaditya/workspace/Acme_certificate_lifecycle_agent
 configfile: pyproject.toml
 plugins: anyio-4.12.1, asyncio-0.25.3, langsmith-0.3.45
 asyncio: mode=Mode.STRICT
-collected 35 items
+collected 46 items
 
-tests/test_integration_pebble.py::test_full_renewal_flow SKIPPED        [  2%]
-tests/test_integration_pebble.py::test_second_run_reuses_account SKIPPED [  5%]
-tests/test_integration_pebble.py::test_no_renewal_needed SKIPPED        [  8%]
-tests/test_kb.py::test_markdown_splits_into_sections PASSED              [ 11%]
-tests/test_kb.py::test_markdown_chunk_contains_full_text PASSED          [ 14%]
-tests/test_kb.py::test_python_extracts_top_level_functions PASSED        [ 17%]
-tests/test_kb.py::test_python_extracts_class_overview_and_methods PASSED [ 20%]
-tests/test_kb.py::test_search_returns_semantically_relevant_result PASSED [ 22%]
-tests/test_lifecycle_pebble.py::test_certificate_lifecycle SKIPPED      [ 25%]
-tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal SKIPPED [ 28%]
-tests/test_unit_acme.py::test_generate_account_key PASSED                [ 31%]
-tests/test_unit_acme.py::test_jwk_thumbprint_is_deterministic PASSED     [ 34%]
-tests/test_unit_acme.py::test_key_authorization PASSED                   [ 37%]
-tests/test_unit_acme.py::test_sign_request_jwk_header PASSED             [ 40%]
-tests/test_unit_acme.py::test_sign_request_kid_header PASSED             [ 42%]
-tests/test_unit_acme.py::test_save_and_load_account_key PASSED           [ 45%]
-tests/test_unit_acme.py::test_rsa_key_generation PASSED                  [ 48%]
-tests/test_unit_acme.py::test_private_key_to_pem PASSED                  [ 51%]
-tests/test_unit_acme.py::test_create_csr_single_domain PASSED            [ 54%]
-tests/test_unit_acme.py::test_create_csr_multi_san PASSED                [ 57%]
-tests/test_unit_acme.py::test_get_directory PASSED                       [ 60%]
-tests/test_unit_acme.py::test_get_nonce PASSED                           [ 62%]
-tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 65%]
-tests/test_unit_acme.py::test_create_order PASSED                        [ 68%]
-tests/test_unit_acme.py::test_poll_authorization_valid PASSED            [ 71%]
-tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 74%]
-tests/test_unit_acme.py::test_acme_error_on_non_2xx PASSED               [ 77%]
-tests/test_unit_acme.py::test_revoke_certificate PASSED                  [ 80%]
-tests/test_unit_failure_scenarios.py::test_challenge_failure_invalid_status PASSED [ 82%]
-tests/test_unit_failure_scenarios.py::test_invalid_csr_rejected_by_server PASSED [ 85%]
-tests/test_unit_failure_scenarios.py::test_bad_nonce_retries_and_succeeds PASSED [ 88%]
-tests/test_unit_failure_scenarios.py::test_bad_nonce_exhausts_retries PASSED [ 91%]
-tests/test_unit_failure_scenarios.py::test_network_timeout_on_directory_fetch PASSED [ 94%]
-tests/test_unit_failure_scenarios.py::test_invalid_directory_url_connection_error PASSED [ 97%]
-tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PASSED [100%]
+tests/test_unit_acme.py::test_generate_account_key PASSED                [  2%]
+tests/test_unit_acme.py::test_jwk_thumbprint_is_deterministic PASSED     [  4%]
+tests/test_unit_acme.py::test_key_authorization PASSED                   [  6%]
+tests/test_unit_acme.py::test_sign_request_jwk_header PASSED             [  8%]
+tests/test_unit_acme.py::test_sign_request_kid_header PASSED             [ 10%]
+tests/test_unit_acme.py::test_save_and_load_account_key PASSED           [ 13%]
+tests/test_unit_acme.py::test_rsa_key_generation PASSED                  [ 15%]
+tests/test_unit_acme.py::test_private_key_to_pem PASSED                  [ 17%]
+tests/test_unit_acme.py::test_create_csr_single_domain PASSED            [ 19%]
+tests/test_unit_acme.py::test_create_csr_multi_san PASSED                [ 21%]
+tests/test_unit_acme.py::test_get_directory PASSED                       [ 23%]
+tests/test_unit_acme.py::test_get_nonce PASSED                           [ 26%]
+tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 28%]
+tests/test_unit_acme.py::test_create_order PASSED                        [ 30%]
+tests/test_unit_acme.py::test_poll_authorization_valid PASSED            [ 32%]
+tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 34%]
+tests/test_unit_acme.py::test_acme_error_on_non_2xx PASSED               [ 36%]
+tests/test_unit_acme.py::test_revoke_certificate PASSED                  [ 39%]
+tests/test_unit_acme.py::test_zerossl_client_default_url PASSED          [ 41%]
+tests/test_unit_acme.py::test_sectigo_client_default_url PASSED          [ 43%]
+tests/test_unit_acme.py::test_digicert_client_default_url PASSED         [ 45%]
+tests/test_unit_acme.py::test_eab_subclass_hierarchy PASSED              [ 47%]
+tests/test_unit_acme.py::test_create_account_not_overridden_in_subclasses PASSED [ 50%]
+tests/test_unit_acme.py::test_make_client_returns_zerossl PASSED         [ 52%]
+tests/test_unit_acme.py::test_make_client_returns_sectigo PASSED         [ 54%]
+tests/test_unit_acme.py::test_eab_create_account_injects_eab PASSED      [ 56%]
+tests/test_unit_acme.py::test_eab_create_account_omits_eab_when_credentials_empty PASSED [ 58%]
+tests/test_unit_failure_scenarios.py::test_challenge_failure_invalid_status PASSED [ 60%]
+tests/test_unit_failure_scenarios.py::test_invalid_csr_rejected_by_server PASSED [ 63%]
+tests/test_unit_failure_scenarios.py::test_bad_nonce_retries_and_succeeds PASSED [ 65%]
+tests/test_unit_failure_scenarios.py::test_bad_nonce_exhausts_retries PASSED [ 67%]
+tests/test_unit_failure_scenarios.py::test_network_timeout_on_directory_fetch PASSED [ 69%]
+tests/test_unit_failure_scenarios.py::test_invalid_directory_url_connection_error PASSED [ 71%]
+tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PASSED [ 73%]
+tests/test_unit_failure_scenarios.py::test_finalize_order_malformed_json_response PASSED [ 76%]
+tests/test_unit_failure_scenarios.py::test_rate_limit_429_with_retry_after PASSED [ 78%]
+tests/test_integration_pebble.py::test_full_renewal_flow PASSED          [ 80%]
+tests/test_integration_pebble.py::test_second_run_reuses_account PASSED  [ 82%]
+tests/test_integration_pebble.py::test_no_renewal_needed PASSED          [ 84%]
+tests/test_lifecycle_pebble.py::test_certificate_lifecycle PASSED        [ 86%]
+tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal PASSED [ 89%]
+tests/test_kb.py::test_markdown_splits_into_sections PASSED              [ 91%]
+tests/test_kb.py::test_markdown_chunk_contains_full_text PASSED          [ 93%]
+tests/test_kb.py::test_python_extracts_top_level_functions PASSED        [ 95%]
+tests/test_kb.py::test_python_extracts_class_overview_and_methods PASSED [ 97%]
+tests/test_kb.py::test_search_returns_semantically_relevant_result PASSED [100%]
 
-======================== 30 passed, 5 skipped in 14.65s ========================
+============================== 46 passed in 28.62s ==============================
 ```
 
 ---
@@ -100,6 +111,15 @@ No network access required. All ACME HTTP calls are intercepted by the
 | `test_poll_authorization_invalid_raises` | `acme/client.py` | Poll raises `AcmeError` on `status: invalid` |
 | `test_acme_error_on_non_2xx` | `acme/client.py` | Non-2xx ACME response raises `AcmeError` with correct status code |
 | `test_revoke_certificate` | `acme/client.py` | `POST /revokeCert` sends DER cert as base64url; `reason` omitted when 0 |
+| `test_zerossl_client_default_url` | `acme/client.py` | `ZeroSSLAcmeClient.DEFAULT_DIRECTORY_URL` matches official ZeroSSL ACME endpoint |
+| `test_sectigo_client_default_url` | `acme/client.py` | `SectigoAcmeClient.DEFAULT_DIRECTORY_URL` matches official Sectigo ACME endpoint |
+| `test_digicert_client_default_url` | `acme/client.py` | `DigiCertAcmeClient.DEFAULT_DIRECTORY_URL` unchanged after refactor |
+| `test_eab_subclass_hierarchy` | `acme/client.py` | DigiCert/ZeroSSL/Sectigo all subclass `EabAcmeClient`; `EabAcmeClient` subclasses `AcmeClient` |
+| `test_create_account_not_overridden_in_subclasses` | `acme/client.py` | Regression: EAB logic is only in `EabAcmeClient.__dict__`, not duplicated in subclasses |
+| `test_make_client_returns_zerossl` | `acme/client.py` | `make_client()` returns `ZeroSSLAcmeClient` when `CA_PROVIDER=zerossl` |
+| `test_make_client_returns_sectigo` | `acme/client.py` | `make_client()` returns `SectigoAcmeClient` when `CA_PROVIDER=sectigo` |
+| `test_eab_create_account_injects_eab` | `acme/client.py` | `EabAcmeClient.create_account()` injects `externalAccountBinding` when EAB creds are set |
+| `test_eab_create_account_omits_eab_when_credentials_empty` | `acme/client.py` | `EabAcmeClient.create_account()` skips EAB when credentials are empty strings |
 
 ---
 

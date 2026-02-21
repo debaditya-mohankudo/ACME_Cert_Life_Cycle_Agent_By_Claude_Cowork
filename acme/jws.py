@@ -7,7 +7,7 @@ Responsibilities (boundary with acme/crypto.py):
   - Generate / load / save the **account** RSA key
   - Compute JWK thumbprint (for HTTP-01 key-authorizations)
   - Sign ACME POST bodies as JWS (with jwk or kid header)
-  - Build the EAB outer-JWS for DigiCert account registration
+  - Build the EAB outer-JWS for EAB-capable CAs (DigiCert, ZeroSSL, Sectigo)
 """
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ def create_eab_jws(
     new_account_url: str,
 ) -> dict:
     """
-    Build the EAB outer-JWS required by DigiCert's newAccount request.
+    Build the EAB outer-JWS required by EAB-capable CAs (DigiCert, ZeroSSL, Sectigo).
 
     Per RFC 8739:
       - Protected header: {"alg":"HS256","kid":<eab_kid>,"url":<newAccount url>}

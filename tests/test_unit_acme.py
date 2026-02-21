@@ -14,7 +14,16 @@ import responses as resp_lib
 
 from acme import jws as jwslib
 from acme.crypto import create_csr, generate_rsa_key, private_key_to_pem
-from acme.client import AcmeError, AcmeClient, DigiCertAcmeClient, LetsEncryptAcmeClient
+from acme.client import (
+    AcmeError,
+    AcmeClient,
+    EabAcmeClient,
+    DigiCertAcmeClient,
+    ZeroSSLAcmeClient,
+    SectigoAcmeClient,
+    LetsEncryptAcmeClient,
+    make_client,
+)
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -304,3 +313,90 @@ def test_revoke_certificate(account_key):
     cert_der = base64.urlsafe_b64decode(payload["certificate"] + "==")
     assert cert_der == leaf_cert.public_bytes(Encoding.DER)
     assert "reason" not in payload  # default reason=0 omitted
+
+
+# ─── EabAcmeClient, new CA clients, and make_client() factory ─────────────────
+
+def test_zerossl_client_default_url():
+    assert ZeroSSLAcmeClient.DEFAULT_DIRECTORY_URL == "https://acme.zerossl.com/v2/DV90"
+
+def test_sectigo_client_default_url():
+    assert SectigoAcmeClient.DEFAULT_DIRECTORY_URL == "https://acme.sectigo.com/v2/DV"
+
+def test_digicert_client_default_url():
+    assert DigiCertAcmeClient.DEFAULT_DIRECTORY_URL == "https://acme.digicert.com/v2/DV/directory"
+
+def test_eab_subclass_hierarchy():
+    assert issubclass(DigiCertAcmeClient, EabAcmeClient)
+    assert issubclass(ZeroSSLAcmeClient, EabAcmeClient)
+    assert issubclass(SectigoAcmeClient, EabAcmeClient)
+    assert issubclass(EabAcmeClient, AcmeClient)
+
+def test_create_account_not_overridden_in_subclasses():
+    """Regression: EAB logic lives only in EabAcmeClient, not duplicated."""
+    assert "create_account" not in DigiCertAcmeClient.__dict__
+    assert "create_account" not in ZeroSSLAcmeClient.__dict__
+    assert "create_account" not in SectigoAcmeClient.__dict__
+    assert "create_account" in EabAcmeClient.__dict__
+
+def test_make_client_returns_zerossl(monkeypatch):
+    from config import settings
+    monkeypatch.setattr(settings, "CA_PROVIDER", "zerossl")
+    monkeypatch.setattr(settings, "ACME_EAB_KEY_ID", "test-kid")
+    monkeypatch.setattr(settings, "ACME_EAB_HMAC_KEY", "dGVzdA")
+    monkeypatch.setattr(settings, "ACME_CA_BUNDLE", "")
+    monkeypatch.setattr(settings, "ACME_INSECURE", False)
+    client = make_client()
+    assert isinstance(client, ZeroSSLAcmeClient)
+    assert client.directory_url == ZeroSSLAcmeClient.DEFAULT_DIRECTORY_URL
+
+def test_make_client_returns_sectigo(monkeypatch):
+    from config import settings
+    monkeypatch.setattr(settings, "CA_PROVIDER", "sectigo")
+    monkeypatch.setattr(settings, "ACME_EAB_KEY_ID", "test-kid")
+    monkeypatch.setattr(settings, "ACME_EAB_HMAC_KEY", "dGVzdA")
+    monkeypatch.setattr(settings, "ACME_CA_BUNDLE", "")
+    monkeypatch.setattr(settings, "ACME_INSECURE", False)
+    client = make_client()
+    assert isinstance(client, SectigoAcmeClient)
+    assert client.directory_url == SectigoAcmeClient.DEFAULT_DIRECTORY_URL
+
+@resp_lib.activate
+def test_eab_create_account_injects_eab(account_key):
+    """EabAcmeClient injects externalAccountBinding when EAB creds are set."""
+    import base64
+    resp_lib.add(
+        resp_lib.POST, "https://acme.test/newAccount",
+        json={"status": "valid"},
+        headers={"Location": "https://acme.test/acct/99", "Replay-Nonce": "eabnonce"},
+        status=201,
+    )
+    client = ZeroSSLAcmeClient(
+        eab_key_id="my-kid", eab_hmac_key="dGVzdGtleQ",
+        directory_url="https://acme.test/directory",
+    )
+    account_url, new_nonce = client.create_account(account_key, FAKE_NONCE, FAKE_DIRECTORY)
+    assert account_url == "https://acme.test/acct/99"
+    assert new_nonce == "eabnonce"
+    posted = json.loads(resp_lib.calls[0].request.body)
+    payload = json.loads(base64.urlsafe_b64decode(posted["payload"] + "=="))
+    assert "externalAccountBinding" in payload
+    assert payload["termsOfServiceAgreed"] is True
+
+@resp_lib.activate
+def test_eab_create_account_omits_eab_when_credentials_empty(account_key):
+    """EabAcmeClient skips externalAccountBinding when EAB creds are empty."""
+    import base64
+    resp_lib.add(
+        resp_lib.POST, "https://acme.test/newAccount",
+        json={"status": "valid"},
+        headers={"Location": "https://acme.test/acct/100", "Replay-Nonce": "noeabnonce"},
+        status=201,
+    )
+    client = ZeroSSLAcmeClient(eab_key_id="", eab_hmac_key="",
+                               directory_url="https://acme.test/directory")
+    account_url, _ = client.create_account(account_key, FAKE_NONCE, FAKE_DIRECTORY)
+    assert account_url == "https://acme.test/acct/100"
+    posted = json.loads(resp_lib.calls[0].request.body)
+    payload = json.loads(base64.urlsafe_b64decode(posted["payload"] + "=="))
+    assert "externalAccountBinding" not in payload

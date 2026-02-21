@@ -423,16 +423,18 @@ class AcmeClient:
         return resp
 
 
-class DigiCertAcmeClient(AcmeClient):
-    """DigiCert ACME client — requires EAB credentials (RFC 8739)."""
-
-    DEFAULT_DIRECTORY_URL = "https://acme.digicert.com/v2/DV/directory"
+class EabAcmeClient(AcmeClient):
+    """
+    Intermediate base for CAs that require External Account Binding (RFC 8739).
+    DigiCert, ZeroSSL, and Sectigo all use identical EAB logic.
+    Subclasses only set DEFAULT_DIRECTORY_URL and call super().__init__().
+    """
 
     def __init__(
         self,
         eab_key_id: str,
         eab_hmac_key: str,
-        directory_url: str = DEFAULT_DIRECTORY_URL,
+        directory_url: str,
         timeout: int = 30,
         ca_bundle: str = "",
         insecure: bool = False,
@@ -448,8 +450,8 @@ class DigiCertAcmeClient(AcmeClient):
         directory: dict,
     ) -> tuple[str, str]:
         """
-        POST /newAccount with EAB binding when credentials are provided.
-        DigiCert requires EAB; falls through to plain payload if either is empty.
+        POST /newAccount with EAB binding per RFC 8739.
+        Falls through to plain payload if either EAB credential is empty.
         Returns (account_url, new_nonce).
         """
         new_account_url = directory["newAccount"]
@@ -460,6 +462,60 @@ class DigiCertAcmeClient(AcmeClient):
             )
         resp = self._post_signed(payload, account_key, nonce, new_account_url, directory=directory)
         return resp.headers.get("Location", ""), resp.headers.get("Replay-Nonce", "")
+
+
+class DigiCertAcmeClient(EabAcmeClient):
+    """DigiCert ACME client — requires EAB credentials (RFC 8739)."""
+
+    DEFAULT_DIRECTORY_URL = "https://acme.digicert.com/v2/DV/directory"
+
+    def __init__(
+        self,
+        eab_key_id: str,
+        eab_hmac_key: str,
+        directory_url: str = DEFAULT_DIRECTORY_URL,
+        timeout: int = 30,
+        ca_bundle: str = "",
+        insecure: bool = False,
+    ) -> None:
+        super().__init__(eab_key_id, eab_hmac_key, directory_url, timeout, ca_bundle, insecure)
+    # create_account inherited from EabAcmeClient
+
+
+class ZeroSSLAcmeClient(EabAcmeClient):
+    """ZeroSSL ACME client — requires EAB credentials (RFC 8739)."""
+
+    DEFAULT_DIRECTORY_URL = "https://acme.zerossl.com/v2/DV90"
+
+    def __init__(
+        self,
+        eab_key_id: str,
+        eab_hmac_key: str,
+        directory_url: str = DEFAULT_DIRECTORY_URL,
+        timeout: int = 30,
+        ca_bundle: str = "",
+        insecure: bool = False,
+    ) -> None:
+        super().__init__(eab_key_id, eab_hmac_key, directory_url, timeout, ca_bundle, insecure)
+    # create_account inherited from EabAcmeClient
+
+
+class SectigoAcmeClient(EabAcmeClient):
+    """Sectigo ACME client — requires EAB credentials (RFC 8739)."""
+
+    DEFAULT_DIRECTORY_URL = "https://acme.sectigo.com/v2/DV"
+
+    def __init__(
+        self,
+        eab_key_id: str,
+        eab_hmac_key: str,
+        directory_url: str = DEFAULT_DIRECTORY_URL,
+        timeout: int = 30,
+        ca_bundle: str = "",
+        insecure: bool = False,
+    ) -> None:
+        super().__init__(eab_key_id, eab_hmac_key, directory_url, timeout, ca_bundle, insecure)
+    # create_account inherited from EabAcmeClient
 
 
 class LetsEncryptAcmeClient(AcmeClient):
@@ -500,5 +556,19 @@ def make_client() -> AcmeClient:
         return LetsEncryptAcmeClient(ca_bundle=ca_bundle, insecure=insecure)
     if settings.CA_PROVIDER == "letsencrypt_staging":
         return LetsEncryptAcmeClient(staging=True, ca_bundle=ca_bundle, insecure=insecure)
+    if settings.CA_PROVIDER == "zerossl":
+        return ZeroSSLAcmeClient(
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        )
+    if settings.CA_PROVIDER == "sectigo":
+        return SectigoAcmeClient(
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        )
     # CA_PROVIDER == "custom"
     return AcmeClient(directory_url=settings.ACME_DIRECTORY_URL, ca_bundle=ca_bundle, insecure=insecure)

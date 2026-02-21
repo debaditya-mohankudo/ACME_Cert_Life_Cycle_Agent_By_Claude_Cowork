@@ -1,7 +1,7 @@
 # ACME Certificate Lifecycle Agent — Claude Code Guide
 
 ## Project overview
-LangGraph StateGraph + Claude agent that automates TLS certificate renewal via the ACME RFC 8555 protocol. Supports DigiCert (EAB), Let's Encrypt, Let's Encrypt Staging, and custom CAs. Uses HTTP-01 challenge in standalone (port 80) or webroot mode.
+LangGraph StateGraph + Claude agent that automates TLS certificate renewal via the ACME RFC 8555 protocol. Supports DigiCert, ZeroSSL, Sectigo (EAB), Let's Encrypt, Let's Encrypt Staging, and custom CAs. Uses HTTP-01 challenge in standalone (port 80) or webroot mode.
 
 ## Commands
 
@@ -57,7 +57,8 @@ agent/
     retry_scheduler.py      # applies backoff delay before retry (sync + async)
     router.py               # conditional edge logic
 acme/
-  client.py                 # AcmeClient base, DigiCertAcmeClient (EAB),
+  client.py                 # AcmeClient base, EabAcmeClient (shared EAB logic),
+                            # DigiCertAcmeClient, ZeroSSLAcmeClient, SectigoAcmeClient,
                             # LetsEncryptAcmeClient, make_client() factory
   jws.py                    # josepy JWK/JWS/EAB — account key operations
   crypto.py                 # domain key generation + CSR building
@@ -112,9 +113,9 @@ When switching providers, set the corresponding model names (e.g. `LLM_MODEL_PLA
 
 ```env
 # CA selection
-CA_PROVIDER=digicert          # digicert | letsencrypt | letsencrypt_staging | custom
+CA_PROVIDER=digicert    # digicert | letsencrypt | letsencrypt_staging | zerossl | sectigo | custom
 
-# EAB credentials (DigiCert only)
+# EAB credentials (required for DigiCert, ZeroSSL, and Sectigo)
 ACME_EAB_KEY_ID=
 ACME_EAB_HMAC_KEY=
 

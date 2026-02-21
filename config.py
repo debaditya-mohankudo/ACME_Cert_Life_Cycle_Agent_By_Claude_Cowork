@@ -53,9 +53,11 @@ class Settings(BaseSettings):
     )
 
     # ── CA Provider ────────────────────────────────────────────────────────
-    CA_PROVIDER: Literal["digicert", "letsencrypt", "letsencrypt_staging", "custom"] = "digicert"
+    CA_PROVIDER: Literal[
+        "digicert", "letsencrypt", "letsencrypt_staging", "zerossl", "sectigo", "custom"
+    ] = "digicert"
 
-    # ── ACME credentials (EAB — required for DigiCert, unused for Let's Encrypt) ─
+    # ── ACME credentials (EAB — required for DigiCert, ZeroSSL, and Sectigo) ──────
     ACME_EAB_KEY_ID: str = ""
     ACME_EAB_HMAC_KEY: str = ""
     # Only consulted when CA_PROVIDER="custom"
@@ -154,6 +156,8 @@ class Settings(BaseSettings):
             "digicert":            "https://acme.digicert.com/v2/DV/directory",
             "letsencrypt":         "https://acme-v02.api.letsencrypt.org/directory",
             "letsencrypt_staging": "https://acme-staging-v02.api.letsencrypt.org/directory",
+            "zerossl":             "https://acme.zerossl.com/v2/DV90",
+            "sectigo":             "https://acme.sectigo.com/v2/DV",
         }
         if self.CA_PROVIDER in _PRESETS:
             self.ACME_DIRECTORY_URL = _PRESETS[self.CA_PROVIDER]
