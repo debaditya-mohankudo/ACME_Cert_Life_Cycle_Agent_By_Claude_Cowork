@@ -400,7 +400,7 @@ if not nonce:
 
 ## Related Documents
 
-- [`ACME_AGENT_PLAN.md`](ACME_AGENT_PLAN.md) — Agent architecture
+- [`README_ACME_AGENT_PLAN.md`](README_ACME_AGENT_PLAN.md) — Agent architecture
 - [`agent/state.py`](../agent/state.py) — State definition
 - [`acme/client.py`](../acme/client.py) — Nonce handling & retry logic
 - [`CLAUDE.md`](../CLAUDE.md) — Account key security (why not in state)

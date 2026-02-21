@@ -172,7 +172,7 @@ LANGCHAIN_PROJECT=acme-cert-agent
 
 ### After code changes
 When you modify the agent architecture, ACME protocol logic, or node behavior, update these files:
-- **`ACME_Agent_Plan.md`** — if architecture, topology, or phase design changes
+- **`doc/README_ACME_AGENT_PLAN.md`** — if architecture, topology, or phase design changes
 - **`README.md`** — if usage, configuration, or CLI changes
 - **`CLAUDE.md`** — if project structure, commands, or key decisions change
 

@@ -61,7 +61,7 @@ Every PEM file write (cert, key, chain, metadata) uses the pattern: write to tem
 
 **Why:** A crash during a plain `write_text()` call leaves a truncated, corrupt file in place. The old file is gone. The atomic rename means a crash at any point leaves either the old file intact or the new file complete — never a partial state visible to readers.
 
-→ Full analysis: [CERTIFICATE_STORAGE.md — Atomic Writes](CERTIFICATE_STORAGE.md#atomic-writes-for-data-safety)
+→ Full analysis: [CERTIFICATE_STORAGE.md — Atomic Writes](README_CERTIFICATE_STORAGE.md#atomic-writes-for-data-safety)
 
 ---
 
@@ -99,7 +99,7 @@ Every node that makes a network call is a named node in the LangGraph graph. No 
 
 **Why:** Named nodes appear in LangSmith traces, checkpoint history, and interrupt/resume boundaries. A network call hidden in a helper function is invisible to the graph — it can't be interrupted, observed, or retried independently. The graph topology *is* the program's visible behavior.
 
-→ See: [HOW_IT_WORKS.md](HOW_IT_WORKS.md), [agent/graph.py](../agent/graph.py)
+→ See: [HOW_IT_WORKS.md](README_HOW_IT_WORKS.md), [agent/graph.py](../agent/graph.py)
 
 ---
 

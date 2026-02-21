@@ -332,7 +332,7 @@ This means:
 
 ## Related Documents
 
-- [`ACME_AGENT_PLAN.md`](ACME_AGENT_PLAN.md) — Agent architecture overview
+- [`README_ACME_AGENT_PLAN.md`](README_ACME_AGENT_PLAN.md) — Agent architecture overview
 - [`agent/nodes/planner.py`](../agent/nodes/planner.py) — Implementation
 - [`agent/prompts.py`](../agent/prompts.py) — Prompt templates
 - [`TEST_RESULTS.md`](../TEST_RESULTS.md) — Planner validation tests

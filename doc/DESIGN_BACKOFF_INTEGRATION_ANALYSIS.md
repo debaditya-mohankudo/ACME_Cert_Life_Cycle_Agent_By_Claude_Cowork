@@ -367,7 +367,7 @@ There is currently no hard wall-clock limit on a single agent run. A future enha
 ## Related Documents
 
 - [`DESIGN_ASYNC_SCHEDULER_PLAN.md`](DESIGN_ASYNC_SCHEDULER_PLAN.md) — Phase 3-4 implementation plan and roadmap
-- [`SECURITY.md`](SECURITY.md#11-resilience-and-retry-safety) — Security implications of retry backoff
+- [`README_SECURITY.md`](README_SECURITY.md#11-resilience-and-retry-safety) — Security implications of retry backoff
 - [`agent/nodes/error_handler.py`](../agent/nodes/error_handler.py) — Scheduler decision logic
 - [`agent/nodes/retry_scheduler.py`](../agent/nodes/retry_scheduler.py) — Backoff enforcement (sync + async)
 - [`agent/graph.py`](../agent/graph.py) — Graph topology and routing
