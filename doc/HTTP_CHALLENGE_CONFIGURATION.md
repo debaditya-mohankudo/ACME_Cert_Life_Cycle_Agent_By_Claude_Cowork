@@ -254,6 +254,44 @@ Selection is made in `agent/nodes/challenge.py` based on `HTTP_CHALLENGE_MODE` s
 
 ---
 
+## Future Customization Reminders
+
+After deploying this agent to your infrastructure, document these items in this file or a companion deployment guide:
+
+### 1. Deployment Topology
+- [ ] Document your specific infrastructure setup
+  - Example: "Docker container + nginx reverse proxy on host"
+  - Example: "Kubernetes cluster with Ingress controller"
+  - Example: "Standalone VPS with Let's Encrypt"
+- [ ] Diagram or describe the network layout
+
+### 2. Chosen Solution & Rationale
+- [ ] Which HTTP-01 mode did you select? (standalone | webroot)
+- [ ] Why was this mode chosen for your environment?
+- [ ] What were the rejected alternatives and why?
+- [ ] Document any custom port assignments
+
+### 3. Security & Access Control
+- [ ] Which Linux port-80 solution was implemented? (authbind | capabilities | iptables)
+- [ ] What are the file permissions on `WEBROOT_PATH`?
+- [ ] Document the agent process user and its privileges
+- [ ] Note any SELinux or AppArmor policies in effect
+
+### 4. Firewall Configuration
+- [ ] Document your `ufw` or `iptables` rules for port 80
+  - Example: `sudo ufw allow 80/tcp`
+  - Example: `sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT`
+- [ ] Document any cloud provider security groups (AWS, Azure, GCP)
+- [ ] Note any WAF or reverse proxy rules affecting ACME challenges
+- [ ] Test inbound connectivity from outside: `curl http://your-domain.com/.well-known/acme-challenge/test`
+
+### 5. Monitoring & Alerts
+- [ ] How are HTTP-01 challenge failures detected?
+- [ ] What logging/alerting is in place for renewal failures?
+- [ ] Document any automated remediation steps
+
+---
+
 ## See Also
 
 - [ACME RFC 8555 — HTTP-01 Challenge](https://tools.ietf.org/html/rfc8555#section-8.3)
