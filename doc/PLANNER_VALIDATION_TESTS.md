@@ -174,6 +174,51 @@ The validation logic treats all unknown domains the same way: **strip them silen
 
 ---
 
+## Test Results (2026-02-22)
+
+All 12 planner validation tests pass with zero regressions.
+
+```
+============================= test session starts ==============================
+platform darwin · Python 3.12.8 · pytest-8.3.5
+collected 12 items
+
+tests/test_planner_validation.py::TestParseAndValidate::test_invalid_json_falls_back_to_renew_all PASSED [  8%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_urgent_stripped PASSED [ 16%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_routine_stripped PASSED [ 25%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_skip_stripped PASSED [ 33%]
+tests/test_planner_validation.py::TestParseAndValidate::test_mixed_real_and_hallucinated_preserves_real PASSED [ 41%]
+tests/test_planner_validation.py::TestParseAndValidate::test_lookalike_domain_stripped PASSED [ 50%]
+tests/test_planner_validation.py::TestParseAndValidate::test_missing_domain_added_to_routine PASSED [ 58%]
+tests/test_planner_validation.py::TestParseAndValidate::test_all_missing_domains_added_to_routine PASSED [ 66%]
+tests/test_planner_validation.py::TestParseAndValidate::test_all_hallucinated_triggers_missing_domain_fallback PASSED [ 75%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_strips_hallucinated_from_pending_renewals PASSED [ 83%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_invalid_json_queues_all_domains PASSED [ 91%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_urgent_before_routine_in_pending PASSED [100%]
+
+======================== 12 passed in 4.16s ========================
+```
+
+### Full Test Suite (All Tests)
+
+When running the complete test suite (including checkpoint, planner, ACME, retry scheduler, KB, and other tests):
+
+```
+======================== 74 passed, 5 skipped in 17.41s ========================
+
+Summary:
+  • Planner validation tests: 12 passed (new)
+  • Checkpoint tests: 10 passed
+  • Unit ACME tests: 27 passed
+  • Retry scheduler tests: 9 passed
+  • Unit failure scenarios: 9 passed
+  • Knowledge base tests: 5 passed
+  • Integration tests: 3 skipped (no Pebble)
+  • Lifecycle tests: 2 skipped (no Pebble)
+```
+
+---
+
 ## Running the Tests
 
 ```bash
