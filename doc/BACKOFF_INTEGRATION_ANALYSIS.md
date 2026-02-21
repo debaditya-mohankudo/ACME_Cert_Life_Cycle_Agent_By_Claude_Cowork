@@ -320,6 +320,50 @@ error_handler (LLM: retry/skip/abort)
 
 ---
 
+## Run Duration Bound
+
+### Worst-Case Math (Default Config)
+
+Each `retry_delay_seconds` doubles from the LLM's suggestion, but is hard-capped at 300 seconds (5 minutes) by the `error_handler`:
+
+```python
+new_delay = min(suggested_delay, 300)  # Cap at 5 minutes
+```
+
+With the **default config** (`MAX_RETRIES=3`, starting delay ~60s):
+
+| Attempt | Delay | Cumulative wait |
+|---------|-------|-----------------|
+| Retry 1 | 60s   | 1 min           |
+| Retry 2 | 120s  | 3 min           |
+| Retry 3 | 240s  | 7 min           |
+| **Total**| —    | **~7 minutes**  |
+
+After 3 failures, the domain is added to `failed_renewals` and the run ends. The next scheduled run (default: daily at 06:00 UTC) will re-attempt it.
+
+### Extended Config (`MAX_RETRIES=10`)
+
+With the 300s cap, the sequence is: 60 + 120 + 240 + 300 + 300 + 300 + 300 + 300 + 300 + 300 = **2,520s ≈ 42 minutes** per domain.
+
+For 10 domains all failing: **up to ~7 hours** in the absolute worst case.
+
+### Philosophy: Defer to the Next Run
+
+A single agent run has an implicit bound: **if a domain cannot be renewed within `MAX_RETRIES` attempts, defer it to the next scheduled run**. The `failed_renewals` list records which domains were not renewed so operators can inspect logs.
+
+This means:
+- A run should not block indefinitely on a persistently broken domain
+- The daily schedule provides a natural retry boundary
+- Operators who raise `MAX_RETRIES` or start delays high should be aware of the cumulative wait time
+
+**Guideline:** The default `MAX_RETRIES=3` gives ~7 minutes of backoff per domain before deferring. This is a good balance between transient error recovery and bounded run duration. If you raise `MAX_RETRIES` beyond 5, audit the resulting worst-case run time against your renewal window.
+
+### No Current Wall-Clock Limit
+
+There is currently no hard wall-clock limit on a single agent run. A future enhancement could add `max_run_duration_seconds` to config to enforce a ceiling, but this is not implemented. The 300s cap on individual delays is the only current bound.
+
+---
+
 ## Related Documents
 
 - [`ASYNC_SCHEDULER_IMPLEMENTATION_PLAN.md`](ASYNC_SCHEDULER_IMPLEMENTATION_PLAN.md) — Phase 3-4 implementation plan and roadmap

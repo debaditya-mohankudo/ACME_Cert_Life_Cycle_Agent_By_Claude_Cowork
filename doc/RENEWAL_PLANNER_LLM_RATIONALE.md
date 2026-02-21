@@ -128,6 +128,28 @@ def _parse_and_validate(raw: str, managed_domains: set[str]) -> dict:
 
 The LLM can fail gracefully—worst case, you renew everything (safe).
 
+#### LLM Failure: The Deterministic Fallback
+
+If the LLM fails entirely — network error, malformed output, invalid JSON, empty response — the fallback is deterministic and explicit:
+
+> **Renew every managed domain that is at or below the renewal threshold.**
+
+Concretely:
+
+```python
+# _parse_and_validate() fallback on JSON parse failure:
+return {
+    "urgent": [],
+    "routine": list(managed_domains),  # ALL managed domains queued
+    "skip": [],
+    "notes": "JSON parse failed",
+}
+```
+
+This means `pending_renewals = list(managed_domains)`. Every domain goes through the ACME pipeline. If a cert is genuinely healthy (far from expiry), the CA issues a new cert anyway — not harmful, just slightly wasteful.
+
+**The fallback never silently drops a domain.** It errs toward over-renewing, which is safe. Under-renewing (missing a domain) is not safe — an expired cert causes an outage.
+
 ### ✅ 4. Future-Proof for LLM Improvements
 LLMs are getting smarter rapidly. By 2026 (and beyond):
 - Better structured reasoning

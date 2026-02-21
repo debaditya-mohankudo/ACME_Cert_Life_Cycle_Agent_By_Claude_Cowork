@@ -6,6 +6,22 @@
 
 ---
 
+## Concurrency is an Explicit Non-Goal
+
+**Parallel domain renewal is intentionally not supported in this architecture.**
+
+This is a deliberate design decision, not an oversight or a limitation waiting to be fixed.
+
+The nonce model in ACME (RFC 8555) requires every signed POST to carry a single-use nonce obtained from a previous response. A shared `current_nonce` in state is fundamentally incompatible with concurrent domain processing — two domains reading the same nonce and each attempting to use it will result in `badNonce` rejections from the CA.
+
+Making parallelism work correctly requires a non-trivial change to the state structure (per-domain nonce queues) and node signatures. That change is documented as a future migration path if throughput ever becomes a constraint, but it will not be made speculatively.
+
+> **Any future refactor that processes multiple domains concurrently MUST first implement per-domain nonce isolation. Skipping this step will silently break ACME compliance.**
+
+The migration path is documented in the [Migration Path](#migration-path-when-parallelization-is-needed) section below.
+
+---
+
 ## Overview
 
 The agent uses **stateful nonce management** where `current_nonce` flows through the LangGraph state during sequential domain processing. This document explains the design, identifies parallelization risks, and provides migration paths for future multi-domain parallelization.
