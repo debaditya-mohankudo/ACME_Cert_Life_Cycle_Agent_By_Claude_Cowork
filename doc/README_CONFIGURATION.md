@@ -24,3 +24,8 @@ All settings are read from environment variables or `.env`. Any variable can be 
 | `LLM_MODEL_REPORTER` | `claude-haiku-4-5-20251001` | Model for run summary |
 | `SCHEDULE_TIME` | `06:00` | Daily run time (HH:MM, UTC) |
 | `MAX_RETRIES` | `3` | Per-domain retry attempts before skipping |
+| `ACME_INSECURE` | `false` | Disable TLS verification — **testing only, never in production** |
+| `ACME_CA_BUNDLE` | — | Path to custom CA certificate bundle for private ACME servers |
+| `LANGCHAIN_TRACING_V2` | `false` | Enable LangSmith tracing |
+| `LANGCHAIN_API_KEY` | — | LangSmith API key (required when tracing is enabled) |
+| `LANGCHAIN_PROJECT` | `acme-cert-agent` | LangSmith project name |

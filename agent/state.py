@@ -79,6 +79,7 @@ class AgentState(TypedDict):
     error_log: List[str]
     retry_count: int
     retry_delay_seconds: int          # Current delay; doubles on each retry
+    retry_not_before: Optional[float] # Unix timestamp set by error_handler; retry_scheduler waits until this
     max_retries: int
 
     # ── Per-domain metadata ────────────────────────────────────────────────
