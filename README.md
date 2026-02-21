@@ -196,15 +196,35 @@ docker compose run --rm acme-agent --once
 **Override to one-shot in the compose file** — add `command: ["--once"]` under the
 `acme-agent` service in `docker-compose.yml`.
 
-#### Port 80
+#### Port 80 and network security
 
-Port 80 on the host must be free when using the default `HTTP_CHALLENGE_MODE=standalone`.
-If port 80 is in use by another service (e.g. nginx), switch to webroot mode instead:
+The container exposes **a single port: 80**, and only for the brief window while an
+ACME HTTP-01 challenge is being validated (typically a few seconds per domain).
+No other port is opened or listened on at any time.
+
+All other network traffic is **outbound-only**:
+
+| Direction | Destination | Purpose |
+|---|---|---|
+| Outbound | CA ACME API (Let's Encrypt, DigiCert, …) | Certificate issuance |
+| Outbound | LLM provider API (Anthropic, OpenAI, …) | Planner / reporter inference |
+| Inbound | Port 80 (transient) | ACME HTTP-01 challenge response |
+
+This means server owners can verify at a glance that the agent cannot act as a
+backdoor, proxy, or listener: there is no inbound attack surface beyond the
+standard ACME validation port, and that port is only open for the duration of a
+renewal — not permanently.
+
+If even that is undesirable (e.g. port 80 is already owned by nginx), switch to
+webroot mode and the container needs **no inbound ports at all**:
 
 ```env
 HTTP_CHALLENGE_MODE=webroot
 WEBROOT_PATH=/var/www/html
 ```
+
+In webroot mode the agent writes the challenge token file into a directory served
+by your existing web server and never binds any port itself.
 
 #### Persistent storage
 
