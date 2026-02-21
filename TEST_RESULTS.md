@@ -1,10 +1,10 @@
 # Test Results — ACME Certificate Lifecycle Agent
 
 **Date:** 2026-02-21
-**Time:** 14:18 UTC
+**Time:** 14:25 UTC
 **Platform:** macOS 25.3 · arm64
 **Python:** 3.12.8
-**Pebble:** Not running
+**Pebble:** Running (`ghcr.io/letsencrypt/pebble:latest`, `PEBBLE_VA_ALWAYS_VALID=1`)
 
 ---
 
@@ -14,9 +14,9 @@
 |---|---|---|---|---|---|
 | Unit (`test_unit_acme.py`) | 18 | 18 | 0 | 0 | — |
 | Knowledge Base (`test_kb.py`) | 5 | 5 | 0 | 0 | — |
-| Lifecycle (`test_lifecycle_pebble.py`) | 2 | 0 | 2 | 0 | — |
-| Integration (`test_integration_pebble.py`) | 3 | 0 | 3 | 0 | — |
-| **Total** | **28** | **23** | **5** | **0** | **14.18 s** |
+| Lifecycle (`test_lifecycle_pebble.py`) | 2 | 2 | 0 | 0 | — |
+| Integration (`test_integration_pebble.py`) | 3 | 3 | 0 | 0 | — |
+| **Total** | **28** | **28** | **0** | **0** | **23.20 s** |
 
 ---
 
@@ -31,16 +31,16 @@ plugins: anyio-4.12.1, asyncio-0.25.3, langsmith-0.3.45
 asyncio: mode=Mode.STRICT
 collected 28 items
 
-tests/test_integration_pebble.py::test_full_renewal_flow SKIPPED        [  3%]
-tests/test_integration_pebble.py::test_second_run_reuses_account SKIPPED [  7%]
-tests/test_integration_pebble.py::test_no_renewal_needed SKIPPED        [ 10%]
+tests/test_integration_pebble.py::test_full_renewal_flow PASSED          [  3%]
+tests/test_integration_pebble.py::test_second_run_reuses_account PASSED  [  7%]
+tests/test_integration_pebble.py::test_no_renewal_needed PASSED          [ 10%]
 tests/test_kb.py::test_markdown_splits_into_sections PASSED              [ 14%]
 tests/test_kb.py::test_markdown_chunk_contains_full_text PASSED          [ 17%]
 tests/test_kb.py::test_python_extracts_top_level_functions PASSED        [ 21%]
 tests/test_kb.py::test_python_extracts_class_overview_and_methods PASSED [ 25%]
 tests/test_kb.py::test_search_returns_semantically_relevant_result PASSED [ 28%]
-tests/test_lifecycle_pebble.py::test_certificate_lifecycle SKIPPED       [ 32%]
-tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal SKIPPED [ 35%]
+tests/test_lifecycle_pebble.py::test_certificate_lifecycle PASSED        [ 32%]
+tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal PASSED [ 35%]
 tests/test_unit_acme.py::test_generate_account_key PASSED                [ 39%]
 tests/test_unit_acme.py::test_jwk_thumbprint_is_deterministic PASSED     [ 42%]
 tests/test_unit_acme.py::test_key_authorization PASSED                   [ 46%]
@@ -60,7 +60,7 @@ tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 92%]
 tests/test_unit_acme.py::test_acme_error_on_non_2xx PASSED               [ 96%]
 tests/test_unit_acme.py::test_revoke_certificate PASSED                  [100%]
 
-======================== 23 passed, 5 skipped in 14.18s ========================
+======================== 28 passed in 23.20s ========================
 ```
 
 ---

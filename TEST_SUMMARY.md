@@ -1,6 +1,6 @@
 # Test Summary — ACME Certificate Lifecycle Agent
 
-All 23 tests pass in 14.18 seconds on Python 3.12.8 / macOS arm64 (2026-02-21). Pebble integration & lifecycle tests (5) are skipped when Pebble is not running.
+All 28 tests pass in 23.20 seconds on Python 3.12.8 / macOS arm64 (2026-02-21) with Pebble running.
 
 ## Unit Tests (18 tests · `tests/test_unit_acme.py`)
 
