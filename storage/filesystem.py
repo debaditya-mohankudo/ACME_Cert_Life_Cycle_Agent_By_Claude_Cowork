@@ -8,6 +8,8 @@ Directory layout per domain:
       fullchain.pem   — cert + chain (nginx uses this)
       privkey.pem     — Private key (mode 0o600)
       metadata.json   — Issued/expires/order metadata
+
+All writes are atomic: temp file + fsync + atomic rename.
 """
 from __future__ import annotations
 
@@ -20,6 +22,8 @@ from typing import Optional
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+
+from storage.atomic import atomic_write_text, atomic_write_bytes
 
 
 # ─── Public helpers ────────────────────────────────────────────────────────────
@@ -106,4 +110,5 @@ def read_metadata(cert_store_path: str, domain: str) -> Optional[dict]:
 
 
 def _write(path: Path, content: str) -> None:
-    path.write_text(content, encoding="utf-8")
+    """Atomically write text with fsync to prevent corruption."""
+    atomic_write_text(path, content)

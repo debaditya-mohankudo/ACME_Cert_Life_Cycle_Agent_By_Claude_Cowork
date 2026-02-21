@@ -24,6 +24,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
+from storage.atomic import atomic_write_bytes
+
 
 # ─── Account key I/O ──────────────────────────────────────────────────────────
 
@@ -39,15 +41,15 @@ def generate_account_key(key_size: int = 2048) -> JWKRSA:
 
 
 def save_account_key(jwk: JWKRSA, path: str) -> None:
-    """Persist account key as PEM (PKCS8).  Caller should chmod 600."""
+    """Persist account key as PEM (PKCS8) with atomic writes (temp + fsync + rename)."""
     p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
     pem = jwk.key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    p.write_bytes(pem)
+    # Atomic write: temp file + fsync + rename
+    atomic_write_bytes(p, pem)
     os.chmod(path, 0o600)
 
 

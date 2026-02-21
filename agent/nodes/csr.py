@@ -1,6 +1,6 @@
 """
 csr_generator node — generate an RSA-2048 private key and CSR for the
-current domain, storing the key PEM in the cert directory.
+current domain, storing the key PEM in the cert directory with atomic writes.
 """
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 
 from acme.crypto import create_csr, generate_rsa_key, private_key_to_pem
 from agent.state import AgentState
+from storage.atomic import atomic_write_text
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,9 @@ def csr_generator(state: AgentState) -> dict:
     #   - strip any path separators to prevent traversal
     safe_domain = domain.replace("*.", "wildcard.").replace("/", "").replace("\\", "")
     key_dir = Path(cert_store_path) / safe_domain
-    key_dir.mkdir(parents=True, exist_ok=True)
     key_path = key_dir / "privkey.pem"
-    key_path.write_text(key_pem, encoding="utf-8")
+    # Atomic write: temp file + fsync + rename
+    atomic_write_text(key_path, key_pem)
     os.chmod(key_path, stat.S_IRUSR | stat.S_IWUSR)  # 0o600
     logger.info("Private key written to %s", key_path)
 
