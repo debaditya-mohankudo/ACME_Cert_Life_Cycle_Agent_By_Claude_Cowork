@@ -72,13 +72,16 @@ doc/                        # Documentation and guides
 kb/                         # Knowledge base (experimental — FAISS-based indexing)
 ```
 
-## Key architecture decisions
+## Implementation details
 
-### State & security
-- **Account key never goes in AgentState** — would appear in LangSmith traces. It stays on disk at `ACCOUNT_KEY_PATH`.
+> **Design rationale for all architectural decisions lives in [`doc/DESIGN_PRINCIPLES.md`](doc/DESIGN_PRINCIPLES.md).**
+> The notes below are working-session facts — implementation specifics a coding session needs without opening another file.
+
+### State layout
 - `AcmeOrder` uses `List[str]` for `auth_urls`, `challenge_urls`, `tokens`, `key_auths` to support multi-SAN certs.
 - CSR is stored as a hex string in the order dict so it can travel through LangGraph state safely.
 - `current_nonce` flows through state so every node picks up a fresh nonce.
+- Account key stays on disk at `ACCOUNT_KEY_PATH` — never in state (see Principle 7).
 
 ### LLM provider and models
 All nodes use a single `LLM_PROVIDER` (default `anthropic`). The factory lives in `llm/factory.py`
@@ -94,20 +97,14 @@ Override via `.env`: `LLM_PROVIDER`, `LLM_MODEL_PLANNER`, `LLM_MODEL_REPORTER`, 
 When switching providers, set the corresponding model names (e.g. `LLM_MODEL_PLANNER=gpt-4o-mini` for OpenAI).
 
 ### Retry / resilience
-- **error_handler** (LLM) decides action (retry/skip/abort) and schedules retry time via `retry_not_before` timestamp.
-- **retry_scheduler** node applies the backoff delay before retrying (separates concerns; supports async in Phase 4).
-- `retry_delay_seconds` doubles on each retry (exponential backoff).
+- `retry_delay_seconds` doubles on each retry (exponential backoff); capped at 300 s.
 - `MAX_RETRIES` (default 3) controls the retry ceiling.
 - Graph routing: `error_handler` → `retry_scheduler` → `pick_next_domain` (on retry).
-
-### Planner output validation
-- Planner output is validated to strip any domains not present in `managed_domains` (prevents LLM hallucination of out-of-scope domains).
 
 ### Knowledge base storage
 - **Current:** JSON (`kb/chunks.json`) — simple, human-readable, version-control friendly
 - **Revisit when:** chunks dataset exceeds ~50k entries, or when metadata-filtered queries become necessary
 - **Future alternatives:** Qdrant (vector DB), SQLite + FAISS indices, Parquet + metadata index
-- For now: JSON is efficient (write-once, read into memory, query via FAISS semantic search)
 
 ## Configuration (`.env`)
 
