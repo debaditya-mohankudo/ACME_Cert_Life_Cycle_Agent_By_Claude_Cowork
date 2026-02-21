@@ -406,12 +406,36 @@ connections difficult.
 
 ## 11. Resilience and Retry Safety
 
-### Exponential backoff
+### Exponential backoff with scheduled retry timing
 
-The error handler node doubles `retry_delay_seconds` on each retry (suggested by
-the LLM error handler, capped at 300 seconds = 5 minutes). `MAX_RETRIES` (default
-3) provides a hard ceiling. This prevents runaway retry loops from hammering the
-CA's rate limits.
+Retries are handled via a two-step process (Phase 3):
+
+1. **error_handler** (LLM) analyzes the failure and decides action (retry/skip/abort).
+   If retrying, it calculates the backoff delay and schedules a retry time:
+   ```python
+   # error_handler.py
+   retry_not_before = now + new_delay
+   updates["retry_not_before"] = retry_not_before
+   ```
+   The delay doubles each retry: `new_delay = min(retry_delay * 2, 300)` seconds.
+   `MAX_RETRIES` (default 3) provides a hard ceiling. Maximum wait is capped at 300
+   seconds (5 minutes) to prevent excessive delays.
+
+2. **retry_scheduler** node applies the backoff before looping back to retry:
+   ```python
+   # retry_scheduler.py — synchronous version
+   wait_time = retry_not_before - now
+   if wait_time > 0:
+       time.sleep(wait_time)  # blocking, or async version: await asyncio.sleep
+   return {"retry_not_before": None}
+   ```
+   This separates concerns: the LLM decides the action; the scheduler enforces timing.
+   An async version (`retry_scheduler_async`) is available for future conversion to
+   non-blocking execution ([agent/nodes/retry_scheduler.py](../agent/nodes/retry_scheduler.py)).
+
+**Threat addressed:** Rate limiting protection. By enforcing exponential backoff and a
+hard ceiling (300 seconds), the agent cannot hammer the CA's API even if errors
+persist, protecting against rate-limit bans.
 
 ### Isolated domain failures
 
@@ -461,5 +485,7 @@ response to an LLM failure.
 | Persistent data outside image | Named volume `/data`; keys never in image layer | [docker-compose.yml](../docker-compose.yml) |
 | Minimal inbound network surface | Port 80 only, transiently; all else is outbound | [docker-compose.yml](../docker-compose.yml) |
 | Webroot zero-inbound option | No port binding when `HTTP_CHALLENGE_MODE=webroot` | [acme/http_challenge.py](../acme/http_challenge.py) |
-| Exponential backoff | `retry_delay_seconds` doubles per retry, max 300 s | [agent/nodes/error_handler.py](../agent/nodes/error_handler.py) |
+| Exponential backoff scheduling | error_handler calculates `retry_not_before` timestamp; caps at 300 s | [agent/nodes/error_handler.py](../agent/nodes/error_handler.py) |
+| Scheduled backoff enforcement | retry_scheduler node sleeps until `retry_not_before` arrives before retry | [agent/nodes/retry_scheduler.py](../agent/nodes/retry_scheduler.py) |
+| Async backoff support | retry_scheduler_async (non-blocking) for future graph async conversion | [agent/nodes/retry_scheduler.py](../agent/nodes/retry_scheduler.py) |
 | Domain failure isolation | One failed domain does not block others | [agent/graph.py](../agent/graph.py) |
