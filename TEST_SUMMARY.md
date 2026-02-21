@@ -1,10 +1,14 @@
 # Test Summary — ACME Certificate Lifecycle Agent
 
-All 23 tests pass in 9.18 seconds on Python 3.12.8 / macOS arm64 (2026-02-20) with Pebble running.
+All 23 tests pass in 14.18 seconds on Python 3.12.8 / macOS arm64 (2026-02-21). Pebble integration & lifecycle tests (5) are skipped when Pebble is not running.
 
 ## Unit Tests (18 tests · `tests/test_unit_acme.py`)
 
 The unit suite validates the ACME protocol layer in complete isolation — no network, no Pebble, no Anthropic API key. HTTP calls are intercepted by the `responses` library. Six tests cover `acme/jws.py`: RSA-2048 account key generation, JWK thumbprint determinism, HTTP-01 key-authorization construction, JWS signing in both JWK mode (used for `newAccount`) and KID mode (used for all subsequent requests), and round-trip persistence of the account key with enforced `0o600` file permissions. Four tests cover `acme/crypto.py`: domain RSA key generation, PEM encoding, and CSR creation for both single-domain and multi-SAN orders. The remaining eight tests cover `acme/client.py`: directory discovery, nonce retrieval, account registration without EAB (verifying the `externalAccountBinding` field is absent), order creation, authorization polling on both the valid and invalid paths, error handling on non-2xx responses, and — new in this cycle — certificate revocation via `POST /revokeCert`, which asserts that the DER-encoded certificate is correctly base64url-encoded in the payload and that the `reason` field is omitted when the default value of 0 is used.
+
+## Knowledge Base Tests (5 tests · `tests/test_kb.py`)
+
+The knowledge base suite validates document chunking and semantic search functionality — no network or external services required. `test_markdown_splits_into_sections` verifies that markdown files are correctly split into chunks at section boundaries (identified by heading markers). `test_markdown_chunk_contains_full_text` ensures that no text is lost during chunking and each section is complete. `test_python_extracts_top_level_functions` confirms that Python modules extract top-level function definitions as distinct chunks. `test_python_extracts_class_overview_and_methods` verifies that class definitions and their method signatures are extracted as separate chunks for fine-grained indexing. `test_search_returns_semantically_relevant_result` exercises the FAISS semantic search index, confirming that keyword-based queries return contextually relevant results from the indexed knowledge base.
 
 ## Lifecycle Tests (2 tests · `tests/test_lifecycle_pebble.py`)
 
