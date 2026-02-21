@@ -417,8 +417,137 @@ The small cost of passing `domain` context to nodes is worth the gains in debugg
 
 ---
 
+---
+
+## Idempotency Philosophy
+
+The graph is designed to be **safe to resume or re-run at any node boundary**.
+
+This is a first-class design goal, not an afterthought. It matters for:
+- **Crash recovery** — resume a failed run from checkpoint without double-billing or duplicate certs
+- **Operator confidence** — running the agent twice is safe; it won't break things
+- **Long-term ops** — scheduled daily runs are sound even if a previous run crashed partway through
+
+---
+
+### What Happens if the Agent is Run Twice?
+
+The certificate scanner (`certificate_scanner` node) reads existing certs from disk and computes days until expiry. On a re-run:
+
+- If the cert was **successfully renewed on the first run**, it has a fresh expiry far in the future → `needs_renewal=False` → planner assigns it to `skip` → it never reaches the ACME pipeline
+- If the first run **never completed renewal**, the cert is still near-expiry → `needs_renewal=True` → renewal proceeds normally
+
+**Result:** Running twice is a no-op for domains already renewed. No duplicate orders, no wasted API calls.
+
+---
+
+### What Happens if the Agent Crashes After `cert_downloader` but Before `storage_manager`?
+
+This is the most dangerous crash window. The CA has issued a certificate (order status = `valid`), but it hasn't been persisted to disk yet.
+
+**On checkpoint resume:**
+
+1. LangGraph restores state from the last checkpoint — the `current_order` still contains `certificate_url`
+2. `cert_downloader` re-runs and re-fetches the certificate from `certificate_url` (ACME servers keep issued certs accessible)
+3. `storage_manager` then writes all PEM files **atomically** (temp + fsync + rename — see [CERTIFICATE_STORAGE.md](CERTIFICATE_STORAGE.md))
+
+**Without checkpointing (`--once` mode):**
+
+1. The process restarts from scratch
+2. `certificate_scanner` sees the old (near-expiry) cert still on disk
+3. A new ACME order is created — the CA issues a fresh cert (valid operation, CAs allow this)
+4. All files are written atomically, replacing the old cert
+
+**Result:** Either path converges to a valid, consistent cert on disk. No window where a partial write creates a corrupt PEM file.
+
+---
+
+### Is Storage Atomic?
+
+**Yes.** All PEM file writes use the atomic pattern:
+
+```
+write → temp file in same dir
+         ↓
+       fsync()  (flush to disk)
+         ↓
+       os.replace()  (atomic POSIX rename)
+```
+
+Covered files:
+- `cert.pem`, `chain.pem`, `fullchain.pem`, `metadata.json` — via `storage/filesystem.py:_write()`
+- `privkey.pem` (domain key) — via `agent/nodes/csr.py:csr_generator()`
+- `account.key` — via `acme/jws.py:save_account_key()`
+
+A crash at any point in the write sequence leaves the **previous file intact**. There is no state where a corrupt half-written file is visible to readers.
+
+See [CERTIFICATE_STORAGE.md](CERTIFICATE_STORAGE.md) for full details and test coverage.
+
+---
+
+### Is Order Finalization Idempotent?
+
+**Yes — ACME (RFC 8555) is designed for safe replays at every step.**
+
+| Operation | Server behavior on replay |
+|-----------|--------------------------|
+| `newAccount` | Returns `200 OK` with existing account URL if key already registered |
+| `newOrder` | CA may return an existing pending order or create a new one; both are valid |
+| `newAuthz` / challenge response | Authorization objects persist on CA; re-posting a challenge response is safe |
+| `finalize` | If order already `valid`, server returns the existing `certificate_url`; no new cert is issued |
+| `certificate` (download) | Certificate URL remains accessible; downloading it again returns the same cert |
+
+The only operation that is **not** replay-safe is the nonce: every signed ACME request requires a **fresh nonce** that has never been used. This is why `current_nonce` flows through state — so each node picks up a nonce from the previous response, never reusing one.
+
+---
+
+### Node-Level Idempotency Summary
+
+| Node | Idempotent? | Notes |
+|------|-------------|-------|
+| `certificate_scanner` | ✅ Yes | Read-only; re-reads disk certs |
+| `renewal_planner` | ✅ Yes | LLM call; same input → same plan (with validation guard) |
+| `acme_account_setup` | ✅ Yes | ACME `newAccount` returns existing account on replay |
+| `order_initializer` | ✅ Yes | Creates new order or returns existing; both valid |
+| `challenge_setup` | ✅ Yes | Writing challenge token file is idempotent (atomic overwrite) |
+| `challenge_verifier` | ✅ Yes | Re-posting challenge response is safe; CA re-validates |
+| `csr_generator` | ⚠️ Partial | Generates a new key on each call; key is overwritten atomically |
+| `order_finalizer` | ✅ Yes | `finalize` on a `valid` order is a no-op on the CA side |
+| `cert_downloader` | ✅ Yes | Certificate URL is stable; re-downloading returns same cert |
+| `storage_manager` | ✅ Yes | Atomic writes; re-running overwrites cleanly without corruption |
+| `error_handler` | ✅ Yes | Pure state transformation; no side effects |
+| `retry_scheduler` | ✅ Yes | Waits for scheduled retry time; safe to repeat |
+| `summary_reporter` | ✅ Yes | LLM call; no side effects |
+
+**csr_generator note:** Generating a new domain private key on replay is intentional. A fresh key is cryptographically safer than reusing a key from a previous failed run. The old `privkey.pem` is overwritten atomically so no corruption window exists.
+
+---
+
+### Philosophy: Resume-Safe Graph Design
+
+**Every node boundary is a safe checkpoint.**
+
+This follows naturally from:
+
+1. **ACME is replay-safe** — The protocol is designed for unreliable networks and crashed clients. Retrying any ACME operation (with a fresh nonce) is always safe.
+
+2. **Stateless client + state in LangGraph** — Because the `AcmeClient` holds no mutable state, any node can reconstruct it from scratch using the current LangGraph state. There is no "resume from inside a node" problem.
+
+3. **Atomic writes** — Node outputs that touch disk are atomic. A crash after `os.replace()` leaves a valid file. A crash before leaves the old file intact. There is no intermediate corrupt state.
+
+4. **LangGraph `MemorySaver`** — The checkpoint is written *after* each node completes, so the resume point is always at a clean node boundary.
+
+5. **Nonce freshness** — If a run resumes, the first ACME call fetches a fresh nonce via `get_nonce()`. Stale nonces from the previous run are never replayed.
+
+Together these properties mean:
+
+> **A crash at any point in the graph — before, during, or after any node — converges to correct state after resume or re-run.**
+
+---
+
 ## Related Documents
 
 - [`NONCE_MANAGEMENT_STRATEGY.md`](NONCE_MANAGEMENT_STRATEGY.md) — Current design deep-dive
+- [`CERTIFICATE_STORAGE.md`](CERTIFICATE_STORAGE.md) — Atomic write implementation
 - [`acme/client.py`](../acme/client.py) — Stateless client implementation
 - [`ACME_AGENT_PLAN.md`](ACME_AGENT_PLAN.md) — Agent architecture
