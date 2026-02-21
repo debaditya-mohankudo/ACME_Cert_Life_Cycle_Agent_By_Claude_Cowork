@@ -66,6 +66,8 @@ tests/
   test_unit_acme.py         # unit tests (no network)
   test_integration_pebble.py
   test_lifecycle_pebble.py
+doc/                        # Documentation and guides
+kb/                         # Knowledge base (experimental — FAISS-based indexing)
 ```
 
 ## Key architecture decisions
