@@ -164,6 +164,78 @@ All available options are documented in [`.env.example`](.env.example).
 
 ---
 
+## Running with Docker
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose v2
+
+### Production — daily scheduler daemon
+
+```bash
+# 1. Copy the example config and fill in your values
+cp .env.example .env
+# Edit .env: set ANTHROPIC_API_KEY, MANAGED_DOMAINS, CA_PROVIDER, etc.
+
+# 2. Build and start the agent in the background
+docker compose up -d --build
+
+# 3. Tail logs
+docker compose logs -f acme-agent
+```
+
+The container runs `python main.py --schedule` by default, renewing certificates
+daily at `SCHEDULE_TIME` (default `06:00` UTC).
+
+**One-shot run** (renew once and exit):
+
+```bash
+docker compose run --rm acme-agent --once
+```
+
+**Override to one-shot in the compose file** — add `command: ["--once"]` under the
+`acme-agent` service in `docker-compose.yml`.
+
+#### Port 80
+
+Port 80 on the host must be free when using the default `HTTP_CHALLENGE_MODE=standalone`.
+If port 80 is in use by another service (e.g. nginx), switch to webroot mode instead:
+
+```env
+HTTP_CHALLENGE_MODE=webroot
+WEBROOT_PATH=/var/www/html
+```
+
+#### Persistent storage
+
+The named Docker volume `acme_data` is mounted at `/data/` inside the container.
+It stores both the issued certificates (`CERT_STORE_PATH=/data/certs`) and the
+ACME account key (`ACCOUNT_KEY_PATH=/data/account.key`). Data survives container
+restarts and image rebuilds.
+
+---
+
+### Tests in Docker
+
+**Unit tests** (no external services needed):
+
+```bash
+docker build --target test -t acme-test .
+docker run --rm acme-test pytest tests/test_unit_acme.py -v
+```
+
+**Full suite — unit + integration** (spins up Pebble automatically):
+
+```bash
+docker compose -f docker-compose.pebble.yml up --build --exit-code-from acme-test
+```
+
+This builds the `test` image, starts a local [Pebble](https://github.com/letsencrypt/pebble)
+ACME server alongside it, and runs all 23 tests. Pebble auto-approves HTTP-01
+challenges so no DNS or real port-80 access is needed.
+
+---
+
 ## Usage
 
 ### Run one renewal cycle immediately

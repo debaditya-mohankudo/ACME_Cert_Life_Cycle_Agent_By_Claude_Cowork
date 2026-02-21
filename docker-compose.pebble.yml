@@ -12,3 +12,23 @@ services:
       PEBBLE_VA_ALWAYS_VALID: "1"
     # Pebble's built-in test certs & config are bundled in the image.
     # No volume mounts needed for the default configuration.
+
+  acme-test:
+    build:
+      context: .
+      target: test
+    environment:
+      # Tell conftest.py to reach Pebble by its compose service name instead of localhost
+      PEBBLE_HOST: pebble
+      CA_PROVIDER: custom
+      ACME_DIRECTORY_URL: https://pebble:14000/dir
+      ACME_INSECURE: "true"
+      MANAGED_DOMAINS: acme-test.localhost
+      HTTP_CHALLENGE_MODE: webroot
+      WEBROOT_PATH: /tmp/pebble-webroot
+      CERT_STORE_PATH: /tmp/pebble-certs
+      ACCOUNT_KEY_PATH: /tmp/pebble-account.key
+      ANTHROPIC_API_KEY: dummy-key-for-testing
+      MAX_RETRIES: "2"
+    depends_on:
+      - pebble

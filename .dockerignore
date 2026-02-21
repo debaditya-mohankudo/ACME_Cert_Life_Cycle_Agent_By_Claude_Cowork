@@ -1,0 +1,12 @@
+.git
+.env
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.python-version
+certs/
+*.key
+ACME_Agent_Plan.md
+TEST_RESULTS.md
+TEST_SUMMARY.md

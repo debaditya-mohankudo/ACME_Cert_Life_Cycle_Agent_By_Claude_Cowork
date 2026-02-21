@@ -1,0 +1,15 @@
+services:
+  acme-agent:
+    build:
+      context: .
+      target: production
+    ports:
+      - "80:80"       # HTTP-01 standalone challenge (temporary during each renewal)
+    volumes:
+      - acme_data:/data   # Persists certs (CERT_STORE_PATH) + account.key (ACCOUNT_KEY_PATH)
+    env_file:
+      - .env          # Copy .env.example → .env and fill in your keys and domains
+    restart: unless-stopped
+
+volumes:
+  acme_data:

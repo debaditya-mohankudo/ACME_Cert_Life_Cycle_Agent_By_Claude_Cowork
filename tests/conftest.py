@@ -23,7 +23,12 @@ import pytest
 
 # ─── Pebble availability check ────────────────────────────────────────────────
 
-def _pebble_running(host: str = "localhost", port: int = 14000) -> bool:
+# Allow the Pebble host to be overridden via env var so tests can run inside
+# Docker Compose (where Pebble is reachable as "pebble", not "localhost").
+_PEBBLE_HOST = os.getenv("PEBBLE_HOST", "localhost")
+
+
+def _pebble_running(host: str = _PEBBLE_HOST, port: int = 14000) -> bool:
     """Return True if Pebble's ACME port is open."""
     try:
         with socket.create_connection((host, port), timeout=1):
@@ -71,7 +76,7 @@ def pebble_settings(tmp_path: Path):
     account_key = tmp_path / "account.key"
 
     settings.CA_PROVIDER        = "custom"
-    settings.ACME_DIRECTORY_URL = "https://localhost:14000/dir"
+    settings.ACME_DIRECTORY_URL = f"https://{_PEBBLE_HOST}:14000/dir"
     settings.ACME_EAB_KEY_ID    = ""
     settings.ACME_EAB_HMAC_KEY  = ""
     settings.MANAGED_DOMAINS = ["acme-test.localhost"]
