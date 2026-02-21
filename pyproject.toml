@@ -5,3 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "faiss-cpu>=1.13.2",
+    "sentence-transformers>=5.2.3",
+]

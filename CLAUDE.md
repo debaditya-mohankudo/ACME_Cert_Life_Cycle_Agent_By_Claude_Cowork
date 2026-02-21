@@ -15,8 +15,7 @@ python main.py --once --checkpoint                 # with MemorySaver checkpoint
 
 ### Install dependencies
 ```bash
-pip install -r requirements.txt
-# or with uv:
+# Always use uv for this project (never pip directly)
 uv sync
 ```
 
