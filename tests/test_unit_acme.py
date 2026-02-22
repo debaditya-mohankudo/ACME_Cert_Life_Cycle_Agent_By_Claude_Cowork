@@ -6,6 +6,7 @@ DigiCert access required.  Run with:  uv run pytest tests/test_unit_acme.py -v
 """
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 
@@ -162,6 +163,105 @@ def test_get_nonce():
     client = AcmeClient("https://acme.test/directory")
     nonce = client.get_nonce(FAKE_DIRECTORY)
     assert nonce == FAKE_NONCE
+
+
+@resp_lib.activate
+def test_post_as_get_empty_payload_jws(account_key):
+    """POST-as-GET: _post_signed(None, ...) produces JWS with empty payload field."""
+    resp_lib.add(
+        resp_lib.POST,
+        "https://acme.test/order/1",
+        json={"status": "valid"},
+        headers={"Replay-Nonce": "orderNonce"},
+        status=200,
+    )
+    client = AcmeClient("https://acme.test/directory")
+    resp = client._post_signed(
+        payload=None,  # POST-as-GET: no payload
+        account_key=account_key,
+        nonce=FAKE_NONCE,
+        url="https://acme.test/order/1",
+        account_url="https://acme.test/acct/42",
+    )
+    assert resp.ok
+
+    # Verify the JWS has empty payload field
+    posted = json.loads(resp_lib.calls[0].request.body)
+    assert "protected" in posted
+    assert "payload" in posted
+    assert posted["payload"] == ""  # POST-as-GET: empty payload
+
+
+@resp_lib.activate
+def test_post_as_get_sign_request_compliance(account_key):
+    """POST-as-GET: sign_request(None, ...) produces correct JWS structure."""
+    jws = jwslib.sign_request(
+        payload=None,
+        account_key=account_key,
+        nonce=FAKE_NONCE,
+        url="https://acme.test/order/1",
+        account_url="https://acme.test/acct/42",
+    )
+
+    # Verify JWS structure for POST-as-GET
+    assert isinstance(jws, dict)
+    assert "protected" in jws
+    assert "payload" in jws
+    assert "signature" in jws
+
+    # Verify empty payload (RFC 8555 §6.2)
+    assert jws["payload"] == ""
+
+    # Verify protected header is valid
+    protected_decoded = json.loads(
+        base64.urlsafe_b64decode(jws["protected"] + "==")
+    )
+    assert protected_decoded["alg"] == "RS256"
+    assert protected_decoded["nonce"] == FAKE_NONCE
+    assert protected_decoded["url"] == "https://acme.test/order/1"
+    assert protected_decoded["kid"] == "https://acme.test/acct/42"
+    assert "jwk" not in protected_decoded  # "kid" used instead
+
+
+@resp_lib.activate
+def test_post_with_payload_vs_post_as_get(account_key):
+    """Contrast: POST with payload vs POST-as-GET (None payload)."""
+    import base64
+
+    # With payload
+    jws_with_payload = jwslib.sign_request(
+        payload={"onlyReturnExisting": True},
+        account_key=account_key,
+        nonce=FAKE_NONCE,
+        url="https://acme.test/newAccount",
+        account_url="https://acme.test/acct/42",
+    )
+    assert jws_with_payload["payload"] != ""  # Has payload
+
+    payload_decoded = json.loads(
+        base64.urlsafe_b64decode(jws_with_payload["payload"] + "==")
+    )
+    assert payload_decoded == {"onlyReturnExisting": True}
+
+    # Without payload (POST-as-GET)
+    jws_post_as_get = jwslib.sign_request(
+        payload=None,
+        account_key=account_key,
+        nonce=FAKE_NONCE,
+        url="https://acme.test/newAccount",
+        account_url="https://acme.test/acct/42",
+    )
+    assert jws_post_as_get["payload"] == ""  # Empty for POST-as-GET
+
+    # Protected headers are the same structure, only nonce might differ
+    protected_with = json.loads(
+        base64.urlsafe_b64decode(jws_with_payload["protected"] + "==")
+    )
+    protected_without = json.loads(
+        base64.urlsafe_b64decode(jws_post_as_get["protected"] + "==")
+    )
+    assert protected_with["alg"] == protected_without["alg"]
+    assert protected_with["kid"] == protected_without["kid"]
 
 
 @resp_lib.activate
