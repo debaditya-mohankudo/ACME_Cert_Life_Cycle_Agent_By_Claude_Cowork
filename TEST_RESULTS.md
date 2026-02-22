@@ -4,7 +4,7 @@
 **Time:** — UTC
 **Platform:** macOS 25.3 · arm64
 **Python:** 3.12.8
-**Pebble:** Not running (5 integration tests skipped)
+**Pebble:** Running (all integration tests passed)
 
 ---
 
@@ -12,14 +12,16 @@
 
 | Suite | Tests | Passed | Skipped | Failed | Duration |
 |---|---|---|---|---|---|
+| Atomic Writes (`test_atomic_writes.py`) | 12 | 12 | 0 | 0 | — |
 | Checkpoint (`test_checkpoint.py`) | 10 | 10 | 0 | 0 | — |
 | Unit (`test_unit_acme.py`) | 27 | 27 | 0 | 0 | — |
 | Unit Failure Scenarios (`test_unit_failure_scenarios.py`) | 9 | 9 | 0 | 0 | — |
-| Retry Scheduler (`test_retry_scheduler.py`) | 9 | 9 | 0 | 0 | — |
+| Retry Scheduler (`test_retry_scheduler.py`) | 12 | 12 | 0 | 0 | — |
 | Knowledge Base (`test_kb.py`) | 5 | 5 | 0 | 0 | — |
-| Lifecycle (`test_lifecycle_pebble.py`) | 2 | 0 | 2 | 0 | — |
-| Integration (`test_integration_pebble.py`) | 3 | 0 | 3 | 0 | — |
-| **Total** | **65** | **60** | **5** | **0** | **22.64 s** |
+| Planner Validation (`test_planner_validation.py`) | 12 | 12 | 0 | 0 | — |
+| Lifecycle (`test_lifecycle_pebble.py`) | 2 | 2 | 0 | 0 | — |
+| Integration (`test_integration_pebble.py`) | 3 | 3 | 0 | 0 | — |
+| **Total** | **91** | **91** | **0** | **0** | **28.21 s** |
 
 ---
 
@@ -31,75 +33,129 @@ platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0
 rootdir: /Users/debaditya/workspace/Acme_certificate_lifecycle_agent
 configfile: pyproject.toml
 plugins: anyio-4.12.1, asyncio-0.25.3, langsmith-0.3.45
-asyncio: mode=Mode.STRICT
-collected 46 items
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None
+collected 91 items
 
-tests/test_unit_acme.py::test_generate_account_key PASSED                [  2%]
-tests/test_unit_acme.py::test_jwk_thumbprint_is_deterministic PASSED     [  4%]
-tests/test_unit_acme.py::test_key_authorization PASSED                   [  6%]
-tests/test_unit_acme.py::test_sign_request_jwk_header PASSED             [  8%]
-tests/test_unit_acme.py::test_sign_request_kid_header PASSED             [ 10%]
-tests/test_unit_acme.py::test_save_and_load_account_key PASSED           [ 13%]
-tests/test_unit_acme.py::test_rsa_key_generation PASSED                  [ 15%]
-tests/test_unit_acme.py::test_private_key_to_pem PASSED                  [ 17%]
-tests/test_unit_acme.py::test_create_csr_single_domain PASSED            [ 19%]
-tests/test_unit_acme.py::test_create_csr_multi_san PASSED                [ 21%]
-tests/test_unit_acme.py::test_get_directory PASSED                       [ 23%]
-tests/test_unit_acme.py::test_get_nonce PASSED                           [ 26%]
-tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 28%]
-tests/test_unit_acme.py::test_create_order PASSED                        [ 30%]
-tests/test_unit_acme.py::test_poll_authorization_valid PASSED            [ 32%]
-tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 34%]
-tests/test_unit_acme.py::test_acme_error_on_non_2xx PASSED               [ 36%]
-tests/test_unit_acme.py::test_revoke_certificate PASSED                  [ 39%]
-tests/test_unit_acme.py::test_zerossl_client_default_url PASSED          [ 41%]
-tests/test_unit_acme.py::test_sectigo_client_default_url PASSED          [ 43%]
-tests/test_unit_acme.py::test_digicert_client_default_url PASSED         [ 45%]
-tests/test_unit_acme.py::test_eab_subclass_hierarchy PASSED              [ 47%]
-tests/test_unit_acme.py::test_create_account_not_overridden_in_subclasses PASSED [ 50%]
-tests/test_unit_acme.py::test_make_client_returns_zerossl PASSED         [ 52%]
-tests/test_unit_acme.py::test_make_client_returns_sectigo PASSED         [ 54%]
-tests/test_unit_acme.py::test_eab_create_account_injects_eab PASSED      [ 56%]
-tests/test_unit_acme.py::test_eab_create_account_omits_eab_when_credentials_empty PASSED [ 58%]
-tests/test_unit_failure_scenarios.py::test_challenge_failure_invalid_status PASSED [ 60%]
-tests/test_unit_failure_scenarios.py::test_invalid_csr_rejected_by_server PASSED [ 63%]
-tests/test_unit_failure_scenarios.py::test_bad_nonce_retries_and_succeeds PASSED [ 65%]
-tests/test_unit_failure_scenarios.py::test_bad_nonce_exhausts_retries PASSED [ 67%]
-tests/test_unit_failure_scenarios.py::test_network_timeout_on_directory_fetch PASSED [ 69%]
-tests/test_unit_failure_scenarios.py::test_invalid_directory_url_connection_error PASSED [ 71%]
-tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PASSED [ 73%]
-tests/test_unit_failure_scenarios.py::test_finalize_order_malformed_json_response PASSED [ 76%]
-tests/test_unit_failure_scenarios.py::test_rate_limit_429_with_retry_after PASSED [ 78%]
-tests/test_integration_pebble.py::test_full_renewal_flow PASSED          [ 80%]
-tests/test_integration_pebble.py::test_second_run_reuses_account PASSED  [ 82%]
-tests/test_integration_pebble.py::test_no_renewal_needed PASSED          [ 84%]
-tests/test_lifecycle_pebble.py::test_certificate_lifecycle PASSED        [ 86%]
-tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal PASSED [ 89%]
-tests/test_kb.py::test_markdown_splits_into_sections PASSED              [ 91%]
-tests/test_kb.py::test_markdown_chunk_contains_full_text PASSED          [ 93%]
-tests/test_kb.py::test_python_extracts_top_level_functions PASSED        [ 95%]
-tests/test_kb.py::test_python_extracts_class_overview_and_methods PASSED [ 97%]
-tests/test_kb.py::test_search_returns_semantically_relevant_result PASSED [100%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_file PASSED [  1%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_overwrites_existing PASSED [  2%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_no_temp_file_left PASSED [  3%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_parent_dirs PASSED [  4%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_cleans_up_temp_on_error PASSED [  5%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_creates_file PASSED [  6%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_overwrites_existing PASSED [  7%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_no_temp_file_left PASSED [  8%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_large_file PASSED [  9%]
+tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_pem_file_atomic_write_text PASSED [ 10%]
+tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_multiple_atomic_writes_to_same_dir PASSED [ 12%]
+tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_concurrent_writes_to_different_files PASSED [ 13%]
+tests/test_checkpoint.py::TestBasicCheckpointing::test_complete_run_creates_checkpoint PASSED [ 14%]
+tests/test_checkpoint.py::TestBasicCheckpointing::test_checkpoint_history_non_empty PASSED [ 15%]
+tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_acme_account_setup PASSED [ 16%]
+tests/test_checkpoint.py::TestInterruptResume::test_resume_after_interrupt_completes PASSED [ 17%]
+tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_challenge_verifier PASSED [ 18%]
+tests/test_checkpoint.py::TestStateIntegrity::test_critical_config_fields_preserved_through_checkpoint PASSED [ 19%]
+tests/test_checkpoint.py::TestStateIntegrity::test_completed_renewals_in_final_checkpoint PASSED [ 20%]
+tests/test_checkpoint.py::TestStateIntegrity::test_messages_accumulate_across_checkpoints PASSED [ 21%]
+tests/test_checkpoint.py::TestThreadIsolation::test_two_threads_are_independent PASSED [ 23%]
+tests/test_checkpoint.py::TestAdvancedCheckpoint::test_update_state_injects_domain_before_resume PASSED [ 24%]
+tests/test_integration_pebble.py::test_full_renewal_flow PASSED          [ 25%]
+tests/test_integration_pebble.py::test_second_run_reuses_account PASSED  [ 26%]
+tests/test_integration_pebble.py::test_no_renewal_needed PASSED          [ 27%]
+tests/test_kb.py::test_markdown_splits_into_sections PASSED              [ 28%]
+tests/test_kb.py::test_markdown_chunk_contains_full_text PASSED          [ 29%]
+tests/test_kb.py::test_python_extracts_top_level_functions PASSED        [ 30%]
+tests/test_kb.py::test_python_extracts_class_overview_and_methods PASSED [ 31%]
+tests/test_kb.py::test_search_returns_semantically_relevant_result PASSED [ 32%]
+tests/test_lifecycle_pebble.py::test_certificate_lifecycle PASSED        [ 34%]
+tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal PASSED [ 35%]
+tests/test_planner_validation.py::TestParseAndValidate::test_invalid_json_falls_back_to_renew_all PASSED [ 36%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_urgent_stripped PASSED [ 37%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_routine_stripped PASSED [ 38%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_skip_stripped PASSED [ 39%]
+tests/test_planner_validation.py::TestParseAndValidate::test_mixed_real_and_hallucinated_preserves_real PASSED [ 40%]
+tests/test_planner_validation.py::TestParseAndValidate::test_lookalike_domain_stripped PASSED [ 41%]
+tests/test_planner_validation.py::TestParseAndValidate::test_missing_domain_added_to_routine PASSED [ 42%]
+tests/test_planner_validation.py::TestParseAndValidate::test_all_missing_domains_added_to_routine PASSED [ 43%]
+tests/test_planner_validation.py::TestParseAndValidate::test_all_hallucinated_triggers_missing_domain_fallback PASSED [ 45%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_strips_hallucinated_from_pending_renewals PASSED [ 46%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_invalid_json_queues_all_domains PASSED [ 47%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_urgent_before_routine_in_pending PASSED [ 48%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_no_scheduled_retry_passes_through PASSED [ 49%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_past_retry_time_doesnt_wait PASSED [ 50%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_future_retry_time_waits PASSED [ 51%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_clears_retry_not_before PASSED [ 52%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_long_backoff PASSED [ 53%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_no_scheduled_retry PASSED [ 54%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_past_retry_time_doesnt_wait PASSED [ 56%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_future_retry_time_waits PASSED [ 57%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_non_blocking_during_backoff PASSED [ 58%]
+tests/test_retry_scheduler.py::TestRetrySchedulerIntegration::test_retry_scheduler_with_error_handler_state PASSED [ 59%]
+tests/test_retry_scheduler.py::TestRetrySchedulerIntegration::test_multiple_domain_retries_concurrent PASSED [ 60%]
+tests/test_unit_acme.py::test_generate_account_key PASSED                [ 61%]
+tests/test_unit_acme.py::test_jwk_thumbprint_is_deterministic PASSED     [ 62%]
+tests/test_unit_acme.py::test_key_authorization PASSED                   [ 63%]
+tests/test_unit_acme.py::test_sign_request_jwk_header PASSED             [ 64%]
+tests/test_unit_acme.py::test_sign_request_kid_header PASSED             [ 65%]
+tests/test_unit_acme.py::test_save_and_load_account_key PASSED           [ 67%]
+tests/test_unit_acme.py::test_rsa_key_generation PASSED                  [ 68%]
+tests/test_unit_acme.py::test_private_key_to_pem PASSED                  [ 69%]
+tests/test_unit_acme.py::test_create_csr_single_domain PASSED            [ 70%]
+tests/test_unit_acme.py::test_create_csr_multi_san PASSED                [ 71%]
+tests/test_unit_acme.py::test_get_directory PASSED                       [ 72%]
+tests/test_unit_acme.py::test_get_nonce PASSED                           [ 73%]
+tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 74%]
+tests/test_unit_acme.py::test_create_order PASSED                        [ 75%]
+tests/test_unit_acme.py::test_poll_authorization_valid PASSED            [ 76%]
+tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 78%]
+tests/test_unit_acme.py::test_acme_error_on_non_2xx PASSED               [ 79%]
+tests/test_unit_acme.py::test_revoke_certificate PASSED                  [ 80%]
+tests/test_unit_acme.py::test_zerossl_client_default_url PASSED          [ 81%]
+tests/test_unit_acme.py::test_sectigo_client_default_url PASSED          [ 82%]
+tests/test_unit_acme.py::test_digicert_client_default_url PASSED         [ 83%]
+tests/test_unit_acme.py::test_eab_subclass_hierarchy PASSED              [ 84%]
+tests/test_unit_acme.py::test_create_account_not_overridden_in_subclasses PASSED [ 85%]
+tests/test_unit_acme.py::test_make_client_returns_zerossl PASSED         [ 86%]
+tests/test_unit_acme.py::test_make_client_returns_sectigo PASSED         [ 87%]
+tests/test_unit_acme.py::test_eab_create_account_injects_eab PASSED      [ 89%]
+tests/test_unit_acme.py::test_eab_create_account_omits_eab_when_credentials_empty PASSED [ 90%]
+tests/test_unit_failure_scenarios.py::test_challenge_failure_invalid_status PASSED [ 91%]
+tests/test_unit_failure_scenarios.py::test_invalid_csr_rejected_by_server PASSED [ 92%]
+tests/test_unit_failure_scenarios.py::test_bad_nonce_retries_and_succeeds PASSED [ 93%]
+tests/test_unit_failure_scenarios.py::test_bad_nonce_exhausts_retries PASSED [ 94%]
+tests/test_unit_failure_scenarios.py::test_network_timeout_on_directory_fetch PASSED [ 95%]
+tests/test_unit_failure_scenarios.py::test_invalid_directory_url_connection_error PASSED [ 96%]
+tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PASSED [ 97%]
+tests/test_unit_failure_scenarios.py::test_finalize_order_malformed_json_response PASSED [ 98%]
+tests/test_unit_failure_scenarios.py::test_rate_limit_429_with_retry_after PASSED [100%]
 
-tests/test_checkpoint.py::TestBasicCheckpointing::test_complete_run_creates_checkpoint PASSED [ 1%]
-tests/test_checkpoint.py::TestBasicCheckpointing::test_checkpoint_history_non_empty PASSED [ 2%]
-tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_acme_account_setup PASSED [ 4%]
-tests/test_checkpoint.py::TestInterruptResume::test_resume_after_interrupt_completes PASSED [ 5%]
-tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_challenge_verifier PASSED [ 7%]
-tests/test_checkpoint.py::TestStateIntegrity::test_critical_config_fields_preserved_through_checkpoint PASSED [ 8%]
-tests/test_checkpoint.py::TestStateIntegrity::test_completed_renewals_in_final_checkpoint PASSED [ 10%]
-tests/test_checkpoint.py::TestStateIntegrity::test_messages_accumulate_across_checkpoints PASSED [ 11%]
-tests/test_checkpoint.py::TestThreadIsolation::test_two_threads_are_independent PASSED [ 13%]
-tests/test_checkpoint.py::TestAdvancedCheckpoint::test_update_state_injects_domain_before_resume PASSED [ 14%]
-
-[... all other tests ...]
-
-======================== 60 passed, 5 skipped in 22.64s ========================
+======================== 91 passed in 28.21s ========================
 ```
 
 ---
 
 ## Test Descriptions
+
+### Atomic Write Tests — `tests/test_atomic_writes.py`
+
+Filesystem atomic write operations for certificate and metadata storage.
+No network or external services required.
+
+| Test | Group | What it verifies |
+|---|---|---|
+| `test_atomic_write_text_creates_file` | Text | Creates new file with atomic write operation |
+| `test_atomic_write_text_overwrites_existing` | Text | Overwrites existing file atomically (no temp files left) |
+| `test_atomic_write_text_no_temp_file_left` | Text | Temporary file is cleaned up on success |
+| `test_atomic_write_text_creates_parent_dirs` | Text | Missing parent directories are created |
+| `test_atomic_write_text_cleans_up_temp_on_error` | Text | Temporary file is cleaned up on write failure |
+| `test_atomic_write_bytes_creates_file` | Bytes | Creates new file with atomic write operation (binary mode) |
+| `test_atomic_write_bytes_overwrites_existing` | Bytes | Overwrites existing file atomically |
+| `test_atomic_write_bytes_no_temp_file_left` | Bytes | Temporary file cleanup on success |
+| `test_atomic_write_bytes_large_file` | Bytes | Large file writes complete atomically |
+| `test_pem_file_atomic_write_text` | Integration | PEM file writes via atomic operation (certificate storage scenario) |
+| `test_multiple_atomic_writes_to_same_dir` | Integration | Multiple concurrent writes to same directory don't interfere |
+| `test_concurrent_writes_to_different_files` | Integration | Concurrent writes to different files all succeed atomically |
+
+---
 
 ### Checkpoint Tests — `tests/test_checkpoint.py`
 
@@ -194,6 +250,30 @@ all HTTP calls are mocked via the `responses` library.
 | `test_network_timeout_on_directory_fetch` | `acme/client.py` → `get_directory` | `ConnectTimeout` on directory fetch; exception propagates (not suppressed) |
 | `test_invalid_directory_url_connection_error` | `acme/client.py` → `get_directory` | Directory URL on unreachable host; `ConnectionError` propagates |
 | `test_invalid_directory_url_returns_404` | `acme/client.py` → `get_directory` | Directory URL returns 404; `raise_for_status()` converts to `HTTPError`; exception propagates |
+| `test_finalize_order_malformed_json_response` | `acme/client.py` → `finalize_order` | Server returns malformed JSON in finalize response; exception propagates |
+| `test_rate_limit_429_with_retry_after` | `acme/client.py` → rate limit handling | Server returns 429 with `Retry-After` header; exception propagates (consumer decides retry) |
+
+---
+
+### Planner Validation Tests — `tests/test_planner_validation.py`
+
+LLM output validation and hallucinated domain stripping for the renewal planner.
+No network or external services required; LLM output is mocked.
+
+| Test | Group | What it verifies |
+|---|---|---|
+| `test_invalid_json_falls_back_to_renew_all` | Parse & Validate | Invalid JSON from LLM triggers fallback: all domains go to `routine_renewals` |
+| `test_hallucinated_domain_in_urgent_stripped` | Parse & Validate | Hallucinated domain in `urgent_renewals` is stripped (only `managed_domains` allowed) |
+| `test_hallucinated_domain_in_routine_stripped` | Parse & Validate | Hallucinated domain in `routine_renewals` is stripped |
+| `test_hallucinated_domain_in_skip_stripped` | Parse & Validate | Hallucinated domain in `skip` is stripped |
+| `test_mixed_real_and_hallucinated_preserves_real` | Parse & Validate | Real domains preserved; only hallucinated ones removed |
+| `test_lookalike_domain_stripped` | Parse & Validate | Domains that don't exactly match `managed_domains` are stripped (typo protection) |
+| `test_missing_domain_added_to_routine` | Parse & Validate | If managed domain is missing from planner output, it's added to `routine_renewals` |
+| `test_all_missing_domains_added_to_routine` | Parse & Validate | All missing managed domains are recovered via fallback mechanism |
+| `test_all_hallucinated_triggers_missing_domain_fallback` | Parse & Validate | If all domains are hallucinated, all managed domains added to `routine_renewals` |
+| `test_planner_node_strips_hallucinated_from_pending_renewals` | Node-Level | `renewal_planner` node invocation: hallucinated domains stripped from state |
+| `test_planner_node_invalid_json_queues_all_domains` | Node-Level | Invalid JSON from LLM causes node to queue all domains for renewal |
+| `test_planner_node_urgent_before_routine_in_pending` | Node-Level | Urgent renewals appear before routine in `pending_renewals` queue |
 
 ---
 
@@ -214,7 +294,6 @@ Knowledge base indexing and retrieval — no network or external services requir
 ### Lifecycle Tests — `tests/test_lifecycle_pebble.py`
 
 Requires Pebble running on `https://localhost:14000`.
-When Pebble is not running, these tests are auto-skipped.
 LLM nodes (planner, reporter) are mocked — no Anthropic API key needed.
 
 #### `test_certificate_lifecycle`
@@ -241,7 +320,6 @@ Full four-step TLS certificate lifecycle:
 ### Integration Tests — `tests/test_integration_pebble.py`
 
 Requires Pebble running on `https://localhost:14000`.
-When Pebble is not running, these tests are auto-skipped.
 Exercises the full LangGraph agent graph end-to-end.
 
 | Test | What it verifies |
