@@ -46,8 +46,19 @@ def summary_reporter(state: AgentState) -> dict:
         ),
     ]
 
-    response = llm.invoke(messages)
-    summary = response.content.strip()
+    try:
+        response = llm.invoke(messages)
+        summary = response.content.strip()
+    except Exception as exc:
+        logger.error("summary_reporter LLM call failed: %s — using fallback summary", exc)
+        completed_str = ", ".join(completed) or "(none)"
+        failed_str = ", ".join(failed) or "(none)"
+        summary = f"Renewal run complete. Renewed: {completed_str}. Failed: {failed_str}."
+        logger.info("\n=== Certificate Renewal Summary ===\n%s\n===================================", summary)
+        print(f"\n{'='*50}\nCertificate Renewal Summary\n{'='*50}")
+        print(summary)
+        print("=" * 50)
+        return {"messages": messages}
 
     logger.info("\n=== Certificate Renewal Summary ===\n%s\n===================================", summary)
     print(f"\n{'='*50}\nCertificate Renewal Summary\n{'='*50}")
