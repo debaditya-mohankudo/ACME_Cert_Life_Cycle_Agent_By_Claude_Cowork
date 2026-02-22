@@ -14,14 +14,17 @@
 |---|---|---|---|---|---|
 | Atomic Writes (`test_atomic_writes.py`) | 12 | 12 | 0 | 0 | — |
 | Checkpoint (`test_checkpoint.py`) | 10 | 10 | 0 | 0 | — |
+| DNS-01 Challenge (`test_dns_challenge.py`) | 45 | 45 | 0 | 0 | — |
 | Unit (`test_unit_acme.py`) | 27 | 27 | 0 | 0 | — |
 | Unit Failure Scenarios (`test_unit_failure_scenarios.py`) | 9 | 9 | 0 | 0 | — |
 | Retry Scheduler (`test_retry_scheduler.py`) | 12 | 12 | 0 | 0 | — |
 | Knowledge Base (`test_kb.py`) | 5 | 5 | 0 | 0 | — |
 | Planner Validation (`test_planner_validation.py`) | 12 | 12 | 0 | 0 | — |
 | Lifecycle (`test_lifecycle_pebble.py`) | 2 | 2 | 0 | 0 | — |
-| Integration (`test_integration_pebble.py`) | 3 | 3 | 0 | 0 | — |
-| **Total** | **91** | **91** | **0** | **0** | **28.21 s** |
+| Integration (`test_integration_pebble.py`) | 4 | 4 | 0 | 0 | — |
+| Revocation (`test_revocation.py`) | 15 | 15 | 0 | 0 | — |
+| Revocation Pebble (`test_revocation_pebble.py`) | 3 | 3 | 0 | 0 | — |
+| **Total** | **155** | **155** | **0** | **0** | **28.99 s** |
 
 ---
 
@@ -29,106 +32,170 @@
 
 ```
 ============================= test session starts ==============================
-platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0
+platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0 -- /Users/debaditya/workspace/Acme_certificate_lifecycle_agent/.venv/bin/python3
 rootdir: /Users/debaditya/workspace/Acme_certificate_lifecycle_agent
 configfile: pyproject.toml
 plugins: anyio-4.12.1, asyncio-0.25.3, langsmith-0.3.45
 asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None
-collected 91 items
+collected 155 items
 
-tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_file PASSED [  1%]
-tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_overwrites_existing PASSED [  2%]
-tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_no_temp_file_left PASSED [  3%]
-tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_parent_dirs PASSED [  4%]
-tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_cleans_up_temp_on_error PASSED [  5%]
-tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_creates_file PASSED [  6%]
-tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_overwrites_existing PASSED [  7%]
-tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_no_temp_file_left PASSED [  8%]
-tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_large_file PASSED [  9%]
-tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_pem_file_atomic_write_text PASSED [ 10%]
-tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_multiple_atomic_writes_to_same_dir PASSED [ 12%]
-tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_concurrent_writes_to_different_files PASSED [ 13%]
-tests/test_checkpoint.py::TestBasicCheckpointing::test_complete_run_creates_checkpoint PASSED [ 14%]
-tests/test_checkpoint.py::TestBasicCheckpointing::test_checkpoint_history_non_empty PASSED [ 15%]
-tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_acme_account_setup PASSED [ 16%]
-tests/test_checkpoint.py::TestInterruptResume::test_resume_after_interrupt_completes PASSED [ 17%]
-tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_challenge_verifier PASSED [ 18%]
-tests/test_checkpoint.py::TestStateIntegrity::test_critical_config_fields_preserved_through_checkpoint PASSED [ 19%]
-tests/test_checkpoint.py::TestStateIntegrity::test_completed_renewals_in_final_checkpoint PASSED [ 20%]
-tests/test_checkpoint.py::TestStateIntegrity::test_messages_accumulate_across_checkpoints PASSED [ 21%]
-tests/test_checkpoint.py::TestThreadIsolation::test_two_threads_are_independent PASSED [ 23%]
-tests/test_checkpoint.py::TestAdvancedCheckpoint::test_update_state_injects_domain_before_resume PASSED [ 24%]
-tests/test_integration_pebble.py::test_full_renewal_flow PASSED          [ 25%]
-tests/test_integration_pebble.py::test_second_run_reuses_account PASSED  [ 26%]
-tests/test_integration_pebble.py::test_no_renewal_needed PASSED          [ 27%]
-tests/test_kb.py::test_markdown_splits_into_sections PASSED              [ 28%]
-tests/test_kb.py::test_markdown_chunk_contains_full_text PASSED          [ 29%]
-tests/test_kb.py::test_python_extracts_top_level_functions PASSED        [ 30%]
-tests/test_kb.py::test_python_extracts_class_overview_and_methods PASSED [ 31%]
-tests/test_kb.py::test_search_returns_semantically_relevant_result PASSED [ 32%]
-tests/test_lifecycle_pebble.py::test_certificate_lifecycle PASSED        [ 34%]
-tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal PASSED [ 35%]
-tests/test_planner_validation.py::TestParseAndValidate::test_invalid_json_falls_back_to_renew_all PASSED [ 36%]
-tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_urgent_stripped PASSED [ 37%]
-tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_routine_stripped PASSED [ 38%]
-tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_skip_stripped PASSED [ 39%]
-tests/test_planner_validation.py::TestParseAndValidate::test_mixed_real_and_hallucinated_preserves_real PASSED [ 40%]
-tests/test_planner_validation.py::TestParseAndValidate::test_lookalike_domain_stripped PASSED [ 41%]
-tests/test_planner_validation.py::TestParseAndValidate::test_missing_domain_added_to_routine PASSED [ 42%]
-tests/test_planner_validation.py::TestParseAndValidate::test_all_missing_domains_added_to_routine PASSED [ 43%]
-tests/test_planner_validation.py::TestParseAndValidate::test_all_hallucinated_triggers_missing_domain_fallback PASSED [ 45%]
-tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_strips_hallucinated_from_pending_renewals PASSED [ 46%]
-tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_invalid_json_queues_all_domains PASSED [ 47%]
-tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_urgent_before_routine_in_pending PASSED [ 48%]
-tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_no_scheduled_retry_passes_through PASSED [ 49%]
-tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_past_retry_time_doesnt_wait PASSED [ 50%]
-tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_future_retry_time_waits PASSED [ 51%]
-tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_clears_retry_not_before PASSED [ 52%]
-tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_long_backoff PASSED [ 53%]
-tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_no_scheduled_retry PASSED [ 54%]
-tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_past_retry_time_doesnt_wait PASSED [ 56%]
-tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_future_retry_time_waits PASSED [ 57%]
-tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_non_blocking_during_backoff PASSED [ 58%]
-tests/test_retry_scheduler.py::TestRetrySchedulerIntegration::test_retry_scheduler_with_error_handler_state PASSED [ 59%]
-tests/test_retry_scheduler.py::TestRetrySchedulerIntegration::test_multiple_domain_retries_concurrent PASSED [ 60%]
-tests/test_unit_acme.py::test_generate_account_key PASSED                [ 61%]
-tests/test_unit_acme.py::test_jwk_thumbprint_is_deterministic PASSED     [ 62%]
-tests/test_unit_acme.py::test_key_authorization PASSED                   [ 63%]
-tests/test_unit_acme.py::test_sign_request_jwk_header PASSED             [ 64%]
-tests/test_unit_acme.py::test_sign_request_kid_header PASSED             [ 65%]
-tests/test_unit_acme.py::test_save_and_load_account_key PASSED           [ 67%]
-tests/test_unit_acme.py::test_rsa_key_generation PASSED                  [ 68%]
-tests/test_unit_acme.py::test_private_key_to_pem PASSED                  [ 69%]
-tests/test_unit_acme.py::test_create_csr_single_domain PASSED            [ 70%]
-tests/test_unit_acme.py::test_create_csr_multi_san PASSED                [ 71%]
-tests/test_unit_acme.py::test_get_directory PASSED                       [ 72%]
-tests/test_unit_acme.py::test_get_nonce PASSED                           [ 73%]
-tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 74%]
-tests/test_unit_acme.py::test_create_order PASSED                        [ 75%]
-tests/test_unit_acme.py::test_poll_authorization_valid PASSED            [ 76%]
-tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 78%]
-tests/test_unit_acme.py::test_acme_error_on_non_2xx PASSED               [ 79%]
-tests/test_unit_acme.py::test_revoke_certificate PASSED                  [ 80%]
-tests/test_unit_acme.py::test_zerossl_client_default_url PASSED          [ 81%]
-tests/test_unit_acme.py::test_sectigo_client_default_url PASSED          [ 82%]
-tests/test_unit_acme.py::test_digicert_client_default_url PASSED         [ 83%]
-tests/test_unit_acme.py::test_eab_subclass_hierarchy PASSED              [ 84%]
-tests/test_unit_acme.py::test_create_account_not_overridden_in_subclasses PASSED [ 85%]
-tests/test_unit_acme.py::test_make_client_returns_zerossl PASSED         [ 86%]
-tests/test_unit_acme.py::test_make_client_returns_sectigo PASSED         [ 87%]
-tests/test_unit_acme.py::test_eab_create_account_injects_eab PASSED      [ 89%]
-tests/test_unit_acme.py::test_eab_create_account_omits_eab_when_credentials_empty PASSED [ 90%]
-tests/test_unit_failure_scenarios.py::test_challenge_failure_invalid_status PASSED [ 91%]
-tests/test_unit_failure_scenarios.py::test_invalid_csr_rejected_by_server PASSED [ 92%]
-tests/test_unit_failure_scenarios.py::test_bad_nonce_retries_and_succeeds PASSED [ 93%]
-tests/test_unit_failure_scenarios.py::test_bad_nonce_exhausts_retries PASSED [ 94%]
-tests/test_unit_failure_scenarios.py::test_network_timeout_on_directory_fetch PASSED [ 95%]
-tests/test_unit_failure_scenarios.py::test_invalid_directory_url_connection_error PASSED [ 96%]
-tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PASSED [ 97%]
-tests/test_unit_failure_scenarios.py::test_finalize_order_malformed_json_response PASSED [ 98%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_file PASSED [  0%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_overwrites_existing PASSED [  1%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_no_temp_file_left PASSED [  1%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_parent_dirs PASSED [  2%]
+tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_cleans_up_temp_on_error PASSED [  3%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_creates_file PASSED [  3%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_overwrites_existing PASSED [  4%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_no_temp_file_left PASSED [  5%]
+tests/test_atomic_writes.py::TestAtomicWriteBytes::test_atomic_write_bytes_large_file PASSED [  5%]
+tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_pem_file_atomic_write_text PASSED [  6%]
+tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_multiple_atomic_writes_to_same_dir PASSED [  7%]
+tests/test_atomic_writes.py::TestAtomicWriteIntegration::test_concurrent_writes_to_different_files PASSED [  7%]
+tests/test_checkpoint.py::TestBasicCheckpointing::test_complete_run_creates_checkpoint PASSED [  8%]
+tests/test_checkpoint.py::TestBasicCheckpointing::test_checkpoint_history_non_empty PASSED [  9%]
+tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_acme_account_setup PASSED [  9%]
+tests/test_checkpoint.py::TestInterruptResume::test_resume_after_interrupt_completes PASSED [ 10%]
+tests/test_checkpoint.py::TestInterruptResume::test_interrupt_before_challenge_verifier PASSED [ 10%]
+tests/test_checkpoint.py::TestStateIntegrity::test_critical_config_fields_preserved_through_checkpoint PASSED [ 11%]
+tests/test_checkpoint.py::TestStateIntegrity::test_completed_renewals_in_final_checkpoint PASSED [ 12%]
+tests/test_checkpoint.py::TestStateIntegrity::test_messages_accumulate_across_checkpoints PASSED [ 12%]
+tests/test_checkpoint.py::TestThreadIsolation::test_two_threads_are_independent PASSED [ 13%]
+tests/test_checkpoint.py::TestAdvancedCheckpoint::test_update_state_injects_domain_before_resume PASSED [ 14%]
+tests/test_dns_challenge.py::TestComputeDnsTxtValue::test_known_vector PASSED [ 14%]
+tests/test_dns_challenge.py::TestComputeDnsTxtValue::test_no_padding PASSED [ 15%]
+tests/test_dns_challenge.py::TestComputeDnsTxtValue::test_deterministic PASSED [ 16%]
+tests/test_dns_challenge.py::TestComputeDnsTxtValue::test_different_inputs_produce_different_outputs PASSED [ 16%]
+tests/test_dns_challenge.py::TestComputeDnsTxtValue::test_output_is_valid_base64url PASSED [ 17%]
+tests/test_dns_challenge.py::TestMakeDnsProvider::test_dispatches_cloudflare PASSED [ 18%]
+tests/test_dns_challenge.py::TestMakeDnsProvider::test_dispatches_route53 PASSED [ 18%]
+tests/test_dns_challenge.py::TestMakeDnsProvider::test_dispatches_google PASSED [ 19%]
+tests/test_dns_challenge.py::TestMakeDnsProvider::test_unknown_provider_raises PASSED [ 20%]
+tests/test_dns_challenge.py::TestMakeDnsProvider::test_cloudflare_importerror_hint PASSED [ 20%]
+tests/test_dns_challenge.py::TestMakeDnsProvider::test_route53_importerror_hint PASSED [ 21%]
+tests/test_dns_challenge.py::TestMakeDnsProvider::test_google_importerror_hint PASSED [ 21%]
+tests/test_dns_challenge.py::TestCloudflareDnsProvider::test_create_txt_record_explicit_zone PASSED [ 22%]
+tests/test_dns_challenge.py::TestCloudflareDnsProvider::test_create_txt_record_auto_discover_zone PASSED [ 23%]
+tests/test_dns_challenge.py::TestCloudflareDnsProvider::test_create_txt_record_idempotent PASSED [ 23%]
+tests/test_dns_challenge.py::TestCloudflareDnsProvider::test_delete_txt_record_finds_and_deletes PASSED [ 24%]
+tests/test_dns_challenge.py::TestCloudflareDnsProvider::test_delete_txt_record_swallows_errors PASSED [ 25%]
+tests/test_dns_challenge.py::TestCloudflareDnsProvider::test_delete_txt_record_missing_record_silent PASSED [ 25%]
+tests/test_dns_challenge.py::TestRoute53DnsProvider::test_create_txt_record_upsert_with_quotes PASSED [ 26%]
+tests/test_dns_challenge.py::TestRoute53DnsProvider::test_create_txt_record_uses_explicit_zone_id PASSED [ 27%]
+tests/test_dns_challenge.py::TestRoute53DnsProvider::test_create_txt_record_auto_discover_zone PASSED [ 27%]
+tests/test_dns_challenge.py::TestRoute53DnsProvider::test_delete_txt_record_uses_delete_action PASSED [ 28%]
+tests/test_dns_challenge.py::TestRoute53DnsProvider::test_delete_txt_record_swallows_errors PASSED [ 29%]
+tests/test_dns_challenge.py::TestGoogleCloudDnsProvider::test_create_txt_record_calls_add_and_create PASSED [ 29%]
+tests/test_dns_challenge.py::TestGoogleCloudDnsProvider::test_delete_txt_record_calls_delete_and_create PASSED [ 30%]
+tests/test_dns_challenge.py::TestGoogleCloudDnsProvider::test_delete_txt_record_swallows_errors PASSED [ 30%]
+tests/test_dns_challenge.py::TestOrderInitializerDns01::test_dns01_challenge_selected PASSED [ 31%]
+tests/test_dns_challenge.py::TestOrderInitializerDns01::test_dns01_populates_auth_domains PASSED [ 32%]
+tests/test_dns_challenge.py::TestOrderInitializerDns01::test_dns01_populates_dns_txt_values PASSED [ 32%]
+tests/test_dns_challenge.py::TestOrderInitializerDns01::test_http01_dns_txt_values_empty PASSED [ 33%]
+tests/test_dns_challenge.py::TestOrderInitializerDns01::test_missing_dns01_challenge_returns_error PASSED [ 34%]
+tests/test_dns_challenge.py::TestChallengeSetupDns::test_create_txt_record_called_for_each_domain PASSED [ 34%]
+tests/test_dns_challenge.py::TestChallengeSetupDns::test_propagation_sleep_called_when_positive PASSED [ 35%]
+tests/test_dns_challenge.py::TestChallengeSetupDns::test_propagation_sleep_skipped_when_zero PASSED [ 36%]
+tests/test_dns_challenge.py::TestChallengeSetupDns::test_returns_empty_dict PASSED [ 36%]
+tests/test_dns_challenge.py::TestCleanupChallengeDns::test_delete_called_for_each_domain PASSED [ 37%]
+tests/test_dns_challenge.py::TestCleanupChallengeDns::test_continues_on_partial_failure PASSED [ 38%]
+tests/test_dns_challenge.py::TestCleanupChallengeDns::test_safe_when_no_provider PASSED [ 38%]
+tests/test_dns_challenge.py::TestConfigValidation::test_dns_mode_accepted PASSED [ 39%]
+tests/test_dns_challenge.py::TestConfigValidation::test_invalid_mode_rejected PASSED [ 40%]
+tests/test_dns_challenge.py::TestConfigValidation::test_cloudflare_missing_token_raises PASSED [ 40%]
+tests/test_dns_challenge.py::TestConfigValidation::test_google_missing_project_id_raises PASSED [ 41%]
+tests/test_dns_challenge.py::TestConfigValidation::test_route53_no_mandatory_fields PASSED [ 41%]
+tests/test_dns_challenge.py::TestConfigValidation::test_standalone_mode_unchanged PASSED [ 42%]
+tests/test_dns_challenge.py::TestConfigValidation::test_webroot_mode_unchanged PASSED [ 43%]
+tests/test_integration_pebble.py::test_full_renewal_flow PASSED          [ 43%]
+tests/test_integration_pebble.py::test_second_run_reuses_account PASSED  [ 44%]
+tests/test_integration_pebble.py::test_no_renewal_needed PASSED          [ 45%]
+tests/test_integration_pebble.py::test_full_renewal_flow_dns01 PASSED    [ 45%]
+tests/test_kb.py::test_markdown_splits_into_sections PASSED              [ 46%]
+tests/test_kb.py::test_markdown_chunk_contains_full_text PASSED          [ 47%]
+tests/test_kb.py::test_python_extracts_top_level_functions PASSED        [ 47%]
+tests/test_kb.py::test_python_extracts_class_overview_and_methods PASSED [ 48%]
+tests/test_kb.py::test_search_returns_semantically_relevant_result PASSED [ 49%]
+tests/test_lifecycle_pebble.py::test_certificate_lifecycle PASSED        [ 49%]
+tests/test_lifecycle_pebble.py::test_revoke_original_cert_after_renewal PASSED [ 50%]
+tests/test_planner_validation.py::TestParseAndValidate::test_invalid_json_falls_back_to_renew_all PASSED [ 50%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_urgent_stripped PASSED [ 51%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_routine_stripped PASSED [ 52%]
+tests/test_planner_validation.py::TestParseAndValidate::test_hallucinated_domain_in_skip_stripped PASSED [ 52%]
+tests/test_planner_validation.py::TestParseAndValidate::test_mixed_real_and_hallucinated_preserves_real PASSED [ 53%]
+tests/test_planner_validation.py::TestParseAndValidate::test_lookalike_domain_stripped PASSED [ 54%]
+tests/test_planner_validation.py::TestParseAndValidate::test_missing_domain_added_to_routine PASSED [ 54%]
+tests/test_planner_validation.py::TestParseAndValidate::test_all_missing_domains_added_to_routine PASSED [ 55%]
+tests/test_planner_validation.py::TestParseAndValidate::test_all_hallucinated_triggers_missing_domain_fallback PASSED [ 56%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_strips_hallucinated_from_pending_renewals PASSED [ 56%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_invalid_json_queues_all_domains PASSED [ 57%]
+tests/test_planner_validation.py::TestRenewalPlannerNode::test_planner_node_urgent_before_routine_in_pending PASSED [ 58%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_no_scheduled_retry_passes_through PASSED [ 58%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_past_retry_time_doesnt_wait PASSED [ 59%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_future_retry_time_waits PASSED [ 60%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_clears_retry_not_before PASSED [ 60%]
+tests/test_retry_scheduler.py::TestRetrySchedulerSync::test_long_backoff PASSED [ 61%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_no_scheduled_retry PASSED [ 61%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_past_retry_time_doesnt_wait PASSED [ 62%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_future_retry_time_waits PASSED [ 63%]
+tests/test_retry_scheduler.py::TestRetrySchedulerAsync::test_async_non_blocking_during_backoff PASSED [ 63%]
+tests/test_retry_scheduler.py::TestRetrySchedulerIntegration::test_retry_scheduler_with_error_handler_state PASSED [ 64%]
+tests/test_retry_scheduler.py::TestRetrySchedulerIntegration::test_multiple_domain_retries_concurrent PASSED [ 65%]
+tests/test_revocation.py::test_pick_next_revocation_domain_pops_first_domain PASSED [ 65%]
+tests/test_revocation.py::test_pick_next_revocation_domain_last_domain PASSED [ 66%]
+tests/test_revocation.py::test_pick_next_revocation_domain_empty_targets PASSED [ 67%]
+tests/test_revocation.py::test_revocation_loop_router_more_targets PASSED [ 67%]
+tests/test_revocation.py::test_revocation_loop_router_no_targets PASSED  [ 68%]
+tests/test_revocation.py::test_cert_revoker_success PASSED               [ 69%]
+tests/test_revocation.py::test_cert_revoker_missing_cert PASSED          [ 69%]
+tests/test_revocation.py::test_cert_revoker_acme_error PASSED            [ 70%]
+tests/test_revocation.py::test_revocation_reporter_success PASSED        [ 70%]
+tests/test_revocation.py::test_revocation_reporter_with_failures PASSED  [ 71%]
+tests/test_revocation.py::test_revocation_reporter_llm_failure PASSED    [ 72%]
+tests/test_revocation.py::test_revocation_graph_topology PASSED          [ 72%]
+tests/test_revocation.py::test_revocation_graph_single_domain_flow PASSED [ 73%]
+tests/test_revocation.py::test_revocation_graph_multi_domain_flow PASSED [ 74%]
+tests/test_revocation.py::test_revocation_graph_partial_failure PASSED   [ 74%]
+tests/test_revocation_pebble.py::test_revocation_graph_basic_against_pebble PASSED [ 75%]
+tests/test_revocation_pebble.py::test_revocation_reason_codes_against_pebble PASSED [ 76%]
+tests/test_revocation_pebble.py::test_revocation_nonexistent_cert_against_pebble PASSED [ 76%]
+tests/test_unit_acme.py::test_generate_account_key PASSED                [ 77%]
+tests/test_unit_acme.py::test_jwk_thumbprint_is_deterministic PASSED     [ 78%]
+tests/test_unit_acme.py::test_key_authorization PASSED                   [ 78%]
+tests/test_unit_acme.py::test_sign_request_jwk_header PASSED             [ 79%]
+tests/test_unit_acme.py::test_sign_request_kid_header PASSED             [ 80%]
+tests/test_unit_acme.py::test_save_and_load_account_key PASSED           [ 80%]
+tests/test_unit_acme.py::test_rsa_key_generation PASSED                  [ 81%]
+tests/test_unit_acme.py::test_private_key_to_pem PASSED                  [ 81%]
+tests/test_unit_acme.py::test_create_csr_single_domain PASSED            [ 82%]
+tests/test_unit_acme.py::test_create_csr_multi_san PASSED                [ 83%]
+tests/test_unit_acme.py::test_get_directory PASSED                       [ 83%]
+tests/test_unit_acme.py::test_get_nonce PASSED                           [ 84%]
+tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 85%]
+tests/test_unit_acme.py::test_create_order PASSED                        [ 85%]
+tests/test_unit_acme.py::test_poll_authorization_valid PASSED            [ 86%]
+tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 87%]
+tests/test_unit_acme.py::test_acme_error_on_non_2xx PASSED               [ 87%]
+tests/test_unit_acme.py::test_revoke_certificate PASSED                  [ 88%]
+tests/test_unit_acme.py::test_zerossl_client_default_url PASSED          [ 89%]
+tests/test_unit_acme.py::test_sectigo_client_default_url PASSED          [ 89%]
+tests/test_unit_acme.py::test_digicert_client_default_url PASSED         [ 90%]
+tests/test_unit_acme.py::test_eab_subclass_hierarchy PASSED              [ 90%]
+tests/test_unit_acme.py::test_create_account_not_overridden_in_subclasses PASSED [ 91%]
+tests/test_unit_acme.py::test_make_client_returns_zerossl PASSED         [ 92%]
+tests/test_unit_acme.py::test_make_client_returns_sectigo PASSED         [ 92%]
+tests/test_unit_acme.py::test_eab_create_account_injects_eab PASSED      [ 93%]
+tests/test_unit_acme.py::test_eab_create_account_omits_eab_when_credentials_empty PASSED [ 94%]
+tests/test_unit_failure_scenarios.py::test_challenge_failure_invalid_status PASSED [ 94%]
+tests/test_unit_failure_scenarios.py::test_invalid_csr_rejected_by_server PASSED [ 95%]
+tests/test_unit_failure_scenarios.py::test_bad_nonce_retries_and_succeeds PASSED [ 96%]
+tests/test_unit_failure_scenarios.py::test_bad_nonce_exhausts_retries PASSED [ 96%]
+tests/test_unit_failure_scenarios.py::test_network_timeout_on_directory_fetch PASSED [ 97%]
+tests/test_unit_failure_scenarios.py::test_invalid_directory_url_connection_error PASSED [ 98%]
+tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PASSED [ 98%]
+tests/test_unit_failure_scenarios.py::test_finalize_order_malformed_json_response PASSED [ 99%]
 tests/test_unit_failure_scenarios.py::test_rate_limit_429_with_retry_after PASSED [100%]
 
-======================== 91 passed in 28.21s ========================
+============================== 155 passed in 28.99s ==============================
 ```
 
 ---
@@ -175,6 +242,61 @@ can be resumed without losing progress or data integrity.
 | `test_messages_accumulate_across_checkpoints` | State Integrity | LLM message history accumulates via `add_messages` reducer across checkpoints |
 | `test_two_threads_are_independent` | Thread Isolation | Different `thread_id` values maintain independent checkpoint histories |
 | `test_update_state_injects_domain_before_resume` | Advanced Operations | `graph.update_state()` can inject modified state before resuming |
+
+---
+
+### DNS-01 Challenge Tests — `tests/test_dns_challenge.py`
+
+Full coverage of DNS-01 challenge support — Cloudflare, Route53, Google Cloud DNS.
+No network, no DNS credentials, no Pebble required; all provider API calls are mocked.
+
+| Test | Group | What it verifies |
+|---|---|---|
+| `test_known_vector` | `compute_dns_txt_value` | SHA-256 → base64url output matches manual computation (RFC 8555 §8.4) |
+| `test_no_padding` | `compute_dns_txt_value` | Output contains no `=` padding characters |
+| `test_deterministic` | `compute_dns_txt_value` | Same key_auth always produces the same TXT value |
+| `test_different_inputs_produce_different_outputs` | `compute_dns_txt_value` | Different key_auth strings produce different TXT values |
+| `test_output_is_valid_base64url` | `compute_dns_txt_value` | Output contains only URL-safe base64 characters |
+| `test_dispatches_cloudflare` | `make_dns_provider` | Factory returns `CloudflareDnsProvider` for `DNS_PROVIDER=cloudflare` |
+| `test_dispatches_route53` | `make_dns_provider` | Factory returns `Route53DnsProvider` for `DNS_PROVIDER=route53` |
+| `test_dispatches_google` | `make_dns_provider` | Factory returns `GoogleCloudDnsProvider` for `DNS_PROVIDER=google` |
+| `test_unknown_provider_raises` | `make_dns_provider` | Raises `ValueError` for unrecognised provider name |
+| `test_cloudflare_importerror_hint` | `make_dns_provider` | `CloudflareDnsProvider` raises `ImportError` with `uv sync --extra dns-cloudflare` hint |
+| `test_route53_importerror_hint` | `make_dns_provider` | `Route53DnsProvider` raises `ImportError` with `uv sync --extra dns-route53` hint |
+| `test_google_importerror_hint` | `make_dns_provider` | `GoogleCloudDnsProvider` raises `ImportError` with `uv sync --extra dns-google` hint |
+| `test_create_txt_record_explicit_zone` | `CloudflareDnsProvider` | Uses explicit `zone_id` without zone discovery |
+| `test_create_txt_record_auto_discover_zone` | `CloudflareDnsProvider` | Auto-discovers zone via `zones.list()` when `zone_id` is empty |
+| `test_create_txt_record_idempotent` | `CloudflareDnsProvider` | Skips create when identical TXT record already exists |
+| `test_delete_txt_record_finds_and_deletes` | `CloudflareDnsProvider` | Finds matching record by name+content and deletes it |
+| `test_delete_txt_record_swallows_errors` | `CloudflareDnsProvider` | Delete errors are swallowed (best-effort cleanup) |
+| `test_delete_txt_record_missing_record_silent` | `CloudflareDnsProvider` | Silently does nothing when record not found |
+| `test_create_txt_record_upsert_with_quotes` | `Route53DnsProvider` | TXT value is wrapped in double-quotes as required by Route53 |
+| `test_create_txt_record_uses_explicit_zone_id` | `Route53DnsProvider` | Uses explicit `hosted_zone_id` without zone discovery |
+| `test_create_txt_record_auto_discover_zone` | `Route53DnsProvider` | Auto-discovers zone via `list_hosted_zones_by_name()` when `hosted_zone_id` is empty |
+| `test_delete_txt_record_uses_delete_action` | `Route53DnsProvider` | Uses `Action: DELETE` in change batch |
+| `test_delete_txt_record_swallows_errors` | `Route53DnsProvider` | Route53 errors during delete are swallowed |
+| `test_create_txt_record_calls_add_and_create` | `GoogleCloudDnsProvider` | Calls `add_record_set()` then `changes.create()` |
+| `test_delete_txt_record_calls_delete_and_create` | `GoogleCloudDnsProvider` | Calls `delete_record_set()` then `changes.create()` |
+| `test_delete_txt_record_swallows_errors` | `GoogleCloudDnsProvider` | GCP errors during delete are swallowed |
+| `test_dns01_challenge_selected` | `order_initializer` | Selects `dns-01` challenge URL when `HTTP_CHALLENGE_MODE=dns` |
+| `test_dns01_populates_auth_domains` | `order_initializer` | `auth_domains` populated from `authz["identifier"]["value"]` |
+| `test_dns01_populates_dns_txt_values` | `order_initializer` | `dns_txt_values` contains correct `compute_dns_txt_value` output |
+| `test_http01_dns_txt_values_empty` | `order_initializer` | `dns_txt_values` is empty list for HTTP-01 modes |
+| `test_missing_dns01_challenge_returns_error` | `order_initializer` | Returns `error_log` entry when no `dns-01` challenge found in authz |
+| `test_create_txt_record_called_for_each_domain` | `challenge_setup` | `create_txt_record()` called once per domain (all domains covered) |
+| `test_propagation_sleep_called_when_positive` | `challenge_setup` | `time.sleep()` called with `DNS_PROPAGATION_WAIT_SECONDS` when > 0 |
+| `test_propagation_sleep_skipped_when_zero` | `challenge_setup` | `time.sleep()` not called when `DNS_PROPAGATION_WAIT_SECONDS=0` |
+| `test_returns_empty_dict` | `challenge_setup` | Returns `{}` on success (no state mutation needed) |
+| `test_delete_called_for_each_domain` | `_cleanup_challenge` | `delete_txt_record()` called once per domain; `_dns_provider` cleared to `None` |
+| `test_continues_on_partial_failure` | `_cleanup_challenge` | Continues deleting remaining domains even after one raises |
+| `test_safe_when_no_provider` | `_cleanup_challenge` | Does not raise when `_dns_provider` is `None` |
+| `test_dns_mode_accepted` | Config | `HTTP_CHALLENGE_MODE='dns'` passes `validate_challenge_mode` |
+| `test_invalid_mode_rejected` | Config | Invalid mode value raises `ValidationError` |
+| `test_cloudflare_missing_token_raises` | Config | `validate_dns_config` rejects empty `CLOUDFLARE_API_TOKEN` in dns+cloudflare mode |
+| `test_google_missing_project_id_raises` | Config | `validate_dns_config` rejects empty `GOOGLE_PROJECT_ID` in dns+google mode |
+| `test_route53_no_mandatory_fields` | Config | Route53 requires no mandatory fields (uses credential chain / instance role) |
+| `test_standalone_mode_unchanged` | Config | Existing `standalone` mode validation is unaffected |
+| `test_webroot_mode_unchanged` | Config | Existing `webroot` mode validation (requires `WEBROOT_PATH`) is unaffected |
 
 ---
 
@@ -320,13 +442,50 @@ Full four-step TLS certificate lifecycle:
 ### Integration Tests — `tests/test_integration_pebble.py`
 
 Requires Pebble running on `https://localhost:14000`.
-Exercises the full LangGraph agent graph end-to-end.
+Exercises the full LangGraph agent graph end-to-end. LLM nodes are mocked.
 
 | Test | What it verifies |
 |---|---|
 | `test_full_renewal_flow` | Happy-path: scanner → planner → account → order → challenge → CSR → finalize → download → storage → reporter. All PEM files written; `privkey.pem` mode `0o600`; metadata populated. |
 | `test_second_run_reuses_account` | Second run loads existing account key and calls `POST /newAccount onlyReturnExisting` instead of registering a new account. |
 | `test_no_renewal_needed` | When planner returns `skip: [domain]`, `pending_renewals` stays empty; agent exits via `no_renewals` path with empty `completed_renewals` and `failed_renewals`. |
+| `test_full_renewal_flow_dns01` | DNS-01 happy-path: full graph run with `HTTP_CHALLENGE_MODE=dns` and a mocked DNS provider. Verifies `create_txt_record()` called once (challenge setup), `delete_txt_record()` called once (cleanup), and `cert.pem` written to disk with a valid expiry. |
+
+---
+
+### Revocation Tests — `tests/test_revocation.py`
+
+Unit and graph topology tests for certificate revocation — no Pebble, all ACME mocked.
+
+| Test | Group | What it verifies |
+|---|---|---|
+| `test_pick_next_revocation_domain_pops_first_domain` | Router | Pops first domain from `revocation_targets`; sets `current_revocation_domain` |
+| `test_pick_next_revocation_domain_last_domain` | Router | Handles single remaining domain correctly |
+| `test_pick_next_revocation_domain_empty_targets` | Router | Empty targets leaves `current_revocation_domain` as `None` |
+| `test_revocation_loop_router_more_targets` | Router | Routes to `next_domain` when `revocation_targets` is non-empty |
+| `test_revocation_loop_router_no_targets` | Router | Routes to `all_done` when `revocation_targets` is empty |
+| `test_cert_revoker_success` | Revoker | `POST /revokeCert` succeeds; domain added to `revoked_domains` |
+| `test_cert_revoker_missing_cert` | Revoker | Missing cert file adds domain to `failed_revocations` without raising |
+| `test_cert_revoker_acme_error` | Revoker | ACME error during revocation adds domain to `failed_revocations` |
+| `test_revocation_reporter_success` | Reporter | LLM summary generated; `revoked_domains` reflected in message |
+| `test_revocation_reporter_with_failures` | Reporter | Reporter includes failed domains in summary |
+| `test_revocation_reporter_llm_failure` | Reporter | Reporter continues gracefully when LLM call fails |
+| `test_revocation_graph_topology` | Graph | Graph has correct nodes and edges; compiles without error |
+| `test_revocation_graph_single_domain_flow` | Graph | Single-domain revocation completes; domain in `revoked_domains` |
+| `test_revocation_graph_multi_domain_flow` | Graph | Multi-domain revocation loops correctly; all domains revoked |
+| `test_revocation_graph_partial_failure` | Graph | One failed revocation doesn't block remaining domains |
+
+---
+
+### Revocation Pebble Tests — `tests/test_revocation_pebble.py`
+
+Requires Pebble running on `https://localhost:14000`. LLM nodes are mocked.
+
+| Test | What it verifies |
+|---|---|
+| `test_revocation_graph_basic_against_pebble` | Issues a cert via the main graph, then revokes it via the revocation graph (reason=0); domain appears in `revoked_domains`. |
+| `test_revocation_reason_codes_against_pebble` | Same flow with reason=1 (keyCompromise); Pebble accepts the reason code. |
+| `test_revocation_nonexistent_cert_against_pebble` | Revocation attempted for a domain with no cert file on disk; domain lands in `failed_revocations` with a non-empty `error_log`. |
 
 ---
 
@@ -340,5 +499,5 @@ docker compose -f docker-compose.pebble.yml up -d
 |---|---|---|---|
 | `pebble` | `ghcr.io/letsencrypt/pebble:latest` | `14000` (ACME) · `15000` (mgmt) | `PEBBLE_VA_NOSLEEP=1` · `PEBBLE_VA_ALWAYS_VALID=1` |
 
-`PEBBLE_VA_ALWAYS_VALID=1` auto-approves all HTTP-01 challenges, so tests run
-without real DNS records or port-80 access.
+`PEBBLE_VA_ALWAYS_VALID=1` auto-approves all HTTP-01 and DNS-01 challenges, so
+tests run without real DNS records, TXT records, or port-80 access.
