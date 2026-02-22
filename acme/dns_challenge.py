@@ -280,10 +280,20 @@ class GoogleCloudDnsProvider(DnsProvider):
         self._credentials_path = credentials_path
 
     def _get_client(self):
-        import os
+        """Get Google Cloud DNS client, optionally with explicit credentials.
+
+        Does NOT mutate os.environ — passes credentials directly to the client
+        to avoid global state pollution and thread-safety issues.
+        """
         if self._credentials_path:
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self._credentials_path
-        return self._gcp_dns.Client(project=self._project_id)
+            from google.oauth2 import service_account
+            credentials = service_account.Credentials.from_service_account_file(
+                self._credentials_path
+            )
+            return self._gcp_dns.Client(project=self._project_id, credentials=credentials)
+        else:
+            # Fall back to application default credentials (env var, metadata server, etc.)
+            return self._gcp_dns.Client(project=self._project_id)
 
     def create_txt_record(self, domain: str, txt_value: str) -> None:
         client = self._get_client()
