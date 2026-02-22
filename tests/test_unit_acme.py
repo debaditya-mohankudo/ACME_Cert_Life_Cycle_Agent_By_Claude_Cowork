@@ -755,3 +755,73 @@ def test_eab_jws_minimum_16_byte_key(account_key):
     )
 
     assert all(isinstance(v, str) and len(v) > 0 for v in jws.values())
+
+
+# ─── Partial EAB configuration detection ──────────────────────────────────────
+
+@resp_lib.activate
+def test_eab_create_account_raises_when_only_key_id_set(account_key):
+    """EabAcmeClient raises ValueError when eab_key_id is set but eab_hmac_key is empty."""
+    client = ZeroSSLAcmeClient(eab_key_id="my-key-id", eab_hmac_key="",
+                               directory_url="https://acme.test/directory")
+    with pytest.raises(ValueError, match="eab_hmac_key is missing"):
+        client.create_account(account_key, FAKE_NONCE, FAKE_DIRECTORY)
+
+
+@resp_lib.activate
+def test_eab_create_account_raises_when_only_hmac_key_set(account_key):
+    """EabAcmeClient raises ValueError when eab_hmac_key is set but eab_key_id is empty."""
+    client = ZeroSSLAcmeClient(eab_key_id="", eab_hmac_key="dGVzdGtleXRlc3RrZXl0ZXN0a2V5",
+                               directory_url="https://acme.test/directory")
+    with pytest.raises(ValueError, match="eab_key_id is missing"):
+        client.create_account(account_key, FAKE_NONCE, FAKE_DIRECTORY)
+
+
+def test_config_rejects_partial_eab_key_id_only():
+    """Settings raises ValidationError at startup when only ACME_EAB_KEY_ID is set."""
+    from pydantic import ValidationError
+    from config import Settings
+    with pytest.raises(ValidationError, match="ACME_EAB_HMAC_KEY must be set"):
+        Settings(
+            CA_PROVIDER="digicert",
+            ACME_EAB_KEY_ID="my-key-id",
+            ACME_EAB_HMAC_KEY="",
+            MANAGED_DOMAINS=["example.com"],
+        )
+
+
+def test_config_rejects_partial_eab_hmac_only():
+    """Settings raises ValidationError at startup when only ACME_EAB_HMAC_KEY is set."""
+    from pydantic import ValidationError
+    from config import Settings
+    with pytest.raises(ValidationError, match="ACME_EAB_KEY_ID must be set"):
+        Settings(
+            CA_PROVIDER="zerossl",
+            ACME_EAB_KEY_ID="",
+            ACME_EAB_HMAC_KEY="dGVzdGtleXRlc3RrZXl0ZXN0a2V5",
+            MANAGED_DOMAINS=["example.com"],
+        )
+
+
+def test_config_accepts_both_eab_credentials_set():
+    """Settings accepts valid full EAB configuration."""
+    from config import Settings
+    s = Settings(
+        CA_PROVIDER="digicert",
+        ACME_EAB_KEY_ID="my-key-id",
+        ACME_EAB_HMAC_KEY="dGVzdGtleXRlc3RrZXl0ZXN0a2V5",
+        MANAGED_DOMAINS=["example.com"],
+    )
+    assert s.ACME_EAB_KEY_ID == "my-key-id"
+
+
+def test_config_accepts_both_eab_credentials_empty():
+    """Settings accepts both-empty EAB credentials (defers validation to CA)."""
+    from config import Settings
+    s = Settings(
+        CA_PROVIDER="digicert",
+        ACME_EAB_KEY_ID="",
+        ACME_EAB_HMAC_KEY="",
+        MANAGED_DOMAINS=["example.com"],
+    )
+    assert s.ACME_EAB_KEY_ID == ""

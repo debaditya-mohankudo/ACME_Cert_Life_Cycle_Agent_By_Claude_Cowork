@@ -152,6 +152,20 @@ class Settings(BaseSettings):
         return v
 
     @model_validator(mode="after")
+    def validate_eab_credentials(self) -> "Settings":
+        """Reject partial EAB configuration before any network call is made."""
+        if self.CA_PROVIDER in {"digicert", "zerossl", "sectigo"}:
+            key_set = bool(self.ACME_EAB_KEY_ID)
+            hmac_set = bool(self.ACME_EAB_HMAC_KEY)
+            if key_set != hmac_set:
+                missing = "ACME_EAB_HMAC_KEY" if key_set else "ACME_EAB_KEY_ID"
+                raise ValueError(
+                    f"{missing} must be set when CA_PROVIDER='{self.CA_PROVIDER}'. "
+                    f"Both ACME_EAB_KEY_ID and ACME_EAB_HMAC_KEY are required together."
+                )
+        return self
+
+    @model_validator(mode="after")
     def validate_webroot(self) -> "Settings":
         if self.HTTP_CHALLENGE_MODE == "webroot" and not self.WEBROOT_PATH:
             raise ValueError(

@@ -478,6 +478,12 @@ class EabAcmeClient(AcmeClient):
         """
         new_account_url = directory["newAccount"]
         payload: dict = {"termsOfServiceAgreed": True}
+        if bool(self.eab_key_id) != bool(self.eab_hmac_key):
+            missing = "eab_hmac_key" if self.eab_key_id else "eab_key_id"
+            raise ValueError(
+                f"EAB credentials are partially configured: {missing} is missing. "
+                f"Both eab_key_id and eab_hmac_key must be set together."
+            )
         if self.eab_key_id and self.eab_hmac_key:
             payload["externalAccountBinding"] = jwslib.create_eab_jws(
                 account_key, self.eab_key_id, self.eab_hmac_key, new_account_url
