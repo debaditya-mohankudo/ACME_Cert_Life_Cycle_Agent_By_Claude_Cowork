@@ -160,8 +160,12 @@ def test_sign_request_jwk_header(account_key):
     import base64
     protected = json.loads(base64.urlsafe_b64decode(body["protected"] + "=="))
     assert "jwk" in protected
+    assert "kid" not in protected  # jwk and kid are mutually exclusive
     assert protected["nonce"] == FAKE_NONCE
     assert protected["alg"] == "RS256"
+    # Payload must round-trip to the original dict (base64url-encoded JSON)
+    payload_decoded = json.loads(base64.urlsafe_b64decode(body["payload"] + "=="))
+    assert payload_decoded == {"test": True}
 
 
 def test_sign_request_kid_header(account_key):
@@ -220,6 +224,33 @@ def test_sign_request_rejects_whitespace_url(account_key):
             nonce=FAKE_NONCE,
             url="   ",
         )
+
+
+def test_sign_request_post_as_get_signature_is_valid(account_key):
+    """Case C: POST-as-GET — payload=None produces empty-string payload field and a valid RS256 signature."""
+    from cryptography.hazmat.primitives.asymmetric import padding
+    from cryptography.hazmat.primitives import hashes
+
+    body = jwslib.sign_request(
+        payload=None,
+        account_key=account_key,
+        nonce=FAKE_NONCE,
+        url="https://acme.test/authz/1",
+        account_url="https://acme.test/acct/1",
+    )
+
+    # Payload field must be the empty string (RFC 8555 §6.3)
+    assert body["payload"] == ""
+
+    # Reconstruct signing input: ASCII(base64url(protected) + "." + base64url(payload))
+    signing_input = f"{body['protected']}.{body['payload']}".encode("ascii")
+
+    # Decode signature from base64url
+    sig_bytes = base64.urlsafe_b64decode(body["signature"] + "==")
+
+    # Verify the RSA-SHA256 signature — raises InvalidSignature on failure
+    public_key = account_key.key.public_key()
+    public_key.verify(sig_bytes, signing_input, padding.PKCS1v15(), hashes.SHA256())
 
 
 def test_save_and_load_account_key(account_key, tmp_path):
