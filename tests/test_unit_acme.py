@@ -479,8 +479,10 @@ def test_eab_create_account_injects_eab(account_key):
         headers={"Location": "https://acme.test/acct/99", "Replay-Nonce": "eabnonce"},
         status=201,
     )
+    # Use a valid 32-byte base64url-encoded HMAC key (per RFC 8555 minimum is 16 bytes)
+    valid_hmac_key = base64.urlsafe_b64encode(b"a" * 32).decode().rstrip("=")
     client = ZeroSSLAcmeClient(
-        eab_key_id="my-kid", eab_hmac_key="dGVzdGtleQ",
+        eab_key_id="my-kid", eab_hmac_key=valid_hmac_key,
         directory_url="https://acme.test/directory",
     )
     account_url, new_nonce = client.create_account(account_key, FAKE_NONCE, FAKE_DIRECTORY)
@@ -508,3 +510,84 @@ def test_eab_create_account_omits_eab_when_credentials_empty(account_key):
     posted = json.loads(resp_lib.calls[0].request.body)
     payload = json.loads(base64.urlsafe_b64decode(posted["payload"] + "=="))
     assert "externalAccountBinding" not in payload
+
+
+def test_eab_jws_rejects_empty_eab_kid(account_key):
+    """create_eab_jws raises ValueError when eab_kid is empty."""
+    with pytest.raises(ValueError, match="EAB key ID.*cannot be empty"):
+        jwslib.create_eab_jws(
+            account_key,
+            eab_kid="",  # Empty
+            eab_hmac_key_b64url="dGVzdGtleXRlc3RrZXl0ZXN0a2V5",  # Valid base64url (>16 bytes)
+            new_account_url="https://acme.test/newAccount",
+        )
+
+
+def test_eab_jws_rejects_empty_eab_hmac_key(account_key):
+    """create_eab_jws raises ValueError when eab_hmac_key_b64url is empty."""
+    with pytest.raises(ValueError, match="EAB HMAC key.*cannot be empty"):
+        jwslib.create_eab_jws(
+            account_key,
+            eab_kid="test-kid",
+            eab_hmac_key_b64url="",  # Empty
+            new_account_url="https://acme.test/newAccount",
+        )
+
+
+def test_eab_jws_rejects_short_hmac_key(account_key):
+    """create_eab_jws raises ValueError when HMAC key < 16 bytes (RFC 8555 minimum)."""
+    import base64
+    # Create a base64url string that decodes to only 8 bytes
+    short_key = base64.urlsafe_b64encode(b"12345678").decode().rstrip("=")
+
+    with pytest.raises(ValueError, match="EAB HMAC key is too short.*16 bytes"):
+        jwslib.create_eab_jws(
+            account_key,
+            eab_kid="test-kid",
+            eab_hmac_key_b64url=short_key,  # Only 8 bytes when decoded
+            new_account_url="https://acme.test/newAccount",
+        )
+
+
+def test_eab_jws_succeeds_with_valid_inputs(account_key):
+    """create_eab_jws succeeds and returns well-formed JWS with valid inputs."""
+    import base64
+    # Create a valid base64url HMAC key (32 bytes = 256 bits)
+    valid_key = base64.urlsafe_b64encode(b"a" * 32).decode().rstrip("=")
+
+    jws = jwslib.create_eab_jws(
+        account_key,
+        eab_kid="test-kid",
+        eab_hmac_key_b64url=valid_key,
+        new_account_url="https://acme.test/newAccount",
+    )
+
+    # Validate JWS structure
+    assert isinstance(jws, dict)
+    assert "protected" in jws
+    assert "payload" in jws
+    assert "signature" in jws
+    assert all(isinstance(v, str) and len(v) > 0 for v in jws.values())
+
+    # Verify protected header is valid base64url
+    protected_decoded = base64.urlsafe_b64decode(jws["protected"] + "==")
+    protected_obj = json.loads(protected_decoded)
+    assert protected_obj["alg"] == "HS256"
+    assert protected_obj["kid"] == "test-kid"
+    assert protected_obj["url"] == "https://acme.test/newAccount"
+
+
+def test_eab_jws_minimum_16_byte_key(account_key):
+    """create_eab_jws accepts 16-byte HMAC key (minimum per RFC 8555)."""
+    import base64
+    # Create exactly 16 bytes (128 bits)
+    min_key = base64.urlsafe_b64encode(b"a" * 16).decode().rstrip("=")
+
+    jws = jwslib.create_eab_jws(
+        account_key,
+        eab_kid="test-kid",
+        eab_hmac_key_b64url=min_key,
+        new_account_url="https://acme.test/newAccount",
+    )
+
+    assert all(isinstance(v, str) and len(v) > 0 for v in jws.values())

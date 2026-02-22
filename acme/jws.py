@@ -148,9 +148,34 @@ def create_eab_jws(
       - Protected header: {"alg":"HS256","kid":<eab_kid>,"url":<newAccount url>}
       - Payload: the account public JWK
       - Signature: HMAC-SHA256 keyed with the decoded EAB HMAC key
+
+    Raises ValueError if:
+      - eab_kid is empty
+      - eab_hmac_key_b64url is not valid base64url
+      - Decoded HMAC key is < 16 bytes (per RFC 8555 minimum)
     """
-    # Decode the base64url HMAC key
-    hmac_key = _b64url_decode(eab_hmac_key_b64url)
+    # Validate eab_kid
+    if not eab_kid or not eab_kid.strip():
+        raise ValueError("EAB key ID (eab_kid) cannot be empty")
+
+    # Validate eab_hmac_key_b64url format and decode
+    if not eab_hmac_key_b64url or not eab_hmac_key_b64url.strip():
+        raise ValueError("EAB HMAC key (eab_hmac_key_b64url) cannot be empty")
+
+    try:
+        hmac_key = _b64url_decode(eab_hmac_key_b64url)
+    except Exception as exc:
+        raise ValueError(
+            f"EAB HMAC key is not valid base64url: {exc!s}. "
+            f"Must be base64url-encoded bytes."
+        ) from exc
+
+    # Validate HMAC key length (RFC 8555 requires at least 128 bits = 16 bytes)
+    if len(hmac_key) < 16:
+        raise ValueError(
+            f"EAB HMAC key is too short: {len(hmac_key)} bytes. "
+            f"Must be at least 16 bytes (128 bits) per RFC 8555."
+        )
 
     pub_jwk = account_jwk.public_key().fields_to_partial_json()
     pub_jwk["kty"] = "RSA"
@@ -166,11 +191,20 @@ def create_eab_jws(
     signing_input = f"{protected}.{payload}".encode()
     mac = hmac.new(hmac_key, signing_input, hashlib.sha256).digest()
 
-    return {
+    jws = {
         "protected": protected,
         "payload": payload,
         "signature": _b64url(mac),
     }
+
+    # Validate JWS structure: all fields must be non-empty base64url strings
+    for field in ("protected", "payload", "signature"):
+        if not jws[field]:
+            raise ValueError(f"Malformed JWS: {field} is empty")
+        if not isinstance(jws[field], str):
+            raise ValueError(f"Malformed JWS: {field} is not a string")
+
+    return jws
 
 
 # ─── Internal helpers ─────────────────────────────────────────────────────────
