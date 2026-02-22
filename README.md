@@ -20,6 +20,7 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 | Certificate revocation | [REVOCATION_IMPLEMENTATION.md](doc/REVOCATION_IMPLEMENTATION.md) |
 | Certificate storage layout | [CERTIFICATE_STORAGE.md](doc/README_CERTIFICATE_STORAGE.md) |
 | HTTP-01 challenge modes | [HTTP_CHALLENGE_MODES.md](doc/README_HTTP_CHALLENGE_MODES.md) |
+| HTTP-01 validation explained | [HTTP_01_VALIDATION_EXPLAINED.md](doc/HTTP_01_VALIDATION_EXPLAINED.md) |
 | LLM nodes and provider support | [LLM_NODES.md](doc/README_LLM_NODES.md) |
 | Let's Encrypt | [LETS_ENCRYPT.md](doc/README_LETS_ENCRYPT.md) |
 | Observability | [OBSERVABILITY.md](doc/README_OBSERVABILITY.md) |
