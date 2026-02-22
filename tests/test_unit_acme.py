@@ -86,6 +86,62 @@ def test_jwk_thumbprint_rfc7638_canonical_includes_kty(account_key):
     assert list(canonical_dict.keys()) == ["e", "kty", "n"]
 
 
+def test_jwk_thumbprint_matches_independent_rfc7638_computation(account_key):
+    """RFC 7638 §3: thumbprint must match a value computed from raw RSA numbers, bypassing josepy.
+
+    The existing test derives 'expected' via fields_to_partial_json() — the same josepy path
+    the implementation uses, so a consistent josepy bug would make both sides wrong and the
+    test would still pass.  This test computes expected entirely from cryptography primitives.
+    """
+    import hashlib
+
+    pub_numbers = account_key.key.public_key().public_numbers()
+
+    def int_to_b64url(n: int) -> str:
+        byte_len = (n.bit_length() + 7) // 8
+        return base64.urlsafe_b64encode(n.to_bytes(byte_len, "big")).rstrip(b"=").decode()
+
+    e_b64 = int_to_b64url(pub_numbers.e)
+    n_b64 = int_to_b64url(pub_numbers.n)
+
+    canonical = json.dumps(
+        {"e": e_b64, "kty": "RSA", "n": n_b64},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    expected = base64.urlsafe_b64encode(
+        hashlib.sha256(canonical.encode()).digest()
+    ).rstrip(b"=").decode()
+
+    assert jwslib.compute_jwk_thumbprint(account_key) == expected
+
+
+def test_jwk_thumbprint_differs_when_extra_fields_included(account_key):
+    """RFC 7638 §3.2: canonical form must use exactly {e, kty, n} — extra fields change the digest.
+
+    Verifies that the function doesn't accidentally include fields like 'alg' or 'use',
+    which would silently produce a thumbprint incompatible with every ACME server.
+    """
+    import hashlib
+
+    pub = account_key.public_key()
+    fields = pub.fields_to_partial_json()
+
+    correct = jwslib.compute_jwk_thumbprint(account_key)
+
+    # Add an extra field — any JOSE-valid addition that is NOT in {e, kty, n}
+    wrong_dict = {"alg": "RS256", "e": fields["e"], "kty": "RSA", "n": fields["n"]}
+    wrong_canonical = json.dumps(wrong_dict, sort_keys=True, separators=(",", ":"))
+    wrong_thumbprint = base64.urlsafe_b64encode(
+        hashlib.sha256(wrong_canonical.encode()).digest()
+    ).rstrip(b"=").decode()
+
+    assert correct != wrong_thumbprint, (
+        "Thumbprint must change when extra fields are added — "
+        "canonical form is strictly {e, kty, n}"
+    )
+
+
 def test_key_authorization(account_key):
     token = "sometoken"
     key_auth = jwslib.compute_key_authorization(token, account_key)
