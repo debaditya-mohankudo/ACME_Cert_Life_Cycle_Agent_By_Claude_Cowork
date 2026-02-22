@@ -153,12 +153,16 @@ protected header. The agent:
 
 1. Fetches a fresh nonce via `HEAD /newNonce` before each request
    ([acme/client.py](../acme/client.py)).
-2. Includes the nonce in the signed header — it cannot be stripped without
+2. Validates the nonce is non-empty **before signing** — `sign_request()` raises
+   `ValueError` immediately if `nonce` is empty or whitespace-only, surfacing the
+   failure at the call site rather than letting the CA return `badNonce`
+   ([acme/jws.py](../acme/jws.py)).
+3. Includes the nonce in the signed header — it cannot be stripped without
    invalidating the signature.
-3. On a `badNonce` error response, extracts the fresh nonce from the
+4. On a `badNonce` error response, extracts the fresh nonce from the
    `Replay-Nonce` response header and retries (up to `_NONCE_RETRIES = 3`
    times) without an extra round-trip.
-4. Threads `current_nonce` through `AgentState` so every node picks up the
+5. Threads `current_nonce` through `AgentState` so every node picks up the
    latest nonce automatically.
 
 **Threat addressed:** Replay attacks — an attacker capturing a signed ACME request
@@ -171,6 +175,7 @@ The signed protected header always includes both the nonce **and the target URL*
 
 ```python
 # acme/jws.py — sign_request
+# Both nonce and url are validated non-empty before this point
 header = {
     "alg": "RS256",
     "nonce": nonce,
@@ -178,6 +183,10 @@ header = {
     ...
 }
 ```
+
+`sign_request()` validates that `url` is non-empty before building the header —
+an empty URL would produce a JWS bound to no endpoint, which every ACME server
+would reject. This guard mirrors the nonce pre-condition check.
 
 Including the URL in the signature binds each request to a specific ACME endpoint.
 A signed `newOrder` request cannot be replayed against `revokeCert`.

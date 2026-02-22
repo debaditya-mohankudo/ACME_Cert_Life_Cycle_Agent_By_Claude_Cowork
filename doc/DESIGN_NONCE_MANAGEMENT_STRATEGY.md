@@ -346,7 +346,21 @@ def order_creation(context: DomainContext) -> DomainContext:
 
 The current implementation has defensive safeguards:
 
-### 1. Nonce Retry Logic
+### 1. Pre-Signing Nonce Validation
+```python
+# From acme/jws.py — sign_request()
+if not nonce or not nonce.strip():
+    raise ValueError("nonce must not be empty — call get_nonce() before signing")
+if not url or not url.strip():
+    raise ValueError("url must not be empty")
+```
+
+**Effect:** An empty or whitespace-only nonce is caught at the call site — before
+any JWS is built and before any network call is made. Failure surfaces as a
+`ValueError` in the signing layer rather than a `badNonce` response from the CA.
+The URL guard is symmetric: an empty URL would produce a JWS bound to no endpoint.
+
+### 2. Nonce Retry Logic
 ```python
 # From acme/client.py
 if "badNonce" in error_body.get("type", "") and attempt < _NONCE_RETRIES - 1:
@@ -358,14 +372,14 @@ if "badNonce" in error_body.get("type", "") and attempt < _NONCE_RETRIES - 1:
 
 **Effect:** If a nonce is reused, ACME rejects it, and the client automatically retries with a fresh nonce from the error response.
 
-### 2. Assertion on Nonce Presence
+### 3. Assertion on Nonce Presence in Response
 ```python
 # From acme/client.py
 if not nonce:
     raise AcmeError(resp.status_code, {"detail": "No Replay-Nonce header"})
 ```
 
-**Effect:** Missing nonce is detected immediately; never silently ignored.
+**Effect:** Missing nonce in a CA response is detected immediately; never silently ignored.
 
 ---
 
@@ -373,6 +387,8 @@ if not nonce:
 
 ### Current Tests
 - ✅ `test_unit_acme.py` — nonce handling in sequential calls
+- ✅ `test_unit_acme.py` — `test_sign_request_rejects_empty_nonce` / `test_sign_request_rejects_whitespace_nonce` — pre-signing guard
+- ✅ `test_unit_acme.py` — `test_sign_request_rejects_empty_url` / `test_sign_request_rejects_whitespace_url` — URL pre-condition guard
 - ✅ `test_unit_failure_scenarios.py` — `test_bad_nonce_retries_and_succeeds` — nonce retry logic
 - ✅ `test_integration_pebble.py` — full lifecycle with real nonce exchange
 
