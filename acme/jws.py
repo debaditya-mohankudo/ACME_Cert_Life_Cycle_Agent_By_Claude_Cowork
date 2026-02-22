@@ -72,12 +72,17 @@ def compute_jwk_thumbprint(jwk: JWKRSA) -> str:
     Compute the base64url SHA-256 thumbprint of the public JWK.
     Used to construct the HTTP-01 key-authorization:
       key_authorization = token + "." + thumbprint
+
+    RFC 7638 §3.2 canonical form for RSA: {"e":"...","kty":"RSA","n":"..."}
+    josepy's fields_to_partial_json() returns only {e, n} — kty is missing.
+    We add it explicitly so the digest matches what ACME servers expect.
     """
-    # josepy exposes the public key components via .public_key()
     pub = jwk.public_key()
-    # Canonical JSON representation per RFC 7638
-    pub_dict = pub.fields_to_partial_json()
-    canonical = json.dumps(pub_dict, sort_keys=True, separators=(",", ":"))
+    fields = pub.fields_to_partial_json()
+    # RFC 7638 §3.2: required members for RSA are {e, kty, n} in alphabetical order.
+    # fields_to_partial_json() omits "kty" — include it explicitly.
+    canonical_dict = {"e": fields["e"], "kty": "RSA", "n": fields["n"]}
+    canonical = json.dumps(canonical_dict, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(canonical.encode()).digest()
     return _b64url(digest)
 
@@ -103,7 +108,14 @@ def sign_request(
     If *account_url* is None the JWS header uses the full JWK (used for
     newAccount).  If *account_url* is set the header uses the shorter "kid"
     form (used for all subsequent requests).
+
+    Raises ValueError if nonce or url is empty — an empty nonce produces a
+    syntactically valid JWS that every ACME server will reject with badNonce.
     """
+    if not nonce or not nonce.strip():
+        raise ValueError("nonce must not be empty — call get_nonce() before signing")
+    if not url or not url.strip():
+        raise ValueError("url must not be empty")
     header: dict[str, Any] = {
         "alg": "RS256",
         "nonce": nonce,

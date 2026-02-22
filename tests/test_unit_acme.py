@@ -64,6 +64,28 @@ def test_jwk_thumbprint_is_deterministic(account_key):
     assert len(t1) > 10
 
 
+def test_jwk_thumbprint_rfc7638_canonical_includes_kty(account_key):
+    """RFC 7638 §3.2: canonical JSON for RSA must include {e, kty, n} — kty must not be absent."""
+    import hashlib
+
+    pub = account_key.public_key()
+    fields = pub.fields_to_partial_json()
+
+    # The canonical dict the fixed implementation builds
+    canonical_dict = {"e": fields["e"], "kty": "RSA", "n": fields["n"]}
+    canonical_json = json.dumps(canonical_dict, sort_keys=True, separators=(",", ":"))
+    expected_digest = hashlib.sha256(canonical_json.encode()).digest()
+    expected_thumbprint = base64.urlsafe_b64encode(expected_digest).rstrip(b"=").decode()
+
+    actual_thumbprint = jwslib.compute_jwk_thumbprint(account_key)
+
+    assert actual_thumbprint == expected_thumbprint
+    # Canonical JSON must contain "kty":"RSA" — the earlier broken code omitted this
+    assert '"kty":"RSA"' in canonical_json
+    # Canonical JSON must be alphabetically sorted: e < kty < n
+    assert list(canonical_dict.keys()) == ["e", "kty", "n"]
+
+
 def test_key_authorization(account_key):
     token = "sometoken"
     key_auth = jwslib.compute_key_authorization(token, account_key)
@@ -98,6 +120,50 @@ def test_sign_request_kid_header(account_key):
     protected = json.loads(base64.urlsafe_b64decode(body["protected"] + "=="))
     assert protected["kid"] == "https://acme.test/acct/1"
     assert "jwk" not in protected
+
+
+def test_sign_request_rejects_empty_nonce(account_key):
+    """sign_request raises ValueError for empty nonce — prevents silent badNonce from ACME server."""
+    with pytest.raises(ValueError, match="nonce must not be empty"):
+        jwslib.sign_request(
+            payload={"test": True},
+            account_key=account_key,
+            nonce="",
+            url="https://acme.test/newAccount",
+        )
+
+
+def test_sign_request_rejects_whitespace_nonce(account_key):
+    """sign_request raises ValueError for whitespace-only nonce."""
+    with pytest.raises(ValueError, match="nonce must not be empty"):
+        jwslib.sign_request(
+            payload={"test": True},
+            account_key=account_key,
+            nonce="   ",
+            url="https://acme.test/newAccount",
+        )
+
+
+def test_sign_request_rejects_empty_url(account_key):
+    """sign_request raises ValueError for empty url."""
+    with pytest.raises(ValueError, match="url must not be empty"):
+        jwslib.sign_request(
+            payload={"test": True},
+            account_key=account_key,
+            nonce=FAKE_NONCE,
+            url="",
+        )
+
+
+def test_sign_request_rejects_whitespace_url(account_key):
+    """sign_request raises ValueError for whitespace-only url."""
+    with pytest.raises(ValueError, match="url must not be empty"):
+        jwslib.sign_request(
+            payload={"test": True},
+            account_key=account_key,
+            nonce=FAKE_NONCE,
+            url="   ",
+        )
 
 
 def test_save_and_load_account_key(account_key, tmp_path):
