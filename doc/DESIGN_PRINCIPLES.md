@@ -11,6 +11,12 @@ The `AcmeClient` holds no mutable state. Every value the client needs — the cu
 
 **Why:** A stateless client is trivially testable, reproducible, and safe to recreate across nodes or machines. Hiding nonce in a client instance breaks checkpoint/restore and makes parallelization unsafe. The small cost of passing one extra argument is worth the gains in debuggability.
 
+**Nonce ownership:** `AgentState.current_nonce` is the single source of truth for nonces between graph node boundaries. The `AcmeClient` must never store a nonce as instance state (`self.*`). Method-local nonce handling is acceptable and in two cases RFC-required:
+- `_post_signed` consumes a fresh nonce from a `badNonce` error response within the same call (RFC 8555 § 6.5)
+- `get_authorization` / `get_order` fetch a one-shot nonce for a single POST-as-GET poll iteration
+
+Instance-level nonce caching across calls is never acceptable, regardless of perceived performance benefit.
+
 → Full analysis: [DESIGN_STATEFUL_CLIENT_ANALYSIS.md](DESIGN_STATEFUL_CLIENT_ANALYSIS.md)
 
 ---
