@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -62,28 +63,22 @@ class TestAtomicWriteText:
         assert path.read_text() == "content"
 
     def test_atomic_write_text_cleans_up_temp_on_error(self, tmp_dir):
-        """Verify temp files are cleaned up even on write error."""
+        """Verify temp files are cleaned up even on write error.
+
+        Uses mock.patch to inject a failure at os.replace — this is root-safe
+        (filesystem permission tricks don't work when Docker runs as root).
+        The test verifies the except-block cleanup runs and no .tmp files remain.
+        """
         path = tmp_dir / "test.txt"
 
-        # Try to write to a read-only directory (simulating error)
-        os_mkdir = os.mkdir
-        error_count = [0]
+        # Patch os.replace to fail after the temp file has been written
+        with patch("os.replace", side_effect=PermissionError("Simulated permission error")):
+            with pytest.raises(PermissionError):
+                atomic_write_text(path, "content")
 
-        def failing_mkdir(*args, **kwargs):
-            error_count[0] += 1
-            if error_count[0] == 1:  # Fail on the first mkdir inside atomic_write_text
-                raise PermissionError("Simulated permission error")
-            return os_mkdir(*args, **kwargs)
-
-        # This will fail, but temp file should still be cleaned up
-        with pytest.raises(PermissionError):
-            # Create a read-only directory to trigger failure
-            ro_dir = tmp_dir / "readonly"
-            ro_dir.mkdir(mode=0o444)
-            try:
-                atomic_write_text(ro_dir / "test.txt", "content")
-            finally:
-                ro_dir.chmod(0o755)
+        # The except block in atomic_write_text should have cleaned up the temp file
+        temp_files = list(tmp_dir.glob(f".{path.name}.*.tmp"))
+        assert len(temp_files) == 0, f"Temp files not cleaned up: {temp_files}"
 
 
 class TestAtomicWriteBytes:
