@@ -184,4 +184,9 @@ def initial_state(
         "retry_not_before": None,
         "max_retries": max_retries,
         "cert_metadata": {},
+        "revocation_targets": [],
+        "current_revocation_domain": None,
+        "revocation_reason": 0,
+        "revoked_domains": [],
+        "failed_revocations": [],
     }

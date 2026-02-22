@@ -210,6 +210,41 @@ START
                         END
 ```
 
+### 3.4 Revocation Subgraph Topology
+
+A separate `agent/revocation_graph.py` handles certificate revocation (RFC 8555 § 7.6):
+
+```
+START
+  │
+  ▼
+[revocation_account_setup]
+  │  Register/retrieve ACME account (same as renewal)
+  │
+  ▼
+[pick_next_revocation_domain] ◄──────────────┐
+  │  Pop domain from revocation_targets      │
+  │                                          │
+  ▼                                          │
+[cert_revoker]                               │
+  │  POST /revokeCert for current domain     │
+  │  (reads cert.pem from disk; fails        │
+  │   gracefully if not found)               │
+  │                                          │
+  ▼                                          │
+[revocation_loop_router] ─ next_domain ──────┘
+  │
+  └── all_done ──► [revocation_reporter] ◄── LLM NODE
+                         │
+                        END
+```
+
+**Key differences from renewal:**
+- No error_handler / retry logic — failures are logged and the loop continues (best-effort)
+- Triggered on-demand (via `--revoke-cert` CLI), not scheduled
+- Requires domains to have issued certificates (reads from disk)
+- Accepts an RFC 5280 reason code (0=unspecified, 1=keyCompromise, 4=superseded, 5=cessationOfOperation)
+
 ---
 
 ## 4. Project Structure

@@ -111,6 +111,18 @@ Every node that makes a network call is a named node in the LangGraph graph. No 
 
 ---
 
+## 11. Revocation as a Separate Subgraph
+
+Certificate revocation uses a dedicated LangGraph state machine (`agent/revocation_graph.py`) rather than being integrated into the renewal graph. The revocation subgraph is simpler: account setup → loop through domains → revoke each → reporter.
+
+**Why:** Revocation has different semantics from renewal. It loops at domain granularity (no retry handler), produces no new certificates, and is typically triggered on-demand rather than scheduled. A separate graph keeps the renewal graph focused and makes revocation behavior explicit.
+
+**No retry logic:** Revocation failures (404 Not Found, 403 Unauthorized) are logged and the loop continues (best-effort). Unlike renewal, which retries transient errors, revocation failures typically indicate protocol or policy violations that retrying won't fix.
+
+→ See: [agent/revocation_graph.py](../agent/revocation_graph.py), [agent/nodes/revoker.py](../agent/nodes/revoker.py), [main.py](../main.py) (`run_revocation()`)
+
+---
+
 ## Quick Reference
 
 | Principle | Short Form | Key File |

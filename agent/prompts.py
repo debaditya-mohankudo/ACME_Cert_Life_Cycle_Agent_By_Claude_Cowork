@@ -87,3 +87,18 @@ Write a 3–5 sentence summary covering:
 2. Any domains that need immediate operator attention
 3. A recommendation for the next check (e.g., "check again tomorrow" or "lower renewal threshold")
 """
+
+# ── revocation_reporter ────────────────────────────────────────────────────
+
+REVOCATION_REPORTER_USER = """\
+Certificate revocation run completed.
+
+Revoked certificates:   {revoked}
+Failed revocations:     {failed}
+Revocation reason code: {reason}
+Errors logged:
+{error_log}
+
+Write a 2–4 sentence summary covering overall result, any failures needing
+operator attention, and whether a renewal cycle should follow.
+"""

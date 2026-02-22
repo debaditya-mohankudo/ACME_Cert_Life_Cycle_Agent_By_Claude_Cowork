@@ -101,6 +101,8 @@ python main.py --once
 python main.py --schedule
 python main.py --once --domains api.example.com
 python main.py --once --checkpoint
+python main.py --revoke-cert example.com
+python main.py --revoke-cert example.com api.example.com --reason 4
 ```
 
 ### Install dependencies
@@ -143,10 +145,10 @@ config.py       main.py
 
 llm/factory.py
 
-agent/state.py  agent/graph.py  agent/prompts.py
+agent/state.py  agent/graph.py  agent/revocation_graph.py  agent/prompts.py
 agent/nodes/    planner  scanner  account  order  challenge
                 csr  finalizer  storage  reporter  error_handler
-                retry_scheduler  router
+                retry_scheduler  router  revoker  revocation_router
 
 acme/client.py  acme/jws.py  acme/crypto.py  acme/http_challenge.py
 storage/atomic.py  storage/filesystem.py

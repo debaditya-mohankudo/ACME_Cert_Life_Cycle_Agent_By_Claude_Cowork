@@ -84,3 +84,10 @@ class AgentState(TypedDict):
 
     # ── Per-domain metadata ────────────────────────────────────────────────
     cert_metadata: Dict[str, dict]    # domain → metadata dict from storage_manager
+
+    # ── Revocation flow ────────────────────────────────────────────────────
+    revocation_targets: List[str]            # domains queued for revocation
+    current_revocation_domain: Optional[str] # domain being revoked right now
+    revocation_reason: int                   # RFC 5280: 0=unspecified,1=keyCompromise,4=superseded,5=cessation
+    revoked_domains: List[str]               # successfully revoked
+    failed_revocations: List[str]            # domains that failed revocation
