@@ -1,10 +1,10 @@
 # Test Results — ACME Certificate Lifecycle Agent
 
 **Date:** 2026-02-22
-**Time:** — UTC
+**Time:** Latest run
 **Platform:** macOS 25.3 · arm64
 **Python:** 3.12.8
-**Pebble:** Running (all integration tests passed)
+**Pebble:** Running (all integration tests executed and passed)
 
 ---
 
@@ -20,15 +20,23 @@
 | Retry Scheduler (`test_retry_scheduler.py`) | 11 | 11 | 0 | 0 | — |
 | Knowledge Base (`test_kb.py`) | 5 | 5 | 0 | 0 | — |
 | Planner Validation (`test_planner_validation.py`) | 12 | 12 | 0 | 0 | — |
-| Lifecycle (`test_lifecycle_pebble.py`) | 2 | 2 | 0 | 0 | — |
-| Integration (`test_integration_pebble.py`) | 4 | 4 | 0 | 0 | — |
+| Lifecycle Pebble (`test_lifecycle_pebble.py`) | 2 | 2 | 0 | 0 | — |
+| Integration Pebble (`test_integration_pebble.py`) | 4 | 4 | 0 | 0 | — |
 | Revocation (`test_revocation.py`) | 15 | 15 | 0 | 0 | — |
 | Revocation Pebble (`test_revocation_pebble.py`) | 3 | 3 | 0 | 0 | — |
-| **Total** | **166** | **166** | **0** | **0** | **19.85 s** |
+| **Total (with Pebble)** | **175** | **175** | **0** | **0** | **37.12 s** |
 
 ---
 
 ## Recent Improvements (2026-02-22)
+
+### Full Test Suite with Pebble Integration (Latest)
+- **175 total tests passing** including all Pebble integration tests
+  - 166 unit tests (no Pebble required)
+  - 4 integration tests (HTTP-01 and DNS-01 renewal flows)
+  - 2 lifecycle tests (certificate issue → renew → revoke)
+  - 3 revocation tests (certificate revocation against Pebble)
+- All tests execute in 37.12 seconds with Pebble running
 
 ### POST-as-GET Compliance Tests
 - **3 new tests for RFC 8555 §6.2 POST-as-GET verification**:
@@ -47,8 +55,8 @@ platform darwin -- Python 3.12.8, pytest-9.0.2, pluggy-1.6.0 -- /Users/debaditya
 rootdir: /Users/debaditya/workspace/Acme_certificate_lifecycle_agent
 configfile: pyproject.toml
 plugins: anyio-4.12.1, langsmith-0.7.6, asyncio-1.3.0
-asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None
-collected 166 items
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None
+collected 175 items
 
 tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_file PASSED [  0%]
 tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_overwrites_existing PASSED [  1%]
@@ -209,7 +217,7 @@ tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PAS
 tests/test_unit_failure_scenarios.py::test_finalize_order_malformed_json_response PASSED [ 99%]
 tests/test_unit_failure_scenarios.py::test_rate_limit_429_with_retry_after PASSED [100%]
 
-============================== 166 passed in 19.85s ==============================
+============================== 175 passed in 37.12s ==============================
 ```
 
 ---
