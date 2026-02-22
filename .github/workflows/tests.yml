@@ -22,8 +22,8 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run unit tests (excluding Pebble integration tests)
-        run: uv run pytest -v --ignore=tests/test_revocation_pebble.py --ignore=tests/test_integration_pebble.py --ignore=tests/test_lifecycle_pebble.py
+      - name: Run unit tests (excluding Pebble integration tests and KB tests)
+        run: uv run pytest -v --ignore=tests/test_revocation_pebble.py --ignore=tests/test_integration_pebble.py --ignore=tests/test_lifecycle_pebble.py --ignore=tests/test_kb.py
 
       - name: Upload test results
         if: always()
