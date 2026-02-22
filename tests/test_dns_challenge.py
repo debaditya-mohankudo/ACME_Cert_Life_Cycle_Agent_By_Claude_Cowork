@@ -70,6 +70,49 @@ class TestComputeDnsTxtValue:
         valid_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
         assert all(c in valid_chars for c in result)
 
+    def test_output_length_always_43(self):
+        """SHA-256 digest (32 bytes) encodes to exactly 43 base64url chars."""
+        from acme.dns_challenge import compute_dns_txt_value
+
+        # Test various input lengths: minimal, typical, very long
+        test_inputs = [
+            "a.b",  # minimal
+            "token.thumbprint",  # typical
+            "x" * 100 + "." + "y" * 100,  # long
+            "evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ+PCt92wr+oA.nysaScAHF4R6FyQ7UGnL1hYu3Dg6EBKZ2TqkPl1JXIA",
+        ]
+        for key_auth in test_inputs:
+            result = compute_dns_txt_value(key_auth)
+            # SHA-256 → 32 bytes → base64url without padding = always 43 chars
+            assert len(result) == 43, f"Expected 43 chars for {key_auth!r}, got {len(result)}"
+
+    def test_minimal_key_auth(self):
+        """Minimal key_auth ('a.b') produces consistent, valid output."""
+        from acme.dns_challenge import compute_dns_txt_value
+
+        result = compute_dns_txt_value("a.b")
+        # Verify against manual calculation
+        expected_bytes = hashlib.sha256(b"a.b").digest()
+        expected = base64.urlsafe_b64encode(expected_bytes).rstrip(b"=").decode("ascii")
+        assert result == expected
+        assert len(result) == 43
+        assert "=" not in result
+
+    def test_with_real_jwk_thumbprint_characters(self):
+        """Real JWK thumbprints contain base64url characters (-, _)."""
+        from acme.dns_challenge import compute_dns_txt_value
+
+        # Real JWK thumbprint format: base64url(JSON hash)
+        # Includes URL-safe chars like - and _
+        key_auth = "token-ABC_xyz.thumbprint-123_XYZ"
+        result = compute_dns_txt_value(key_auth)
+
+        # Verify it matches manual calculation
+        expected_bytes = hashlib.sha256(key_auth.encode("ascii")).digest()
+        expected = base64.urlsafe_b64encode(expected_bytes).rstrip(b"=").decode("ascii")
+        assert result == expected
+        assert "=" not in result
+
 
 # ─── make_dns_provider ────────────────────────────────────────────────────────
 
