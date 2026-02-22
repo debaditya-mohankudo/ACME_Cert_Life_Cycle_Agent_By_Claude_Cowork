@@ -194,6 +194,70 @@ def test_create_account_without_eab(account_key):
 
 
 @resp_lib.activate
+def test_lookup_account_returns_none_when_account_does_not_exist(account_key):
+    """lookup_account returns (None, nonce) when account doesn't exist (400 accountDoesNotExist)."""
+    resp_lib.add(
+        resp_lib.POST,
+        "https://acme.test/newAccount",
+        json={"type": "urn:acme:error:accountDoesNotExist", "detail": "Account does not exist"},
+        headers={"Replay-Nonce": "lookupnonce"},
+        status=400,
+    )
+    client = AcmeClient("https://acme.test/directory")
+    account_url, new_nonce = client.lookup_account(
+        account_key=account_key,
+        nonce=FAKE_NONCE,
+        directory=FAKE_DIRECTORY,
+    )
+    assert account_url is None
+    assert new_nonce == "lookupnonce"
+
+
+@resp_lib.activate
+def test_lookup_account_raises_for_other_400_errors(account_key):
+    """lookup_account raises AcmeError for 400 errors that are NOT accountDoesNotExist."""
+    resp_lib.add(
+        resp_lib.POST,
+        "https://acme.test/newAccount",
+        json={"type": "urn:acme:error:malformed", "detail": "Request body was malformed"},
+        headers={"Replay-Nonce": "lookupnonce"},
+        status=400,
+    )
+    client = AcmeClient("https://acme.test/directory")
+    with pytest.raises(AcmeError) as exc_info:
+        client.lookup_account(
+            account_key=account_key,
+            nonce=FAKE_NONCE,
+            directory=FAKE_DIRECTORY,
+        )
+    assert exc_info.value.status_code == 400
+    assert "malformed" in exc_info.value.body.get("type", "")
+
+
+@resp_lib.activate
+def test_lookup_account_returns_url_when_account_exists(account_key):
+    """lookup_account returns (account_url, nonce) when account exists."""
+    resp_lib.add(
+        resp_lib.POST,
+        "https://acme.test/newAccount",
+        json={"status": "valid"},
+        headers={
+            "Location": "https://acme.test/acct/42",
+            "Replay-Nonce": "lookupnonce",
+        },
+        status=200,
+    )
+    client = AcmeClient("https://acme.test/directory")
+    account_url, new_nonce = client.lookup_account(
+        account_key=account_key,
+        nonce=FAKE_NONCE,
+        directory=FAKE_DIRECTORY,
+    )
+    assert account_url == "https://acme.test/acct/42"
+    assert new_nonce == "lookupnonce"
+
+
+@resp_lib.activate
 def test_create_order(account_key):
     resp_lib.add(
         resp_lib.POST,

@@ -160,8 +160,10 @@ class AcmeClient:
         directory: dict,
     ) -> tuple[Optional[str], str]:
         """
-        POST /newAccount with onlyReturnExisting=True.
-        Returns (account_url or None, new_nonce).
+        POST /newAccount with onlyReturnExisting=True (RFC 8555 §7.3.1).
+        Returns (account_url, new_nonce) if account exists.
+        Returns (None, new_nonce) if account does not exist (400 accountDoesNotExist).
+        Raises AcmeError for all other errors, including other 400 errors.
         """
         new_account_url = directory["newAccount"]
         try:
@@ -170,8 +172,10 @@ class AcmeClient:
             )
             return resp.headers.get("Location"), resp.headers.get("Replay-Nonce", "")
         except AcmeError as e:
-            if e.status_code == 400:
+            # RFC 8555: 400 with type "accountDoesNotExist" means account doesn't exist
+            if e.status_code == 400 and e.body.get("type") == "urn:acme:error:accountDoesNotExist":
                 return None, e.new_nonce
+            # All other errors (including other 400s) should raise
             raise
 
     # ── Orders ────────────────────────────────────────────────────────────
