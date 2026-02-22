@@ -95,6 +95,39 @@ def pebble_settings(tmp_path: Path):
         setattr(settings, k, v)
 
 
+# ─── DNS-01 settings fixture ──────────────────────────────────────────────────
+
+@pytest.fixture()
+def dns_settings(pebble_settings):
+    """
+    Extend pebble_settings to use DNS-01 challenge mode with a mocked provider.
+
+    Sets HTTP_CHALLENGE_MODE='dns', DNS_PROVIDER='cloudflare', and
+    DNS_PROPAGATION_WAIT_SECONDS=0 so tests run instantly.
+
+    Restores the original values after the test (pebble_settings already
+    handles the base Pebble fields; we only save/restore the extra DNS keys).
+    """
+    from config import settings
+
+    dns_originals = {
+        "HTTP_CHALLENGE_MODE": settings.HTTP_CHALLENGE_MODE,
+        "DNS_PROVIDER": settings.DNS_PROVIDER,
+        "DNS_PROPAGATION_WAIT_SECONDS": settings.DNS_PROPAGATION_WAIT_SECONDS,
+        "CLOUDFLARE_API_TOKEN": settings.CLOUDFLARE_API_TOKEN,
+    }
+
+    settings.HTTP_CHALLENGE_MODE = "dns"
+    settings.DNS_PROVIDER = "cloudflare"
+    settings.DNS_PROPAGATION_WAIT_SECONDS = 0
+    settings.CLOUDFLARE_API_TOKEN = "fake-token-for-testing"
+
+    yield settings
+
+    for k, v in dns_originals.items():
+        setattr(settings, k, v)
+
+
 # ─── LLM mock helpers ─────────────────────────────────────────────────────────
 
 def _mock_llm_response(content: str) -> MagicMock:

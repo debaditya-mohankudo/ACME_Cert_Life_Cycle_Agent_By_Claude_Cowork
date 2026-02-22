@@ -71,10 +71,29 @@ class Settings(BaseSettings):
     CERT_STORE_PATH: str = "./certs"
     ACCOUNT_KEY_PATH: str = "./account.key"
 
-    # ── HTTP-01 Challenge ──────────────────────────────────────────────────
-    HTTP_CHALLENGE_MODE: str = "standalone"   # "standalone" | "webroot"
+    # ── HTTP-01 / DNS-01 Challenge ─────────────────────────────────────────
+    HTTP_CHALLENGE_MODE: str = "standalone"   # "standalone" | "webroot" | "dns"
     HTTP_CHALLENGE_PORT: int = 80
     WEBROOT_PATH: Optional[str] = None
+
+    # ── DNS-01 Challenge ───────────────────────────────────────────────────
+    DNS_PROVIDER: Literal["cloudflare", "route53", "google"] = "cloudflare"
+    DNS_PROPAGATION_WAIT_SECONDS: int = 60
+
+    # Cloudflare
+    CLOUDFLARE_API_TOKEN: str = ""
+    CLOUDFLARE_ZONE_ID: str = ""         # optional; auto-discovered from domain if empty
+
+    # Route53
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-1"
+    AWS_ROUTE53_HOSTED_ZONE_ID: str = "" # optional; auto-discovered if empty
+
+    # Google Cloud DNS
+    GOOGLE_PROJECT_ID: str = ""
+    GOOGLE_APPLICATION_CREDENTIALS: str = "" # path to service account JSON
+    GOOGLE_CLOUD_DNS_ZONE_NAME: str = ""     # GCP managed zone name
 
     # ── LLM ────────────────────────────────────────────────────────────────
     LLM_PROVIDER: Literal["anthropic", "openai", "ollama"] = "anthropic"
@@ -127,7 +146,7 @@ class Settings(BaseSettings):
     @field_validator("HTTP_CHALLENGE_MODE")
     @classmethod
     def validate_challenge_mode(cls, v: str) -> str:
-        allowed = {"standalone", "webroot"}
+        allowed = {"standalone", "webroot", "dns"}
         if v not in allowed:
             raise ValueError(f"HTTP_CHALLENGE_MODE must be one of {allowed}")
         return v
@@ -137,6 +156,20 @@ class Settings(BaseSettings):
         if self.HTTP_CHALLENGE_MODE == "webroot" and not self.WEBROOT_PATH:
             raise ValueError(
                 "WEBROOT_PATH must be set when HTTP_CHALLENGE_MODE='webroot'"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_dns_config(self) -> "Settings":
+        if self.HTTP_CHALLENGE_MODE != "dns":
+            return self
+        if self.DNS_PROVIDER == "cloudflare" and not self.CLOUDFLARE_API_TOKEN:
+            raise ValueError(
+                "CLOUDFLARE_API_TOKEN must be set when DNS_PROVIDER='cloudflare'"
+            )
+        if self.DNS_PROVIDER == "google" and not self.GOOGLE_PROJECT_ID:
+            raise ValueError(
+                "GOOGLE_PROJECT_ID must be set when DNS_PROVIDER='google'"
             )
         return self
 

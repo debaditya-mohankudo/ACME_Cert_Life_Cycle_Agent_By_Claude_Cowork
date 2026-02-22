@@ -28,7 +28,7 @@ def pebble_settings(tmp_path, pebble_settings):
 
 
 @pytest.fixture
-def issued_cert_domain(pebble_settings, tmp_path):
+def issued_cert_domain(pebble_settings, mock_llm_nodes, tmp_path):
     """
     Issue a test certificate for acme-test.localhost to set up revocation test.
     Returns the domain name.
@@ -60,7 +60,7 @@ def issued_cert_domain(pebble_settings, tmp_path):
 # ── Integration tests ──────────────────────────────────────────────────────
 
 
-def test_revocation_graph_basic_against_pebble(pebble_settings, tmp_path, issued_cert_domain):
+def test_revocation_graph_basic_against_pebble(pebble_settings, mock_llm_nodes, tmp_path, issued_cert_domain):
     """Should successfully revoke a certificate against Pebble."""
     domain = issued_cert_domain
     cert_store = str(tmp_path / "certs")
@@ -81,7 +81,7 @@ def test_revocation_graph_basic_against_pebble(pebble_settings, tmp_path, issued
     assert final_state["failed_revocations"] == []
 
 
-def test_revocation_reason_codes_against_pebble(pebble_settings, tmp_path, issued_cert_domain):
+def test_revocation_reason_codes_against_pebble(pebble_settings, mock_llm_nodes, tmp_path, issued_cert_domain):
     """Should accept valid RFC 5280 reason codes."""
     domain = issued_cert_domain
     cert_store = str(tmp_path / "certs")
@@ -102,7 +102,7 @@ def test_revocation_reason_codes_against_pebble(pebble_settings, tmp_path, issue
     assert final_state["revocation_reason"] == 1
 
 
-def test_revocation_nonexistent_cert_against_pebble(pebble_settings, tmp_path, issued_cert_domain):
+def test_revocation_nonexistent_cert_against_pebble(pebble_settings, mock_llm_nodes, tmp_path, issued_cert_domain):
     """Should fail gracefully if cert file doesn't exist."""
     domain = "nonexistent.localhost"  # not issued
     cert_store = str(tmp_path / "certs")

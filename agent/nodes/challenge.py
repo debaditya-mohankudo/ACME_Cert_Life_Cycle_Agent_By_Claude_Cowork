@@ -1,21 +1,22 @@
 """
 challenge_setup and challenge_verifier nodes.
 
-challenge_setup  — serves the HTTP-01 token(s) either via a standalone server
-                   or by writing to the webroot.
+challenge_setup  — serves the HTTP-01 token(s) either via a standalone server,
+                   by writing to the webroot, or by creating DNS TXT records.
 challenge_verifier — tells the ACME CA to check, then polls until valid/invalid.
 
-Both are in one file because they share the standalone server lifecycle.
+Both are in one file because they share the standalone server / DNS provider lifecycle.
 """
 from __future__ import annotations
 
 import logging
 import time
 from contextlib import contextmanager
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 
 from acme import jws as jwslib
 from acme.client import AcmeError, make_client
+from acme.dns_challenge import make_dns_provider
 from acme.http_challenge import (
     StandaloneHttpChallenge,
     remove_webroot_challenge,
@@ -24,10 +25,16 @@ from acme.http_challenge import (
 from agent.state import AgentState
 from config import settings
 
+if TYPE_CHECKING:
+    from acme.dns_challenge import DnsProvider
+
 logger = logging.getLogger(__name__)
 
 # Module-level standalone server instance — kept alive between setup and verify
 _standalone_server: StandaloneHttpChallenge | None = None
+
+# Module-level DNS provider instance — kept alive between setup and cleanup
+_dns_provider: DnsProvider | None = None
 
 
 # ─── challenge_setup ──────────────────────────────────────────────────────────
@@ -35,16 +42,18 @@ _standalone_server: StandaloneHttpChallenge | None = None
 
 def challenge_setup(state: AgentState) -> dict:
     """
-    Serve all HTTP-01 challenge tokens for the current order.
+    Serve all challenge tokens for the current order.
 
-    For standalone mode: starts a server if not already running.
+    For standalone mode: starts an HTTP server if not already running.
     For webroot mode: writes token files to WEBROOT_PATH.
+    For dns mode: creates TXT records via the configured DNS provider and
+                  waits DNS_PROPAGATION_WAIT_SECONDS for propagation.
 
-    Note: This node only sets up the first challenge token.  For multi-domain
-    SANs, the standalone server serves the first token (ACME CAs validate
-    one at a time sequentially); webroot mode writes all files up front.
+    Note: For multi-domain SANs, standalone mode serves the first token at
+    setup (ACME CAs validate one at a time sequentially); webroot and dns
+    modes set up all challenges up front.
     """
-    global _standalone_server
+    global _standalone_server, _dns_provider
 
     order = state.get("current_order")
     if not order:
@@ -59,6 +68,20 @@ def challenge_setup(state: AgentState) -> dict:
         for token, key_auth in zip(challenge_tokens, key_authorizations):
             write_webroot_challenge(webroot, token, key_auth)
             logger.info("Wrote webroot challenge token %s", token)
+
+    elif mode == "dns":
+        _dns_provider = make_dns_provider()
+        auth_domains = order.get("auth_domains", [])
+        dns_txt_values = order.get("dns_txt_values", [])
+        for domain, txt_value in zip(auth_domains, dns_txt_values):
+            _dns_provider.create_txt_record(domain, txt_value)
+            logger.info("Created TXT _acme-challenge.%s", domain)
+
+        wait = settings.DNS_PROPAGATION_WAIT_SECONDS
+        if wait > 0:
+            logger.info("Waiting %d seconds for DNS propagation...", wait)
+            time.sleep(wait)
+
     else:
         # Standalone: serve the first token (we restart between domains anyway)
         if _standalone_server is not None:
@@ -73,7 +96,7 @@ def challenge_setup(state: AgentState) -> dict:
             challenge_tokens[0],
         )
 
-    return {}  # No state changes — server is live
+    return {}  # No state changes — challenge infrastructure is live
 
 
 # ─── challenge_verifier ───────────────────────────────────────────────────────
@@ -154,8 +177,8 @@ def challenge_verifier(state: AgentState) -> dict:
 
 
 def _cleanup_challenge(state: AgentState) -> None:
-    """Stop standalone server or remove webroot files after verification."""
-    global _standalone_server
+    """Stop standalone server, remove webroot files, or delete DNS TXT records."""
+    global _standalone_server, _dns_provider
     order = state.get("current_order")
 
     if settings.HTTP_CHALLENGE_MODE == "standalone" and _standalone_server:
@@ -164,3 +187,12 @@ def _cleanup_challenge(state: AgentState) -> None:
     elif settings.HTTP_CHALLENGE_MODE == "webroot" and order:
         for token in order.get("challenge_tokens", []):
             remove_webroot_challenge(settings.WEBROOT_PATH, token)
+    elif settings.HTTP_CHALLENGE_MODE == "dns" and _dns_provider is not None:
+        auth_domains = order.get("auth_domains", []) if order else []
+        dns_txt_values = order.get("dns_txt_values", []) if order else []
+        for domain, txt_value in zip(auth_domains, dns_txt_values):
+            try:
+                _dns_provider.delete_txt_record(domain, txt_value)
+            except Exception as exc:
+                logger.warning("Failed to delete TXT record for %s: %s", domain, exc)
+        _dns_provider = None

@@ -5,10 +5,10 @@ Prerequisites
 -------------
   docker compose -f docker-compose.pebble.yml up -d
 
-Pebble is configured with PEBBLE_VA_ALWAYS_VALID=1, so HTTP-01 challenges are
-auto-approved without real DNS or port-80 access.  The agent goes through every
-node: scanner → planner → account → order → challenge → csr → finalize →
-download → storage → reporter.
+Pebble is configured with PEBBLE_VA_ALWAYS_VALID=1, so HTTP-01 and DNS-01
+challenges are auto-approved without real DNS or port-80 access.  The agent
+goes through every node: scanner → planner → account → order → challenge →
+csr → finalize → download → storage → reporter.
 
 Run with:
   uv run pytest tests/test_integration_pebble.py -v
@@ -16,6 +16,7 @@ Run with:
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -156,3 +157,63 @@ def test_no_renewal_needed(pebble_settings, mock_llm_nodes):
 
     assert result2["completed_renewals"] == []
     assert result2["failed_renewals"] == []
+
+
+@requires_pebble
+def test_full_renewal_flow_dns01(dns_settings, mock_llm_nodes):
+    """
+    Happy-path for DNS-01: agent renews acme-test.localhost against Pebble
+    with a mocked DNS provider.
+
+    Pebble with PEBBLE_VA_ALWAYS_VALID=1 auto-approves dns-01 without needing
+    real DNS records.  The Cloudflare provider is mocked so no API token or
+    network access to Cloudflare is required.
+
+    Verifies:
+      - Domain appears in completed_renewals
+      - create_txt_record() called exactly once (one authorization)
+      - delete_txt_record() called exactly once (cleanup after verification)
+      - cert.pem written to the temporary cert store
+    """
+    from agent.graph import build_graph, initial_state
+
+    mock_dns_provider = MagicMock()
+
+    graph = build_graph(use_checkpointing=False)
+    state = initial_state(
+        managed_domains=dns_settings.MANAGED_DOMAINS,
+        cert_store_path=dns_settings.CERT_STORE_PATH,
+        account_key_path=dns_settings.ACCOUNT_KEY_PATH,
+        renewal_threshold_days=dns_settings.RENEWAL_THRESHOLD_DAYS,
+        max_retries=dns_settings.MAX_RETRIES,
+        webroot_path=None,
+    )
+
+    with patch("agent.nodes.challenge.make_dns_provider", return_value=mock_dns_provider):
+        result = graph.invoke(state)
+
+    domain = "acme-test.localhost"
+    assert domain in result["completed_renewals"], (
+        f"Expected {domain} in completed_renewals, got: {result['completed_renewals']}\n"
+        f"failed: {result['failed_renewals']}\n"
+        f"errors: {result['error_log']}"
+    )
+    assert result["failed_renewals"] == []
+
+    # DNS provider must have been called for challenge setup and cleanup
+    assert mock_dns_provider.create_txt_record.call_count == 1, (
+        f"Expected 1 create_txt_record call, got {mock_dns_provider.create_txt_record.call_count}"
+    )
+    assert mock_dns_provider.delete_txt_record.call_count == 1, (
+        f"Expected 1 delete_txt_record call, got {mock_dns_provider.delete_txt_record.call_count}"
+    )
+
+    # Verify PEM files written to disk
+    cert_dir = Path(dns_settings.CERT_STORE_PATH) / domain
+    assert (cert_dir / "cert.pem").exists(), f"cert.pem not found at {cert_dir}"
+
+    # cert.pem must be a valid PEM certificate
+    from storage.filesystem import parse_expiry
+    cert_pem = (cert_dir / "cert.pem").read_text()
+    expiry = parse_expiry(cert_pem)
+    assert expiry is not None

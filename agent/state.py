@@ -39,15 +39,21 @@ class AcmeOrder(TypedDict):
       key_authorizations = [one key auth string]
 
     For a multi-domain SAN order, all lists are parallel (same length).
+
+    DNS-01 fields (populated when HTTP_CHALLENGE_MODE="dns", else empty lists):
+      auth_domains    = domain string per authorization (e.g. "api.example.com")
+      dns_txt_values  = base64url(SHA-256(key_auth)) per domain
     """
     order_url: str
     status: str                       # pending | ready | processing | valid | invalid
     auth_urls: List[str]              # One per identifier (domain)
-    challenge_urls: List[str]         # HTTP-01 challenge URL per authorization
-    challenge_tokens: List[str]       # HTTP-01 token per authorization
+    challenge_urls: List[str]         # Challenge URL per authorization
+    challenge_tokens: List[str]       # Token per authorization
     key_authorizations: List[str]     # token + "." + thumbprint per authorization
     finalize_url: str
     certificate_url: Optional[str]    # Set after order is valid
+    auth_domains: List[str]           # Domain string per authorization (for DNS-01)
+    dns_txt_values: List[str]         # base64url(SHA-256(key_auth)) per domain; [] for HTTP-01
 
 
 class AgentState(TypedDict):

@@ -1,6 +1,6 @@
 """
 order_initializer node — POST /newOrder for the current domain, then fetch
-all authorizations to collect HTTP-01 challenge tokens.
+all authorizations to collect challenge tokens (HTTP-01 or DNS-01).
 """
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import logging
 
 from acme import jws as jwslib
 from acme.client import make_client
+from acme.dns_challenge import compute_dns_txt_value
 from agent.state import AgentState, AcmeOrder
 from config import settings
 
@@ -47,28 +48,38 @@ def order_initializer(state: AgentState) -> dict:
     challenge_urls: list[str] = []
     challenge_tokens: list[str] = []
     key_authorizations: list[str] = []
+    auth_domains: list[str] = []
+    dns_txt_values: list[str] = []
     thumbprint = jwslib.compute_jwk_thumbprint(account_key)
+
+    challenge_type = "dns-01" if settings.HTTP_CHALLENGE_MODE == "dns" else "http-01"
 
     for auth_url in auth_urls:
         authz = client.get_authorization(auth_url, account_key, account_url)
-        # Find the HTTP-01 challenge within this authorization
-        http01 = next(
-            (c for c in authz.get("challenges", []) if c.get("type") == "http-01"),
+        auth_domain = authz.get("identifier", {}).get("value", "")
+        auth_domains.append(auth_domain)
+
+        # Find the challenge matching the configured type
+        challenge_obj = next(
+            (c for c in authz.get("challenges", []) if c.get("type") == challenge_type),
             None,
         )
-        if http01 is None:
-            error = f"No HTTP-01 challenge found in authorization {auth_url}"
+        if challenge_obj is None:
+            error = f"No {challenge_type} challenge found in authorization {auth_url}"
             logger.error(error)
             return {
                 "error_log": state.get("error_log", []) + [error],
                 "current_nonce": nonce,
             }
 
-        token = http01["token"]
+        token = challenge_obj["token"]
         key_auth = f"{token}.{thumbprint}"
-        challenge_urls.append(http01["url"])
+        challenge_urls.append(challenge_obj["url"])
         challenge_tokens.append(token)
         key_authorizations.append(key_auth)
+
+        if settings.HTTP_CHALLENGE_MODE == "dns":
+            dns_txt_values.append(compute_dns_txt_value(key_auth))
 
     current_order: AcmeOrder = {
         "order_url": order_url,
@@ -79,6 +90,8 @@ def order_initializer(state: AgentState) -> dict:
         "key_authorizations": key_authorizations,
         "finalize_url": order_body.get("finalize", ""),
         "certificate_url": None,
+        "auth_domains": auth_domains,
+        "dns_txt_values": dns_txt_values,
     }
 
     logger.info(
