@@ -14,17 +14,28 @@
 |---|---|---|---|---|---|
 | Atomic Writes (`test_atomic_writes.py`) | 12 | 12 | 0 | 0 | — |
 | Checkpoint (`test_checkpoint.py`) | 10 | 10 | 0 | 0 | — |
-| DNS-01 Challenge (`test_dns_challenge.py`) | 45 | 45 | 0 | 0 | — |
-| Unit (`test_unit_acme.py`) | 27 | 27 | 0 | 0 | — |
+| DNS-01 Challenge (`test_dns_challenge.py`) | 51 | 51 | 0 | 0 | — |
+| Unit (`test_unit_acme.py`) | 30 | 30 | 0 | 0 | — |
 | Unit Failure Scenarios (`test_unit_failure_scenarios.py`) | 9 | 9 | 0 | 0 | — |
-| Retry Scheduler (`test_retry_scheduler.py`) | 12 | 12 | 0 | 0 | — |
+| Retry Scheduler (`test_retry_scheduler.py`) | 11 | 11 | 0 | 0 | — |
 | Knowledge Base (`test_kb.py`) | 5 | 5 | 0 | 0 | — |
 | Planner Validation (`test_planner_validation.py`) | 12 | 12 | 0 | 0 | — |
 | Lifecycle (`test_lifecycle_pebble.py`) | 2 | 2 | 0 | 0 | — |
 | Integration (`test_integration_pebble.py`) | 4 | 4 | 0 | 0 | — |
 | Revocation (`test_revocation.py`) | 15 | 15 | 0 | 0 | — |
 | Revocation Pebble (`test_revocation_pebble.py`) | 3 | 3 | 0 | 0 | — |
-| **Total** | **155** | **155** | **0** | **0** | **28.99 s** |
+| **Total** | **166** | **166** | **0** | **0** | **19.85 s** |
+
+---
+
+## Recent Improvements (2026-02-22)
+
+### POST-as-GET Compliance Tests
+- **3 new tests for RFC 8555 §6.2 POST-as-GET verification**:
+  - `test_post_as_get_empty_payload_jws()` — Verifies `_post_signed(None, ...)` produces JWS with empty payload field
+  - `test_post_as_get_sign_request_compliance()` — Validates JWS structure for POST-as-GET requests (protected header, empty payload, signature)
+  - `test_post_with_payload_vs_post_as_get()` — Contrasts normal POST (with payload) vs POST-as-GET (empty payload) to ensure both work correctly
+- Total unit tests now: 30 (27 previous + 3 new POST-as-GET)
 
 ---
 
@@ -32,12 +43,12 @@
 
 ```
 ============================= test session starts ==============================
-platform darwin -- Python 3.12.8, pytest-8.3.5, pluggy-1.6.0 -- /Users/debaditya/workspace/Acme_certificate_lifecycle_agent/.venv/bin/python3
+platform darwin -- Python 3.12.8, pytest-9.0.2, pluggy-1.6.0 -- /Users/debaditya/workspace/Acme_certificate_lifecycle_agent/.venv/bin/python3
 rootdir: /Users/debaditya/workspace/Acme_certificate_lifecycle_agent
 configfile: pyproject.toml
-plugins: anyio-4.12.1, asyncio-0.25.3, langsmith-0.3.45
+plugins: anyio-4.12.1, langsmith-0.7.6, asyncio-1.3.0
 asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None
-collected 155 items
+collected 166 items
 
 tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_creates_file PASSED [  0%]
 tests/test_atomic_writes.py::TestAtomicWriteText::test_atomic_write_text_overwrites_existing PASSED [  1%]
@@ -170,7 +181,10 @@ tests/test_unit_acme.py::test_create_csr_single_domain PASSED            [ 82%]
 tests/test_unit_acme.py::test_create_csr_multi_san PASSED                [ 83%]
 tests/test_unit_acme.py::test_get_directory PASSED                       [ 83%]
 tests/test_unit_acme.py::test_get_nonce PASSED                           [ 84%]
-tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 85%]
+tests/test_unit_acme.py::test_post_as_get_empty_payload_jws PASSED       [ 84%]
+tests/test_unit_acme.py::test_post_as_get_sign_request_compliance PASSED [ 85%]
+tests/test_unit_acme.py::test_post_with_payload_vs_post_as_get PASSED    [ 85%]
+tests/test_unit_acme.py::test_create_account_without_eab PASSED          [ 86%]
 tests/test_unit_acme.py::test_create_order PASSED                        [ 85%]
 tests/test_unit_acme.py::test_poll_authorization_valid PASSED            [ 86%]
 tests/test_unit_acme.py::test_poll_authorization_invalid_raises PASSED   [ 87%]
@@ -195,7 +209,7 @@ tests/test_unit_failure_scenarios.py::test_invalid_directory_url_returns_404 PAS
 tests/test_unit_failure_scenarios.py::test_finalize_order_malformed_json_response PASSED [ 99%]
 tests/test_unit_failure_scenarios.py::test_rate_limit_429_with_retry_after PASSED [100%]
 
-============================== 155 passed in 28.99s ==============================
+============================== 166 passed in 19.85s ==============================
 ```
 
 ---
@@ -340,6 +354,9 @@ No network access required. All ACME HTTP calls are intercepted by the
 | `test_create_csr_multi_san` | `acme/crypto.py` | CSR includes all SANs for multi-domain orders |
 | `test_get_directory` | `acme/client.py` | `GET /directory` returns endpoint map |
 | `test_get_nonce` | `acme/client.py` | `HEAD /newNonce` extracts `Replay-Nonce` header |
+| `test_post_as_get_empty_payload_jws` | `acme/jws.py` | RFC 8555 §6.2 POST-as-GET: `_post_signed(None, ...)` produces JWS with empty payload field |
+| `test_post_as_get_sign_request_compliance` | `acme/jws.py` | RFC 8555 §6.2 POST-as-GET: `sign_request(None, ...)` generates valid JWS structure (empty payload, correct headers) |
+| `test_post_with_payload_vs_post_as_get` | `acme/jws.py` | Contrast: normal POST (with payload) vs POST-as-GET (empty payload); both produce valid JWS |
 | `test_create_account_without_eab` | `acme/client.py` | `POST /newAccount` (no EAB); payload lacks `externalAccountBinding` |
 | `test_create_order` | `acme/client.py` | `POST /newOrder` returns order body + URL + nonce |
 | `test_poll_authorization_valid` | `acme/client.py` | Poll loop exits on `status: valid` |
