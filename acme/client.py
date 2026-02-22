@@ -59,6 +59,7 @@ class AcmeClient:
         self.timeout = timeout
         self._session = requests.Session()
         self._session.headers.update({"User-Agent": "acme-cert-agent/1.0"})
+        self._directory_cache: Optional[dict] = None  # Cache directory response
 
         if insecure:
             import urllib3
@@ -70,10 +71,16 @@ class AcmeClient:
     # ── Directory & nonce ─────────────────────────────────────────────────
 
     def get_directory(self) -> dict:
-        """GET /directory — discover ACME endpoint URLs."""
-        resp = self._session.get(self.directory_url, timeout=self.timeout)
-        resp.raise_for_status()
-        return resp.json()
+        """GET /directory — discover ACME endpoint URLs.
+
+        Caches the response per client instance to avoid redundant network
+        calls during polling. Directory is static per ACME server session.
+        """
+        if self._directory_cache is None:
+            resp = self._session.get(self.directory_url, timeout=self.timeout)
+            resp.raise_for_status()
+            self._directory_cache = resp.json()
+        return self._directory_cache
 
     def get_nonce(self, directory: dict) -> str:
         """HEAD /newNonce — fetch a fresh anti-replay nonce."""
