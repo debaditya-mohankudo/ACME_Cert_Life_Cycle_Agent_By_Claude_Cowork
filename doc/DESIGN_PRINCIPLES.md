@@ -17,6 +17,8 @@ The `AcmeClient` holds no mutable state. Every value the client needs — the cu
 
 Instance-level nonce caching across calls is never acceptable, regardless of perceived performance benefit.
 
+**`resp.ok` (200–399) in `_post_signed`:** `resp.ok` technically accepts 3xx codes, but this is not a defect in practice: `requests.Session.post()` does not follow redirects by default (unlike GET/HEAD), so any 3xx returned by an ACME server arrives as a raw response. Subsequent `resp.json()` calls in every caller would then raise immediately, making the failure loud rather than silent. RFC 8555 also forbids 3xx responses on POST endpoints. No change warranted.
+
 → Full analysis: [DESIGN_STATEFUL_CLIENT_ANALYSIS.md](DESIGN_STATEFUL_CLIENT_ANALYSIS.md)
 
 ---
