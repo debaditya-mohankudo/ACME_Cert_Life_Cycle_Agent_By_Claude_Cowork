@@ -16,6 +16,7 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 | Setup | [SETUP.md](doc/README_SETUP.md) |
 | Running with Docker | [DOCKER.md](doc/README_DOCKER.md) |
 | Usage | [USAGE.md](doc/README_USAGE.md) |
+| Pebble testing server | [PEBBLE_TESTING_SERVER.md](doc/PEBBLE_TESTING_SERVER.md) |
 | Configuration reference | [CONFIGURATION.md](doc/README_CONFIGURATION.md) |
 | Certificate revocation | [REVOCATION_IMPLEMENTATION.md](doc/REVOCATION_IMPLEMENTATION.md) |
 | Certificate storage layout | [CERTIFICATE_STORAGE.md](doc/README_CERTIFICATE_STORAGE.md) |
