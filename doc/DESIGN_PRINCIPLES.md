@@ -87,6 +87,8 @@ When there is a choice between processing domains concurrently (faster) and proc
 
 **Why:** Cert renewal is a low-frequency, high-reliability operation — typically once per domain per 60–90 days. Throughput is not the constraint. Correctness and operational predictability are. A single cert renewed successfully in 5 minutes is better than three renewals attempted in parallel with a 20% chance of nonce collisions.
 
+**Determinism is load-bearing, not a preference.** Nonce sequencing (RFC 8555 § 6.5), LangGraph checkpoint reproducibility, and LLM output validation all depend on a deterministic execution order. Treating sequentiality as optional — even for a subset of domains — unravels multiple invariants simultaneously. This is why Hard Invariant 4 in CLAUDE.md (no concurrent ACME operations) admits no exceptions.
+
 ---
 
 ## 9. Configuration over Code for Provider Differences
