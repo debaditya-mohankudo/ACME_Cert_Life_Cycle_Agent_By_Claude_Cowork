@@ -2,6 +2,23 @@
 
 ---
 
+<!--
+  DOCUMENT LAYERS
+  ───────────────────────────────────────────────────────
+  I.  CONSTITUTIONAL LAYER   — Mental model, invariants, pre-implementation checklist
+  II. OPERATIONAL LAYER      — Commands, structure, config, state, retry, KB
+  III. COGNITIVE GUARDRAILS  — Architectural discipline, LLM boundaries, safety rules
+  IV. MAINTENANCE PROTOCOLS  — Testing discipline, documentation maintenance
+  ───────────────────────────────────────────────────────
+-->
+
+---
+
+<!-- ═══════════════════════════════════════════════════════════
+     I. CONSTITUTIONAL LAYER
+     Non-negotiable rules. Read before any code change.
+     ═══════════════════════════════════════════════════════════ -->
+
 # ⚠️ Read This First
 
 This file is the persistent architectural memory for this project.
@@ -49,6 +66,11 @@ If a change violates this mental model, stop and reassess.
 These are architectural safety rails, not suggestions.
 
 ---
+
+<!-- ═══════════════════════════════════════════════════════════
+     II. OPERATIONAL LAYER
+     How to run, build, configure, and understand the system.
+     ═══════════════════════════════════════════════════════════ -->
 
 # 📦 Project Overview
 
@@ -233,6 +255,11 @@ Do not prematurely optimize storage.
 
 ---
 
+<!-- ═══════════════════════════════════════════════════════════
+     III. COGNITIVE GUARDRAILS
+     Rules that prevent the most common architectural mistakes.
+     ═══════════════════════════════════════════════════════════ -->
+
 # 🚦 Before Implementing a New Feature
 
 Ask:
@@ -297,6 +324,11 @@ Scaling must preserve determinism.
 * Never use `pip` — always `uv sync`
 
 ---
+
+<!-- ═══════════════════════════════════════════════════════════
+     IV. MAINTENANCE PROTOCOLS
+     How to keep code, tests, and docs synchronized.
+     ═══════════════════════════════════════════════════════════ -->
 
 # 📖 Documentation Maintenance
 
