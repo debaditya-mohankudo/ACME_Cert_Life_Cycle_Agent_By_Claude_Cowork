@@ -290,7 +290,27 @@ class GoogleCloudDnsProvider(DnsProvider):
         zone = client.zone(self._zone_name)
         name = self._acme_record_name(domain) + "."
 
-        record_set = zone.resource_record_set(name, "TXT", 60, [f'"{txt_value}"'])
+        # Check if TXT record already exists
+        expected_rdata = [f'"{txt_value}"']
+        existing_txt_record = None
+        for record in zone.list_resource_record_sets():
+            if record.name == name and record.record_type == "TXT":
+                existing_txt_record = record
+                break
+
+        # Idempotent: if identical record exists, skip
+        if existing_txt_record:
+            if existing_txt_record.rdata == expected_rdata:
+                logger.debug("TXT record %s already exists with correct value — skipping create", name)
+                return
+            # Record exists with different value, delete it first
+            changes = zone.changes()
+            changes.delete_record_set(existing_txt_record)
+            changes.create()
+            logger.debug("Deleted existing TXT record %s with different value", name)
+
+        # Create the record
+        record_set = zone.resource_record_set(name, "TXT", 60, expected_rdata)
         changes = zone.changes()
         changes.add_record_set(record_set)
         changes.create()

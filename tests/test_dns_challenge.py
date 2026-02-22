@@ -6,7 +6,7 @@ Tests cover:
   - make_dns_provider() — dispatch for all 3 providers, ImportError hints
   - CloudflareDnsProvider — create (explicit zone, auto-discover, idempotent), delete, error swallowed
   - Route53DnsProvider — UPSERT with "" wrapping, zone discovery, DELETE, error swallowed
-  - GoogleCloudDnsProvider — create chain, delete chain, error swallowed
+  - GoogleCloudDnsProvider — create (idempotent: same value, replace diff value, new record), delete, error swallowed
   - order_initializer with dns-01 — correct challenge selected, fields populated
   - challenge_setup DNS branch — create_txt_record called, propagation sleep behavior
   - _cleanup_challenge DNS branch — delete called, partial failure, safe when no provider
@@ -404,6 +404,63 @@ class TestGoogleCloudDnsProvider:
         provider = self._make_provider(gcp_dns_mock)
         # Must not raise
         provider.delete_txt_record("api.example.com", "txt-value")
+
+    def test_create_txt_record_idempotent_same_value(self, gcp_dns_mock):
+        """create_txt_record is idempotent: if record exists with same value, skip."""
+        mock_dns_module, mock_gcp_client, mock_zone = gcp_dns_mock
+
+        # Mock existing record with matching value
+        mock_existing_record = MagicMock()
+        mock_existing_record.name = "_acme-challenge.api.example.com."
+        mock_existing_record.record_type = "TXT"
+        mock_existing_record.rdata = ['"txt-value"']
+
+        mock_zone.list_resource_record_sets.return_value = [mock_existing_record]
+
+        provider = self._make_provider(gcp_dns_mock)
+        provider.create_txt_record("api.example.com", "txt-value")
+
+        # Should not call add_record_set since record already exists
+        mock_zone.changes.return_value.add_record_set.assert_not_called()
+        # Should not call create for add
+        assert mock_zone.changes.return_value.create.call_count == 0
+
+    def test_create_txt_record_replace_different_value(self, gcp_dns_mock):
+        """create_txt_record replaces existing record with different value."""
+        mock_dns_module, mock_gcp_client, mock_zone = gcp_dns_mock
+
+        # Mock existing record with different value
+        mock_existing_record = MagicMock()
+        mock_existing_record.name = "_acme-challenge.api.example.com."
+        mock_existing_record.record_type = "TXT"
+        mock_existing_record.rdata = ['"old-value"']
+
+        mock_zone.list_resource_record_sets.return_value = [mock_existing_record]
+
+        provider = self._make_provider(gcp_dns_mock)
+        provider.create_txt_record("api.example.com", "new-value")
+
+        # Should call delete for the old record, then add for the new one
+        mock_zone.changes.return_value.delete_record_set.assert_called_once_with(
+            mock_existing_record
+        )
+        mock_zone.changes.return_value.add_record_set.assert_called_once()
+        # Should call create twice: once for delete, once for add
+        assert mock_zone.changes.return_value.create.call_count == 2
+
+    def test_create_txt_record_no_existing_record(self, gcp_dns_mock):
+        """create_txt_record creates new record when none exists."""
+        mock_dns_module, mock_gcp_client, mock_zone = gcp_dns_mock
+
+        # Mock no existing records
+        mock_zone.list_resource_record_sets.return_value = []
+
+        provider = self._make_provider(gcp_dns_mock)
+        provider.create_txt_record("api.example.com", "new-value")
+
+        # Should call add_record_set and create once
+        mock_zone.changes.return_value.add_record_set.assert_called_once()
+        assert mock_zone.changes.return_value.create.call_count == 1
 
 
 # ─── order_initializer (DNS-01) ───────────────────────────────────────────────
