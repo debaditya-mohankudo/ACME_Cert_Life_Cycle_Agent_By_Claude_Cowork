@@ -315,6 +315,114 @@ def test_revoke_certificate(account_key):
     assert "reason" not in payload  # default reason=0 omitted
 
 
+def test_revoke_certificate_invalid_reason_negative(account_key):
+    """revoke_certificate raises ValueError for reason < 0 (RFC 5280 violation)."""
+    import datetime
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import Encoding
+    from cryptography.x509.oid import NameOID
+
+    # Generate a dummy cert
+    leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "example.com")])
+    leaf_cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(leaf_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=90))
+        .sign(leaf_key, hashes.SHA256())
+    )
+    cert_pem = leaf_cert.public_bytes(Encoding.PEM).decode()
+
+    client = AcmeClient("https://acme.test/directory")
+    with pytest.raises(ValueError, match="Invalid revocation reason code: -1"):
+        client.revoke_certificate(
+            cert_pem=cert_pem,
+            account_key=account_key,
+            account_url="https://acme.test/acct/42",
+            nonce=FAKE_NONCE,
+            directory=FAKE_DIRECTORY,
+            reason=-1,
+        )
+
+
+def test_revoke_certificate_invalid_reason_above_10(account_key):
+    """revoke_certificate raises ValueError for reason > 10 (RFC 5280 violation)."""
+    import datetime
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import Encoding
+    from cryptography.x509.oid import NameOID
+
+    # Generate a dummy cert
+    leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "example.com")])
+    leaf_cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(leaf_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=90))
+        .sign(leaf_key, hashes.SHA256())
+    )
+    cert_pem = leaf_cert.public_bytes(Encoding.PEM).decode()
+
+    client = AcmeClient("https://acme.test/directory")
+    with pytest.raises(ValueError, match="Invalid revocation reason code: 11"):
+        client.revoke_certificate(
+            cert_pem=cert_pem,
+            account_key=account_key,
+            account_url="https://acme.test/acct/42",
+            nonce=FAKE_NONCE,
+            directory=FAKE_DIRECTORY,
+            reason=11,
+        )
+
+
+def test_revoke_certificate_invalid_reason_far_out_of_range(account_key):
+    """revoke_certificate raises ValueError for reason >> 10."""
+    import datetime
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import Encoding
+    from cryptography.x509.oid import NameOID
+
+    # Generate a dummy cert
+    leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "example.com")])
+    leaf_cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(leaf_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_after(datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=90))
+        .sign(leaf_key, hashes.SHA256())
+    )
+    cert_pem = leaf_cert.public_bytes(Encoding.PEM).decode()
+
+    client = AcmeClient("https://acme.test/directory")
+    with pytest.raises(ValueError, match="Invalid revocation reason code: 100"):
+        client.revoke_certificate(
+            cert_pem=cert_pem,
+            account_key=account_key,
+            account_url="https://acme.test/acct/42",
+            nonce=FAKE_NONCE,
+            directory=FAKE_DIRECTORY,
+            reason=100,
+        )
+
+
 # ─── EabAcmeClient, new CA clients, and make_client() factory ─────────────────
 
 def test_zerossl_client_default_url():

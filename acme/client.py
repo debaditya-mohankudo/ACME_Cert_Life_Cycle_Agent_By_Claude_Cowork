@@ -121,11 +121,22 @@ class AcmeClient:
         POST /revokeCert — revoke an issued certificate (RFC 8555 §7.6).
 
         cert_pem: PEM-encoded leaf certificate (not the full chain).
-        reason:   RFC 5280 CRL reason code (0=unspecified, 1=keyCompromise,
-                  4=superseded, 5=cessationOfOperation).
+        reason:   RFC 5280 CRL reason code, must be 0-10:
+                  0=unspecified, 1=keyCompromise, 2=cACompromise,
+                  3=affiliationChanged, 4=superseded, 5=cessationOfOperation,
+                  6=certificateHold, 7=removeFromCRL, 8=privilegeWithdrawn,
+                  9=aACompromise, 10=weakSignatureAlgorithm (RFC 6962).
         Returns new_nonce.
+        Raises ValueError if reason is outside 0-10 range.
         Raises AcmeError if the server rejects the revocation.
         """
+        if not (0 <= reason <= 10):
+            raise ValueError(
+                f"Invalid revocation reason code: {reason}. "
+                f"Must be 0-10 per RFC 5280 (0=unspecified, 1=keyCompromise, "
+                f"4=superseded, 5=cessationOfOperation, etc.)"
+            )
+
         import base64
         from cryptography import x509
         from cryptography.hazmat.primitives.serialization import Encoding
