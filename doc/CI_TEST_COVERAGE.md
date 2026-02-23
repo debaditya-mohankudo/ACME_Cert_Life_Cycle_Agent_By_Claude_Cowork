@@ -10,7 +10,11 @@ added.
 
 Trigger: every push and PR targeting `main`.
 Runner: `ubuntu-latest`.
-Toolchain: Python 3.12 via `astral-sh/setup-uv`.
+Container: `python:3.12-slim-bookworm` — all steps execute inside this image,
+giving a minimal and reproducible Debian Bookworm environment with Python 3.12
+pre-installed. Git is installed before checkout since the slim image omits it.
+Toolchain: `uv` via `astral-sh/setup-uv` (no `python-version` override —
+container already owns Python 3.12).
 
 ### Command
 
@@ -260,6 +264,7 @@ safe in a CI-only context.
 | Port conflicts | Pebble binds 14000 + 15000; standard GitHub runners have no conflicts |
 | `requires_pebble` decorator | Automatically skips if port 14000 unreachable; safe to leave in place |
 | Flakiness | Pebble with `PEBBLE_VA_ALWAYS_VALID=1` is deterministic; historically stable in CI |
+| No slim container for Pebble job | GitHub `services:` containers require the job to run directly on the runner host (not inside a container job) for Docker networking to resolve correctly. The Pebble job uses `ubuntu-latest` + `python-version: "3.12"` via uv instead of `python:3.12-slim-bookworm`. |
 
 ### Recommended implementation
 
@@ -272,6 +277,8 @@ without waiting for Pebble to start.
 pebble-integration:
   needs: [test]
   runs-on: ubuntu-latest
+  # No container: block here — service containers (Pebble) require the job to
+  # run directly on the runner host so Docker networking resolves correctly.
 
   services:
     pebble:
@@ -290,7 +297,7 @@ pebble-integration:
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
-        python-version: "3.12"
+        python-version: "3.12"   # managed by uv here; no slim container
 
     - name: Install dependencies
       run: uv sync
