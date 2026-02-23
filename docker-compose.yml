@@ -2,7 +2,7 @@ services:
   acme-agent:
     build:
       context: .
-      target: production
+      target: production  # security config verified by tests/test_docker_config.py
     ports:
       - "80:80"       # HTTP-01 standalone challenge (temporary during each renewal)
     # Runs as non-root UID 1001 — see doc/README_DOCKER_NONROOT.md
