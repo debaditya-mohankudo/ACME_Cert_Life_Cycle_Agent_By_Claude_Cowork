@@ -39,7 +39,13 @@ COPY --from=test-runner /app/config.py /app/main.py ./
 ENV CERT_STORE_PATH=/data/certs
 ENV ACCOUNT_KEY_PATH=/data/account.key
 
-RUN mkdir -p /data/certs
+# Non-root user.  Port 80 binding is granted at runtime via NET_BIND_SERVICE
+# (see docker-compose.yml cap_add) — no root required inside the container.
+RUN useradd -r -u 1001 -M -s /sbin/nologin acme \
+    && mkdir -p /data/certs \
+    && chown -R 1001 /data
+
+USER 1001
 
 # Port 80 is used by the HTTP-01 standalone challenge server (temporary, during
 # each renewal window). Map the host's port 80 to this port via docker-compose.
