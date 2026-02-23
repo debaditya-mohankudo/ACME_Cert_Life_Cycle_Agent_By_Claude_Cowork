@@ -343,8 +343,11 @@ After modifying architecture or node behavior:
 
 After running tests:
 
-* Update `TEST_RESULTS.md` — full `pytest -v` output
-* Update `TEST_SUMMARY.md` — counts and descriptions
+* Update [`doc/CI_TEST_COVERAGE.md`](doc/CI_TEST_COVERAGE.md) — test groups, counts, and CI workflow description
+
+After adding a git tag:
+
+* Update [`doc/TAG_SUMMARY.md`](doc/TAG_SUMMARY.md) — add the tag, commit SHA, date, and what it marks
 
 ---
 
