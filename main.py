@@ -6,11 +6,14 @@ Usage:
   python main.py --schedule             # Run on the configured schedule (default 06:00 UTC)
   python main.py --once --checkpoint    # Run with MemorySaver checkpointing
   python main.py --domains a.com b.com  # Override managed domains for this run
+    python main.py --expiring-in-30-days  # Print domains with certs expiring in <= 30 days
+    python main.py --domain-status my.local  # Print status for one or more domains
 """
 from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 
 import structlog
@@ -32,6 +35,15 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger(__name__)
+
+CA_PROVIDER_CHOICES = [
+    "digicert",
+    "letsencrypt",
+    "letsencrypt_staging",
+    "zerossl",
+    "sectigo",
+    "custom",
+]
 
 
 # ── Agent runner ──────────────────────────────────────────────────────────────
@@ -158,6 +170,118 @@ def run_scheduled(domains: list[str] | None = None, use_checkpoint: bool = False
         time.sleep(60)
 
 
+def list_domains_expiring_within(days: int, domains: list[str] | None = None) -> list[str]:
+    """Return domains whose current cert expires within `days` days."""
+    from config import settings
+    from storage import filesystem as fs
+
+    effective_domains = domains or settings.MANAGED_DOMAINS
+    if not effective_domains:
+        log.error("No managed domains configured. Set MANAGED_DOMAINS in .env or pass --domains.")
+        sys.exit(1)
+
+    expiring: list[tuple[str, int]] = []
+    for domain in effective_domains:
+        pem = fs.read_cert_pem(settings.CERT_STORE_PATH, domain)
+        if pem is None:
+            continue
+        try:
+            expiry = fs.parse_expiry(pem)
+            days_until_expiry = fs.days_until_expiry(expiry)
+            if days_until_expiry <= days:
+                expiring.append((domain, days_until_expiry))
+        except Exception as exc:
+            log.warning("Skipping %s: failed to parse cert expiry: %s", domain, exc)
+
+    expiring.sort(key=lambda item: item[1])
+    return [domain for domain, _ in expiring]
+
+
+def get_domain_statuses(domains: list[str]) -> list[dict[str, str | int | bool | None]]:
+    """Return certificate status details for one or more domains."""
+    from config import settings
+    from storage import filesystem as fs
+
+    if not domains:
+        log.error("No domains provided for status lookup.")
+        sys.exit(1)
+
+    statuses: list[dict[str, str | int | bool | None]] = []
+    for domain in domains:
+        pem = fs.read_cert_pem(settings.CERT_STORE_PATH, domain)
+        if pem is None:
+            statuses.append(
+                {
+                    "domain": domain,
+                    "cert_found": False,
+                    "status": "missing",
+                    "expires_at": None,
+                    "days_until_expiry": None,
+                    "expired": None,
+                }
+            )
+            continue
+
+        try:
+            expiry = fs.parse_expiry(pem)
+            days_until_expiry = fs.days_until_expiry(expiry)
+            if days_until_expiry < 0:
+                status = "expired"
+            elif days_until_expiry <= 30:
+                status = "expiring_soon"
+            else:
+                status = "valid"
+
+            statuses.append(
+                {
+                    "domain": domain,
+                    "cert_found": True,
+                    "status": status,
+                    "expires_at": expiry.isoformat(),
+                    "days_until_expiry": days_until_expiry,
+                    "expired": days_until_expiry < 0,
+                }
+            )
+        except Exception as exc:
+            statuses.append(
+                {
+                    "domain": domain,
+                    "cert_found": True,
+                    "status": "parse_error",
+                    "expires_at": None,
+                    "days_until_expiry": None,
+                    "expired": None,
+                }
+            )
+            log.warning("Failed to parse cert expiry for %s: %s", domain, exc)
+
+    return statuses
+
+
+def apply_runtime_settings_overrides(
+    ca_provider: str | None = None,
+    acme_directory_url: str | None = None,
+) -> None:
+    """Apply one-shot CLI settings overrides by reloading the settings singleton."""
+    if not ca_provider and not acme_directory_url:
+        return
+
+    if ca_provider:
+        os.environ["CA_PROVIDER"] = ca_provider
+    if acme_directory_url:
+        os.environ["ACME_DIRECTORY_URL"] = acme_directory_url
+
+    import config
+
+    config.settings = config.Settings()
+
+    log.info(
+        "Applied runtime config override: CA_PROVIDER=%s ACME_DIRECTORY_URL=%s",
+        config.settings.CA_PROVIDER,
+        config.settings.ACME_DIRECTORY_URL,
+    )
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
 
@@ -170,7 +294,10 @@ Examples:
   python main.py --once
   python main.py --schedule
   python main.py --once --domains api.example.com shop.example.com
+    python main.py --once --ca-provider custom --acme-directory-url https://localhost:14000/dir
   python main.py --once --checkpoint
+    python main.py --expiring-in-30-days
+    python main.py --domain-status my.local api.example.com
   python main.py --revoke-cert example.com api.example.com
   python main.py --revoke-cert example.com --reason 4
         """,
@@ -209,14 +336,56 @@ Examples:
         action="store_true",
         help="Enable MemorySaver checkpointing for resumable runs",
     )
+    parser.add_argument(
+        "--expiring-in-30-days",
+        action="store_true",
+        help="Print domains whose existing certificates expire in 30 days or less",
+    )
+    parser.add_argument(
+        "--domain-status",
+        nargs="+",
+        metavar="DOMAIN",
+        help="Print certificate status details for one or more domains",
+    )
+    parser.add_argument(
+        "--ca-provider",
+        choices=CA_PROVIDER_CHOICES,
+        help="Override CA provider for this process only",
+    )
+    parser.add_argument(
+        "--acme-directory-url",
+        metavar="URL",
+        help="Override ACME directory URL for this process only (typically with --ca-provider custom)",
+    )
 
     args = parser.parse_args()
 
-    if not args.once and not args.schedule and not args.revoke_cert:
+    if (
+        not args.once
+        and not args.schedule
+        and not args.revoke_cert
+        and not args.expiring_in_30_days
+        and not args.domain_status
+    ):
         parser.print_help()
         sys.exit(1)
 
-    if args.revoke_cert:
+    apply_runtime_settings_overrides(
+        ca_provider=args.ca_provider,
+        acme_directory_url=args.acme_directory_url,
+    )
+
+    if args.domain_status:
+        statuses = get_domain_statuses(args.domain_status)
+        for item in statuses:
+            print(item)
+    elif args.expiring_in_30_days:
+        expiring_domains = list_domains_expiring_within(days=30, domains=args.domains)
+        if expiring_domains:
+            print("\n".join(expiring_domains))
+        else:
+            print("No domains expiring within 30 days.")
+    elif args.revoke_cert:
         run_revocation(domains=args.revoke_cert, reason=args.reason, use_checkpoint=args.checkpoint)
     elif args.once:
         run_once(domains=args.domains, use_checkpoint=args.checkpoint)
