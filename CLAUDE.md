@@ -30,6 +30,8 @@ Before modifying code, read:
 That document is the constitutional layer.
 This file is the operational + cognitive guardrail layer.
 
+RFC compliance and security auditability are the highest-priority constraints in this project — see **[doc/RFC_COMPLIANCE.md](doc/RFC_COMPLIANCE.md)** and Principle 0 in DESIGN_PRINCIPLES.md.
+
 If a change conflicts with a design principle, it must be explicitly justified.
 
 ---

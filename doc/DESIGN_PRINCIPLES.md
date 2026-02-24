@@ -5,6 +5,36 @@ Each principle is a deliberate trade-off, documented with rationale and a link t
 
 ---
 
+## 0. RFC Compliance and Security Auditability Are the Highest Priority
+
+This is the overriding principle. All other principles exist to serve it.
+
+**RFC compliance is non-negotiable.** Every ACME operation must conform to the relevant RFC sections — RFC 8555 (ACME protocol), RFC 8739 (EAB), RFC 7638 (JWK thumbprint), and RFC 5280 (revocation reason codes). Deviations from the protocol are defects, not trade-offs. Where the RFC permits optionality, this project chooses the safer interpretation. Any change that introduces a protocol deviation — even a minor one — must be treated as a breaking change and requires explicit justification.
+
+**Security auditability is a first-class design constraint.** The system must be auditable by a third party without requiring deep familiarity with the codebase. This means:
+
+- All network calls are named graph nodes — no hidden side effects
+- All state is explicit in `AgentState` — no hidden mutable state in clients or helpers
+- The account private key never appears in any log, trace, checkpoint, or serialized state
+- All file writes are atomic — no partial state is ever observable
+- All LLM outputs are validated before any protocol action is taken
+- Retry and backoff logic is isolated and bounded — no unbounded retries
+
+**Operational priority order:**
+
+1. RFC protocol correctness
+2. Security (key isolation, atomic writes, no hidden state)
+3. Auditability (every action traceable through the graph)
+4. Determinism (reproducible behaviour given the same inputs)
+5. Reliability (bounded retries, safe checkpoint/resume)
+6. Throughput (last — never worth compromising the above)
+
+A change that improves performance at the cost of any item above it in this list is wrong by definition.
+
+→ Full RFC mapping: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
+
+---
+
 ## 1. Stateless ACME Client — All State in LangGraph
 
 The `AcmeClient` holds no mutable state. Every value the client needs — the current nonce, the account URL, the order URL — lives in `AgentState` and is passed in explicitly.
@@ -129,6 +159,7 @@ Certificate revocation uses a dedicated LangGraph state machine (`agent/revocati
 
 | Principle | Short Form | Key File |
 |-----------|-----------|----------|
+| **RFC compliance + security auditability** | **Overrides everything else** | `doc/RFC_COMPLIANCE.md` |
 | Stateless client | `AcmeClient` is a function, not an object | `acme/client.py` |
 | Sequential domains | One domain at a time | `agent/nodes/router.py` |
 | LLM advisory only | Validate every LLM output | `agent/nodes/planner.py` |
