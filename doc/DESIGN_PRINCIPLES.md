@@ -143,6 +143,20 @@ Every node that makes a network call is a named node in the LangGraph graph. No 
 
 ---
 
+## 12. CA Detection is Advisory and Gated on `CA_PROVIDER=custom`
+
+The `certificate_scanner` node optionally detects which CA issued an existing certificate by inspecting the X.509 issuer O field and AIA OCSP URL (`acme/ca_detection.py`). This detection is **advisory only** — it never alters configuration or changes renewal behaviour.
+
+**Gating rule:** Detection runs only when `CA_PROVIDER=custom`. For all named providers (`letsencrypt`, `letsencrypt_staging`, `digicert`, `zerossl`, `sectigo`), the configured `CA_PROVIDER` is the ground truth and detection is skipped entirely — `detected_ca_provider` is left as `None`.
+
+**Why:** When an operator selects a named CA provider, they have explicitly declared their intent. Silently overriding or second-guessing that with cert inspection would be surprising and could produce misleading warnings (e.g. on the very first renewal where the existing cert was issued by a different CA on purpose). For `custom` CAs, where the ACME directory URL is operator-supplied and no named CA is selected, detection provides a useful advisory warning if the cert was previously issued by a known CA.
+
+**Mismatch warning:** When `CA_PROVIDER=custom` and the detected CA differs from `"custom"`, a `WARNING` is logged advising the operator to update `CA_PROVIDER`. Let's Encrypt production and staging are treated as equivalent (both report `"letsencrypt"` in the issuer O field). No action is taken — the configured CA always governs renewal.
+
+→ See: [acme/ca_detection.py](../acme/ca_detection.py), [agent/nodes/scanner.py](../agent/nodes/scanner.py)
+
+---
+
 ## 11. Revocation as a Separate Subgraph
 
 Certificate revocation uses a dedicated LangGraph state machine (`agent/revocation_graph.py`) rather than being integrated into the renewal graph. The revocation subgraph is simpler: account setup → loop through domains → revoke each → reporter.
@@ -170,3 +184,4 @@ Certificate revocation uses a dedicated LangGraph state machine (`agent/revocati
 | Sequential > parallel | Correctness first | `DESIGN_NONCE_MANAGEMENT_STRATEGY.md` |
 | Factory pattern | No provider branches in nodes | `llm/factory.py` |
 | Network calls named | All side effects in graph | `agent/graph.py` |
+| CA detection gated | Advisory only; skipped for named providers | `acme/ca_detection.py` |

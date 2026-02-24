@@ -4,7 +4,7 @@ All settings are read from environment variables or `.env`. Any variable can be 
 
 | Variable | Default | Description |
 |---|---|---|
-| `CA_PROVIDER` | `digicert` | CA to use: `digicert` · `letsencrypt` · `letsencrypt_staging` · `custom` |
+| `CA_PROVIDER` | `digicert` | CA to use: `digicert` · `letsencrypt` · `letsencrypt_staging` · `zerossl` · `sectigo` · `custom`. For named providers the config is authoritative and X.509 issuer detection is skipped. For `custom`, the scanner detects the issuing CA from existing certs and warns on mismatch (advisory only). |
 | `ACME_EAB_KEY_ID` | — | EAB key identifier (DigiCert only) |
 | `ACME_EAB_HMAC_KEY` | — | Base64url-encoded HMAC key (DigiCert only) |
 | `ACME_DIRECTORY_URL` | *(auto-set)* | ACME directory URL — auto-populated from `CA_PROVIDER`; required only when `CA_PROVIDER=custom` |

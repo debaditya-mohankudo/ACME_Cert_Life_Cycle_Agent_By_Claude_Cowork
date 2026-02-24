@@ -22,15 +22,14 @@ container already owns Python 3.12).
 uv run pytest -v \
   --ignore=tests/test_revocation_pebble.py \
   --ignore=tests/test_integration_pebble.py \
-  --ignore=tests/test_lifecycle_pebble.py \
-  --ignore=tests/test_kb.py
+  --ignore=tests/test_lifecycle_pebble.py
 ```
 
-**218 tests, 0 skips, no external services required.**
+**219 tests, 0 skips, no external services required.**
 
 ---
 
-## Tests Currently in CI (218 total)
+## Tests Currently in CI (219 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -154,7 +153,7 @@ LangGraph `MemorySaver` checkpoint mechanics; all ACME nodes mocked.
 
 ---
 
-### `tests/test_ca_detection.py` — 32 tests
+### `tests/test_ca_detection.py` — 33 tests
 CA detection from X.509 issuer fields; no network calls (synthetic certs built in-process).
 
 | Group | Tests | What is verified |
@@ -165,7 +164,7 @@ CA detection from X.509 issuer fields; no network calls (synthetic certs built i
 | `detect_ca_for_domain()` | 4 tests | metadata `ca_provider` takes precedence; falls back to cert inspection; falls back when metadata lacks `ca_provider`; unknown CA returns `None` |
 | `write_cert_files()` metadata | 2 tests | `ca_provider` written to `metadata.json`; defaults to empty string when omitted |
 | `_warn_if_ca_mismatch()` | 6 tests | no warning when detected is `None`; no warning on match; letsencrypt/staging treated as equivalent (both directions); warning logged on real mismatch; domain name included in warning |
-| Scanner integration | 4 tests | no cert → `detected_ca_provider` is `None`; cert present → provider populated; mismatch triggers warning; matching CAs suppress warning |
+| Scanner integration | 5 tests | no cert → `detected_ca_provider` is `None`; named `CA_PROVIDER` skips detection (returns `None`); `CA_PROVIDER=custom` runs detection; mismatch warning emitted only for `custom`; no warning emitted for named providers |
 
 ---
 
@@ -176,8 +175,6 @@ CA detection from X.509 issuer fields; no network calls (synthetic certs built i
 | `tests/test_integration_pebble.py` | 4 | Requires Pebble ACME stub server |
 | `tests/test_lifecycle_pebble.py` | 2 | Requires Pebble ACME stub server |
 | `tests/test_revocation_pebble.py` | 3 | Requires Pebble ACME stub server |
-| `tests/test_kb.py` | variable | Requires `faiss-cpu` + `sentence-transformers` (not in `requirements.txt`) |
-
 **Pebble total: 9 tests.**
 
 ---
