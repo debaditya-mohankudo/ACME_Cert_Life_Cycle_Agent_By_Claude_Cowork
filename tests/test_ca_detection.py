@@ -33,7 +33,7 @@ def _build_cert(
     ocsp_url: str = "",
 ) -> str:
     """
-    Return a self-signed PEM certificate with the given issuer O field and,
+    Return a synthetic PEM certificate whose issuer has the given O field and,
     optionally, an AIA extension containing an OCSP URL.
     """
     key = _make_key()
