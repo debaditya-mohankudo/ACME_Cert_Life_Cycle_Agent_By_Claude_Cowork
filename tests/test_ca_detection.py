@@ -376,7 +376,8 @@ class TestCertificateScannerCADetection:
         record = result["cert_records"][0]
         assert record["detected_ca_provider"] is None
 
-    def test_cert_present_detected_ca_populated(self, tmp_path: Path):
+    def test_named_provider_skips_detection(self, tmp_path: Path):
+        """For named CAs (non-custom), detected_ca_provider is always None."""
         from agent.nodes.scanner import certificate_scanner
 
         domain = "example.com"
@@ -391,10 +392,28 @@ class TestCertificateScannerCADetection:
             result = certificate_scanner(state)
 
         record = result["cert_records"][0]
-        assert record["detected_ca_provider"] == "digicert"
-        assert record["needs_renewal"] is False or record["days_until_expiry"] is not None
+        assert record["detected_ca_provider"] is None
 
-    def test_mismatch_triggers_warning(self, tmp_path: Path, caplog):
+    def test_custom_provider_runs_detection(self, tmp_path: Path):
+        """For CA_PROVIDER='custom', detection runs and populates the field."""
+        from agent.nodes.scanner import certificate_scanner
+
+        domain = "example.com"
+        d = tmp_path / domain
+        d.mkdir()
+        pem = _build_cert("DigiCert Inc")
+        (d / "cert.pem").write_text(pem)
+
+        state = self._make_state(str(tmp_path), [domain])
+        with patch("agent.nodes.scanner.settings") as mock_settings:
+            mock_settings.CA_PROVIDER = "custom"
+            result = certificate_scanner(state)
+
+        record = result["cert_records"][0]
+        assert record["detected_ca_provider"] == "digicert"
+
+    def test_mismatch_triggers_warning_only_for_custom(self, tmp_path: Path, caplog):
+        """Mismatch warning fires only when CA_PROVIDER='custom'."""
         from agent.nodes.scanner import certificate_scanner
 
         domain = "example.com"
@@ -405,13 +424,14 @@ class TestCertificateScannerCADetection:
 
         state = self._make_state(str(tmp_path), [domain])
         with patch("agent.nodes.scanner.settings") as mock_settings:
-            mock_settings.CA_PROVIDER = "digicert"
+            mock_settings.CA_PROVIDER = "custom"
             with caplog.at_level(logging.WARNING, logger="agent.nodes.scanner"):
                 certificate_scanner(state)
 
         assert "mismatch" in caplog.text.lower()
 
-    def test_no_mismatch_warning_when_cas_agree(self, tmp_path: Path, caplog):
+    def test_no_warning_for_named_provider(self, tmp_path: Path, caplog):
+        """Named CA_PROVIDER: no detection, no warning, even if cert issuer differs."""
         from agent.nodes.scanner import certificate_scanner
 
         domain = "example.com"
@@ -422,7 +442,7 @@ class TestCertificateScannerCADetection:
 
         state = self._make_state(str(tmp_path), [domain])
         with patch("agent.nodes.scanner.settings") as mock_settings:
-            mock_settings.CA_PROVIDER = "letsencrypt"
+            mock_settings.CA_PROVIDER = "digicert"  # mismatch, but named — no warning
             with caplog.at_level(logging.WARNING, logger="agent.nodes.scanner"):
                 certificate_scanner(state)
 

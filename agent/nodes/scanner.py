@@ -2,9 +2,10 @@
 certificate_scanner node — reads all managed domain cert files and populates
 cert_records + identifies which domains need renewal.
 
-Also detects the CA that issued each existing certificate (advisory) and
-warns if the detected CA differs from the configured CA_PROVIDER.  Detection
-never alters configuration; it is purely informational for operators.
+CA detection is only performed when CA_PROVIDER is "custom" (i.e. the operator
+has not selected a named CA).  For all named providers (letsencrypt, digicert,
+zerossl, sectigo, letsencrypt_staging) the config is authoritative and
+detection is skipped — detected_ca_provider is left as None.
 """
 from __future__ import annotations
 
@@ -25,7 +26,7 @@ def certificate_scanner(state: AgentState) -> dict:
       - Parse expiry date
       - Compute days_until_expiry
       - Set needs_renewal flag
-      - Detect CA provider from existing cert (advisory)
+      - Detect CA provider from existing cert (advisory, custom CA only)
     Populates state["cert_records"].
     """
     cert_store_path = state["cert_store_path"]
@@ -50,8 +51,13 @@ def certificate_scanner(state: AgentState) -> dict:
                 "detected_ca_provider": None,
             }
         else:
-            detected_ca = fs.detect_ca_for_domain(cert_store_path, domain, pem)
-            _warn_if_ca_mismatch(domain, detected_ca, settings.CA_PROVIDER)
+            # Only detect CA when using a custom ACME endpoint; for named
+            # providers the configured CA_PROVIDER is authoritative.
+            if settings.CA_PROVIDER == "custom":
+                detected_ca = fs.detect_ca_for_domain(cert_store_path, domain, pem)
+                _warn_if_ca_mismatch(domain, detected_ca, settings.CA_PROVIDER)
+            else:
+                detected_ca = None
 
             try:
                 expiry = fs.parse_expiry(pem)
