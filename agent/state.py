@@ -21,11 +21,12 @@ from typing_extensions import TypedDict
 
 class CertRecord(TypedDict):
     domain: str
-    cert_path: Optional[str]          # Path to existing cert.pem (None if not found)
-    key_path: Optional[str]           # Path to privkey.pem
-    expiry_date: Optional[str]        # ISO-8601 UTC string parsed from cert
-    days_until_expiry: Optional[int]  # Computed at scan time
-    needs_renewal: bool               # True when < renewal_threshold_days remain
+    cert_path: Optional[str]             # Path to existing cert.pem (None if not found)
+    key_path: Optional[str]              # Path to privkey.pem
+    expiry_date: Optional[str]           # ISO-8601 UTC string parsed from cert
+    days_until_expiry: Optional[int]     # Computed at scan time
+    needs_renewal: bool                  # True when < renewal_threshold_days remain
+    detected_ca_provider: Optional[str]  # CA that issued the existing cert (advisory)
 
 
 class AcmeOrder(TypedDict):
