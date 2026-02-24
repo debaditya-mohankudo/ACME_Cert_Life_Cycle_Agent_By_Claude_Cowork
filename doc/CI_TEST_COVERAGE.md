@@ -26,11 +26,11 @@ uv run pytest -v \
   --ignore=tests/test_kb.py
 ```
 
-**175 tests, 0 skips, no external services required.**
+**218 tests, 0 skips, no external services required.**
 
 ---
 
-## Tests Currently in CI (175 total)
+## Tests Currently in CI (218 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -81,7 +81,7 @@ Protocol error paths; all HTTP mocked.
 
 ---
 
-### `tests/test_dns_challenge.py` — 45 tests
+### `tests/test_dns_challenge.py` — 51 tests
 DNS-01 challenge provider layer; all cloud SDK calls mocked.
 
 | Group | Tests | What is verified |
@@ -151,6 +151,21 @@ LangGraph `MemorySaver` checkpoint mechanics; all ACME nodes mocked.
 | Text writes | 5 tests | creates file, overwrites, no temp file left, creates parent dirs, cleans up temp on error |
 | Bytes writes | 4 tests | creates file, overwrites, no temp file left, large file (1 MB) |
 | Integration | 3 tests | PEM round-trip, multiple writes same dir, concurrent writes different files |
+
+---
+
+### `tests/test_ca_detection.py` — 32 tests
+CA detection from X.509 issuer fields; no network calls (synthetic certs built in-process).
+
+| Group | Tests | What is verified |
+|---|---|---|
+| `detect_ca_from_cert()` — known CAs | 8 tests | Let's Encrypt, Let's Encrypt staging, DigiCert, ZeroSSL, Sectigo (no AIA), Sectigo (Sectigo OCSP), Sectigo (ZeroSSL OCSP), COMODO legacy with ZeroSSL OCSP |
+| `detect_ca_from_cert()` — fallback | 3 tests | unknown issuer org returns `"digicert"`; invalid/empty PEM returns `None`; cert with no O field returns `"digicert"` |
+| Internal helpers | 4 tests | `_get_issuer_org` present/absent; `_get_ocsp_url` present/absent |
+| `detect_ca_for_domain()` | 4 tests | metadata `ca_provider` takes precedence; falls back to cert inspection; falls back when metadata lacks `ca_provider`; unknown CA returns `"digicert"` |
+| `write_cert_files()` metadata | 2 tests | `ca_provider` written to `metadata.json`; defaults to empty string when omitted |
+| `_warn_if_ca_mismatch()` | 6 tests | no warning when detected is `None`; no warning on match; letsencrypt/staging treated as equivalent (both directions); warning logged on real mismatch; domain name included in warning |
+| Scanner integration | 4 tests | no cert → `detected_ca_provider` is `None`; cert present → provider populated; mismatch triggers warning; matching CAs suppress warning |
 
 ---
 
