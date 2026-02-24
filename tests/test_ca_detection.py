@@ -135,7 +135,8 @@ class TestDetectCaFromCert:
         pem = _build_cert("COMODO CA Limited", ocsp_url="http://ocsp.zerossl.com")
         assert detect_ca_from_cert(pem) == "zerossl"
 
-    def test_unknown_ca_returns_none(self):
+    def test_unknown_ca_falls_back_to_digicert(self):
+        """Unrecognised issuer O field → 'digicert' (default fallback, not None)."""
         from acme.ca_detection import detect_ca_from_cert
 
         pem = _build_cert("Unknown CA Corporation")
