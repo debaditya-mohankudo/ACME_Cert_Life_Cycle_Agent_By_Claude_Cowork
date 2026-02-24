@@ -3,6 +3,7 @@ name = "acme-certificate-lifecycle-agent"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.12"
 dependencies = []
 
