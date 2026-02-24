@@ -27,3 +27,8 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 | Observability | [OBSERVABILITY.md](doc/README_OBSERVABILITY.md) |
 | Security considerations | [SECURITY.md](doc/README_SECURITY.md) |
 | Dependencies | [DEPENDENCIES.md](doc/README_DEPENDENCIES.md) |
+
+
+## License
+
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
