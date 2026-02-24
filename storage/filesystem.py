@@ -68,12 +68,13 @@ def write_cert_files(
     chain_pem: str,
     privkey_pem: str,
     acme_order_url: str = "",
+    ca_provider: str = "",
 ) -> dict:
     """
     Write cert.pem, chain.pem, fullchain.pem, privkey.pem and metadata.json
     to ./certs/<domain>/.  Private key is set to mode 0o600.
 
-    Returns a metadata dict with issued_at, expires_at, acme_order_url.
+    Returns a metadata dict with issued_at, expires_at, acme_order_url, ca_provider.
     """
     d = cert_dir(cert_store_path, domain)
 
@@ -92,10 +93,29 @@ def write_cert_files(
         "expires_at": expiry.isoformat(),
         "acme_order_url": acme_order_url,
         "renewed_by": "acme-cert-agent",
+        "ca_provider": ca_provider,
     }
     _write(d / "metadata.json", json.dumps(metadata, indent=2))
 
     return metadata
+
+
+def detect_ca_for_domain(cert_store_path: str, domain: str, pem_text: str) -> Optional[str]:
+    """
+    Return the CA provider string for the certificate at cert_store_path/<domain>.
+
+    Strategy (in order):
+      1. Read ca_provider from metadata.json if present (written by storage_manager).
+      2. Fall back to X.509 issuer inspection via acme.ca_detection.detect_ca_from_cert().
+
+    Returns None if the CA cannot be identified.
+    """
+    meta = read_metadata(cert_store_path, domain)
+    if meta and meta.get("ca_provider"):
+        return meta["ca_provider"]
+
+    from acme.ca_detection import detect_ca_from_cert  # avoid circular import at module level
+    return detect_ca_from_cert(pem_text)
 
 
 def read_metadata(cert_store_path: str, domain: str) -> Optional[dict]:

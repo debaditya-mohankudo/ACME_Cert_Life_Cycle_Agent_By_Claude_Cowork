@@ -15,6 +15,7 @@ from pathlib import Path
 
 from storage import filesystem as fs
 from agent.state import AgentState
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ def storage_manager(state: AgentState) -> dict:
             chain_pem=chain_pem,
             privkey_pem=privkey_pem,
             acme_order_url=order.get("order_url", ""),
+            ca_provider=settings.CA_PROVIDER,
         )
     except Exception as exc:
         error = f"storage_manager: failed to write PEM files for {domain}: {exc}"

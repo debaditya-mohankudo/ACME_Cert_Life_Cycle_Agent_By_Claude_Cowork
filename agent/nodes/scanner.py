@@ -1,13 +1,18 @@
 """
 certificate_scanner node — reads all managed domain cert files and populates
 cert_records + identifies which domains need renewal.
+
+Also detects the CA that issued each existing certificate (advisory) and
+warns if the detected CA differs from the configured CA_PROVIDER.  Detection
+never alters configuration; it is purely informational for operators.
 """
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from typing import Optional
 
 from agent.state import AgentState, CertRecord
+from config import settings
 from storage import filesystem as fs
 
 logger = logging.getLogger(__name__)
@@ -20,6 +25,7 @@ def certificate_scanner(state: AgentState) -> dict:
       - Parse expiry date
       - Compute days_until_expiry
       - Set needs_renewal flag
+      - Detect CA provider from existing cert (advisory)
     Populates state["cert_records"].
     """
     cert_store_path = state["cert_store_path"]
@@ -41,8 +47,12 @@ def certificate_scanner(state: AgentState) -> dict:
                 "expiry_date": None,
                 "days_until_expiry": None,
                 "needs_renewal": True,
+                "detected_ca_provider": None,
             }
         else:
+            detected_ca = fs.detect_ca_for_domain(cert_store_path, domain, pem)
+            _warn_if_ca_mismatch(domain, detected_ca, settings.CA_PROVIDER)
+
             try:
                 expiry = fs.parse_expiry(pem)
                 days = fs.days_until_expiry(expiry)
@@ -62,6 +72,7 @@ def certificate_scanner(state: AgentState) -> dict:
                     "expiry_date": expiry.isoformat(),
                     "days_until_expiry": days,
                     "needs_renewal": needs_renewal,
+                    "detected_ca_provider": detected_ca,
                 }
             except Exception as exc:
                 logger.warning("  %s → failed to parse cert: %s", domain, exc)
@@ -72,8 +83,35 @@ def certificate_scanner(state: AgentState) -> dict:
                     "expiry_date": None,
                     "days_until_expiry": None,
                     "needs_renewal": True,
+                    "detected_ca_provider": detected_ca,
                 }
 
         records.append(record)
 
     return {"cert_records": records}
+
+
+# ─── Internal helpers ──────────────────────────────────────────────────────────
+
+
+def _warn_if_ca_mismatch(domain: str, detected: Optional[str], configured: str) -> None:
+    """
+    Log a WARNING when the detected CA differs from the configured CA_PROVIDER.
+
+    Let's Encrypt production and staging are treated as equivalent because
+    both are served by "Let's Encrypt" as the issuer O field.
+    """
+    if detected is None:
+        return
+
+    def _normalise(ca: str) -> str:
+        return "letsencrypt" if ca == "letsencrypt_staging" else ca
+
+    if _normalise(detected) != _normalise(configured):
+        logger.warning(
+            "CA mismatch for %s: cert was issued by '%s' but CA_PROVIDER is '%s'. "
+            "Renewal will use the configured CA. Update CA_PROVIDER if this is unintended.",
+            domain,
+            detected,
+            configured,
+        )
