@@ -4,7 +4,7 @@ This guide explains how to configure HTTP-01 challenge modes for the ACME Certif
 
 ## Overview
 
-The HTTP-01 challenge is part of the ACME protocol where the Let's Encrypt (or other CA) server verifies domain ownership by requesting a specific token file from your web server. The agent supports two modes:
+The HTTP-01 challenge (**RFC 8555 § 8.3**) is the domain ownership proof mechanism in the ACME protocol. The CA verifies ownership by making an unauthenticated HTTP GET to `http://<domain>/.well-known/acme-challenge/<token>` and checking that the response body exactly matches the key-authorization string (`{token}.{jwk_thumbprint}`, where the thumbprint is computed per **RFC 7638 § 3**). The agent supports two modes for serving that file:
 
 1. **Standalone** — Agent creates its own temporary HTTP server
 2. **Webroot** — Agent writes token files to an existing web server's directory

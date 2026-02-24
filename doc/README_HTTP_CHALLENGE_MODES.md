@@ -1,5 +1,9 @@
 # HTTP-01 Challenge Modes
 
+**RFC 8555 § 8.3** — The CA verifies domain ownership by making an unauthenticated HTTP GET to `http://<domain>/.well-known/acme-challenge/<token>` and checking that the response body exactly matches the key-authorization string (`{token}.{jwk_thumbprint}`). The agent must serve that file for the duration of the challenge window.
+
+Two modes are supported:
+
 ## Standalone (default)
 
 The agent spins up a minimal HTTP server on port 80 for the duration of each challenge. No existing web server is required. Port 80 must not already be in use during the renewal window.

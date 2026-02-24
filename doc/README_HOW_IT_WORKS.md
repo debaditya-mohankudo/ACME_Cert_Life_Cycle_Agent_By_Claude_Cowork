@@ -1,6 +1,6 @@
 # How It Works
 
-The agent is a LangGraph `StateGraph` that walks through the ACME protocol step-by-step, with three LLM decision points:
+The agent is a LangGraph `StateGraph` that walks through the **ACME protocol (RFC 8555)** step-by-step, with three LLM decision points. Each named node corresponds to a distinct RFC 8555 operation — see [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md) for the full section-level mapping.
 
 ```
 START

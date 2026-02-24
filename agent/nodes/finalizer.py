@@ -2,7 +2,11 @@
 order_finalizer + cert_downloader nodes.
 
 order_finalizer  — POST CSR to /finalize, poll until certificate URL is ready.
+                   RFC 8555 §7.4: payload is {"csr": base64url(DER-CSR)};
+                   CA transitions order to "valid" when certificate is issued.
 cert_downloader  — POST-as-GET the certificate URL, return full PEM chain.
+                   RFC 8555 §7.4.2: certificate URL is stable; re-downloading
+                   returns the same certificate (replay-safe).
 """
 from __future__ import annotations
 

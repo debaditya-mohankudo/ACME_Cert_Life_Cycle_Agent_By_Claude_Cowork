@@ -1,6 +1,13 @@
 """
 acme_account_setup node — register or retrieve an ACME account.
 
+RFC 8555 §7.3: POST /newAccount with termsOfServiceAgreed=true registers a new
+account; the CA returns 201 Created with the account URL in the Location header.
+RFC 8555 §7.3.1: POST /newAccount with onlyReturnExisting=true looks up an
+existing account without creating one; returns 200 OK if found, 400 if not.
+EAB (RFC 8739) is injected transparently by the CA client subclass when required
+(DigiCert, ZeroSSL, Sectigo).
+
 Security note: the account key is never stored in AgentState (which could
 leak into LangSmith traces).  Instead the key path is stored in state and
 the key is loaded from disk each time it is needed.

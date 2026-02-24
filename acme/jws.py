@@ -164,7 +164,7 @@ def create_eab_jws(
     Raises ValueError if:
       - eab_kid is empty
       - eab_hmac_key_b64url is not valid base64url
-      - Decoded HMAC key is < 16 bytes (per RFC 8555 minimum)
+      - Decoded HMAC key is < 16 bytes (per RFC 8739 §2 minimum)
     """
     # Validate eab_kid
     if not eab_kid or not eab_kid.strip():
@@ -182,11 +182,11 @@ def create_eab_jws(
             f"Must be base64url-encoded bytes."
         ) from exc
 
-    # Validate HMAC key length (RFC 8555 requires at least 128 bits = 16 bytes)
+    # Validate HMAC key length (RFC 8739 §2 requires at least 128 bits = 16 bytes)
     if len(hmac_key) < 16:
         raise ValueError(
             f"EAB HMAC key is too short: {len(hmac_key)} bytes. "
-            f"Must be at least 16 bytes (128 bits) per RFC 8555."
+            f"Must be at least 16 bytes (128 bits) per RFC 8739 §2."
         )
 
     pub_jwk = account_jwk.public_key().fields_to_partial_json()

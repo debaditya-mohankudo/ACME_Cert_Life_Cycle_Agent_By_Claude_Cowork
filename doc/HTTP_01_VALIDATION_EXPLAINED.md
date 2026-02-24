@@ -170,7 +170,7 @@ Why this matters:
 
 ### The Protocol Definition
 
-**RFC 8555 § 8.4 — HTTP Content-Type Validation:**
+**RFC 8555 § 8.3 — HTTP Challenge:**
 
 > The ACME server verifies the challenge by making an HTTP request to
 > the URI constructed by concatenating:
@@ -316,11 +316,16 @@ There's no escaping this: to pass HTTP-01, you must control the domain's web ser
 
 ---
 
-## RFC 8555 References
+## RFC References
 
-- **§ 8.4:** HTTP Content-Type Validation
-- **§ 6.5:** Replay Protection (explains one-time nonce usage)
-- **§ 7.1:** Account Creation (explains JWK and thumbprint)
+### RFC 8555 — ACME Protocol
+- **§ 8.3:** HTTP Challenge — token URL format, key-authorization content, and CA verification behaviour
+- **§ 6.5:** Replay-Nonce — one-time nonce requirement (why challenge tokens are single-use)
+- **§ 7.3:** Account Management — `newAccount` endpoint
+- **§ 7.3.2:** Account JWK — public key used to derive the JWK thumbprint
+
+### RFC 7638 — JSON Web Key Thumbprint
+- **§ 3:** JWK Thumbprint Computation — SHA-256 over the canonical JSON serialisation of the account public key; result base64url-encoded and appended to the challenge token
 
 ---
 

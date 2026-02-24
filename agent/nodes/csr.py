@@ -1,6 +1,10 @@
 """
 csr_generator node — generate an RSA-2048 private key and CSR for the
 current domain, storing the key PEM in the cert directory with atomic writes.
+
+The CSR is DER-encoded (RFC 8555 §7.4 requires DER for POST /finalize) and
+stored as a hex string in AgentState so it can be serialised safely through
+LangGraph checkpoints.  The private key never enters state.
 """
 from __future__ import annotations
 

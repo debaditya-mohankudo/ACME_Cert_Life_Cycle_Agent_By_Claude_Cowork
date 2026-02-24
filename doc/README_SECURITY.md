@@ -146,7 +146,7 @@ enforces TLS by default.
 
 ## 4. ACME Protocol Integrity
 
-### Nonce-based replay protection
+### Nonce-based replay protection (RFC 8555 § 6.5)
 
 Every ACME POST request includes a server-issued one-time nonce in the JWS
 protected header. The agent:
@@ -168,10 +168,11 @@ protected header. The agent:
 **Threat addressed:** Replay attacks — an attacker capturing a signed ACME request
 cannot resubmit it because the nonce is single-use and server-validated.
 
-### JWS signature — RS256 + URL binding
+### JWS signature — RS256 + URL binding (RFC 8555 § 6.2 and § 6.3)
 
 All ACME requests are signed with **RS256** (RSA-SHA256, PKCS#1 v1.5 padding).
-The signed protected header always includes both the nonce **and the target URL**:
+The signed protected header always includes both the nonce **and the target URL**
+(required by RFC 8555 § 6.3 — the URL field binds each JWS to a specific endpoint):
 
 ```python
 # acme/jws.py — sign_request
@@ -191,9 +192,9 @@ would reject. This guard mirrors the nonce pre-condition check.
 Including the URL in the signature binds each request to a specific ACME endpoint.
 A signed `newOrder` request cannot be replayed against `revokeCert`.
 
-### EAB (External Account Binding) — HMAC-SHA256
+### EAB (External Account Binding) — HMAC-SHA256 (RFC 8739 § 2)
 
-DigiCert requires EAB per RFC 8739. The outer EAB JWS is signed with
+DigiCert, ZeroSSL, and Sectigo require EAB per RFC 8739 § 2. The outer EAB JWS is signed with
 **HS256** (HMAC-SHA256) using the EAB HMAC key provided by DigiCert
 ([acme/jws.py](../acme/jws.py)):
 

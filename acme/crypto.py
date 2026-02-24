@@ -47,9 +47,12 @@ def create_csr(
     """
     Create a DER-encoded CSR for *domain*.
 
+    The CSR is DER-encoded as required by RFC 8555 §7.4 (POST /finalize expects
+    a base64url-encoded DER CSR in the payload).  Includes a SubjectAlternativeName
+    extension (RFC 5280) covering all domains; *domain* is always in the SAN list.
+
     If *san_domains* is provided, all of them are added as SubjectAlternativeNames
-    (required for multi-domain SANs / wildcard certs).  *domain* is always
-    included in the SAN list.
+    (required for multi-domain SANs / wildcard certs).
     """
     all_domains = list(dict.fromkeys([domain] + (san_domains or [])))  # deduplicate, preserve order
 

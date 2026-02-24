@@ -1,6 +1,11 @@
 """
 order_initializer node — POST /newOrder for the current domain, then fetch
 all authorizations to collect challenge tokens (HTTP-01 or DNS-01).
+
+RFC 8555 §7.4: POST /newOrder returns an order object with authorization URLs.
+RFC 8555 §7.5: each authorization URL is fetched (POST-as-GET) to retrieve the
+challenge objects for the configured challenge type (http-01 per §8.3, dns-01
+per §8.4).
 """
 from __future__ import annotations
 

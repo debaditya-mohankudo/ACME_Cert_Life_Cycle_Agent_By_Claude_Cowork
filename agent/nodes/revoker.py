@@ -1,6 +1,11 @@
 """
 cert_revoker node — revoke a certificate via ACME POST /revokeCert.
 
+RFC 8555 §7.6: the client POSTs a JWS-signed payload containing the
+base64url-encoded DER certificate and an optional RFC 5280 reason code
+(0=unspecified, 1=keyCompromise, 4=superseded, 5=cessationOfOperation).
+Reason code 0 omits the field from the payload per §7.6.
+
 Security note: the account key is loaded from disk, never stored in AgentState
 or returned in the result dict.
 """

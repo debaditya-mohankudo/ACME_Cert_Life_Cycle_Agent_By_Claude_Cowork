@@ -1,5 +1,10 @@
 """
-HTTP-01 challenge responder.
+HTTP-01 challenge responder (RFC 8555 §8.3).
+
+The CA verifies domain ownership by making an unauthenticated HTTP GET to
+http://<domain>/.well-known/acme-challenge/<token> and checking the response
+body exactly matches the key-authorization string: "{token}.{jwk_thumbprint}"
+(thumbprint per RFC 7638 §3).
 
 Two modes:
   1. Standalone — spins up a minimal HTTP server on a configurable port
