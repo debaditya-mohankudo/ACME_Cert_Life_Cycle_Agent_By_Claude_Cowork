@@ -160,9 +160,9 @@ CA detection from X.509 issuer fields; no network calls (synthetic certs built i
 | Group | Tests | What is verified |
 |---|---|---|
 | `detect_ca_from_cert()` — known CAs | 8 tests | Let's Encrypt, Let's Encrypt staging, DigiCert, ZeroSSL, Sectigo (no AIA), Sectigo (Sectigo OCSP), Sectigo (ZeroSSL OCSP), COMODO legacy with ZeroSSL OCSP |
-| `detect_ca_from_cert()` — fallback | 3 tests | unknown issuer org returns `"digicert"`; invalid/empty PEM returns `None`; cert with no O field returns `"digicert"` |
+| `detect_ca_from_cert()` — fallback | 3 tests | unknown issuer org returns `None`; invalid/empty PEM returns `None`; cert with no O field returns `None` |
 | Internal helpers | 4 tests | `_get_issuer_org` present/absent; `_get_ocsp_url` present/absent |
-| `detect_ca_for_domain()` | 4 tests | metadata `ca_provider` takes precedence; falls back to cert inspection; falls back when metadata lacks `ca_provider`; unknown CA returns `"digicert"` |
+| `detect_ca_for_domain()` | 4 tests | metadata `ca_provider` takes precedence; falls back to cert inspection; falls back when metadata lacks `ca_provider`; unknown CA returns `None` |
 | `write_cert_files()` metadata | 2 tests | `ca_provider` written to `metadata.json`; defaults to empty string when omitted |
 | `_warn_if_ca_mismatch()` | 6 tests | no warning when detected is `None`; no warning on match; letsencrypt/staging treated as equivalent (both directions); warning logged on real mismatch; domain name included in warning |
 | Scanner integration | 4 tests | no cert → `detected_ca_provider` is `None`; cert present → provider populated; mismatch triggers warning; matching CAs suppress warning |

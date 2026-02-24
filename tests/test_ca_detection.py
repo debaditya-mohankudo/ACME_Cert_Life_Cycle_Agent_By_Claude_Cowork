@@ -139,7 +139,7 @@ class TestDetectCaFromCert:
         from acme.ca_detection import detect_ca_from_cert
 
         pem = _build_cert("Unknown CA Corporation")
-        assert detect_ca_from_cert(pem) == "digicert"
+        assert detect_ca_from_cert(pem) is None
 
     def test_invalid_pem_returns_none(self):
         from acme.ca_detection import detect_ca_from_cert
@@ -148,7 +148,7 @@ class TestDetectCaFromCert:
         assert detect_ca_from_cert("") is None
 
     def test_cert_without_org_field(self):
-        """A cert whose issuer has no O field should return 'digicert' (default fallback)."""
+        """A cert whose issuer has no O field should return None."""
         from acme.ca_detection import detect_ca_from_cert
 
         key = _make_key()
@@ -167,7 +167,7 @@ class TestDetectCaFromCert:
             .sign(key, hashes.SHA256())
         )
         pem = cert.public_bytes(serialization.Encoding.PEM).decode()
-        assert detect_ca_from_cert(pem) == "digicert"
+        assert detect_ca_from_cert(pem) is None
 
 
 # ─── Tests: _get_issuer_org() and _get_ocsp_url() ────────────────────────────
@@ -258,13 +258,13 @@ class TestDetectCaForDomain:
         result = fs.detect_ca_for_domain(str(tmp_path), domain, pem)
         assert result == "letsencrypt"
 
-    def test_returns_digicert_for_unknown_ca(self, tmp_path: Path):
+    def test_returns_none_for_unknown_ca(self, tmp_path: Path):
         from storage import filesystem as fs
 
         domain = "example.com"
         (tmp_path / domain).mkdir()
         pem = _build_cert("Totally Unknown CA Inc")
-        assert fs.detect_ca_for_domain(str(tmp_path), domain, pem) == "digicert"
+        assert fs.detect_ca_for_domain(str(tmp_path), domain, pem) is None
 
 
 # ─── Tests: write_cert_files() includes ca_provider in metadata ───────────────

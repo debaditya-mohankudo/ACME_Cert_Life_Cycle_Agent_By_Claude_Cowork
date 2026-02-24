@@ -18,7 +18,7 @@ acme-agent/
 │   ├── jws.py                   # JWK / JWS / EAB signing (josepy)
 │   ├── http_challenge.py        # Standalone HTTP-01 server + webroot writer
 │   ├── dns_challenge.py         # DNS-01 TXT value computation + provider adapters (Cloudflare, Route53, Google)
-│   └── ca_detection.py          # X.509 issuer inspection → CA provider string; defaults to "digicert" if unrecognised
+│   └── ca_detection.py          # X.509 issuer inspection → CA provider string; returns None if unrecognised
 │
 ├── storage/
 │   └── filesystem.py            # PEM read/write, expiry parsing, metadata
