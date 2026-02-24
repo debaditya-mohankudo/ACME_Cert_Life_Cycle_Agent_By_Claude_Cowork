@@ -155,7 +155,7 @@ agent/nodes/    planner  scanner  account  order  challenge
 acme/client.py  acme/jws.py  acme/crypto.py  acme/http_challenge.py
 storage/atomic.py  storage/filesystem.py
 
-tests/  doc/  kb/
+tests/  doc/
 ```
 
 ---
@@ -247,15 +247,6 @@ Never change `MANAGED_DOMAINS` parsing logic (`_CommaFallbackMixin` in `config.p
 Never enable `ACME_INSECURE` in production.
 
 ---
-
-# 📚 Knowledge Base
-
-Current: JSON storage (`kb/chunks.json`) — human-readable, version-control friendly.
-
-Revisit when: > 50k entries or metadata filtering required.
-Future options: Qdrant · SQLite + FAISS · Parquet + index.
-
-Do not prematurely optimize storage.
 
 ---
 
