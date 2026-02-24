@@ -102,13 +102,18 @@ def write_cert_files(
 
 def detect_ca_for_domain(cert_store_path: str, domain: str, pem_text: str) -> Optional[str]:
     """
-    Return the CA provider string for the certificate at cert_store_path/<domain>.
+    Return the CA provider string for the given domain and PEM certificate text.
 
     Strategy (in order):
-      1. Read ca_provider from metadata.json if present (written by storage_manager).
-      2. Fall back to X.509 issuer inspection via acme.ca_detection.detect_ca_from_cert().
+      1. Read `ca_provider` from metadata.json in cert_store_path/<domain>/ if present
+         (written by storage_manager).
+      2. If not set in metadata, fall back to X.509 issuer inspection of the provided
+         `pem_text` via acme.ca_detection.detect_ca_from_cert().
 
-    Returns None if the CA cannot be identified.
+    Returns:
+        The CA provider string from metadata.json, or the provider (or default provider,
+        e.g. "digicert") inferred by detect_ca_from_cert(pem_text). May be None if the
+        CA cannot be determined at all.
     """
     meta = read_metadata(cert_store_path, domain)
     if meta and meta.get("ca_provider"):
