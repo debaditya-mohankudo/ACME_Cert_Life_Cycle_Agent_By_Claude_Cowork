@@ -55,7 +55,7 @@ def detect_ca_from_cert(pem_text: str) -> Optional[str]:
 
     issuer_org = _get_issuer_org(cert)
     if issuer_org is None:
-        return None
+        return "digicert"
 
     if _LETSENCRYPT_ORG in issuer_org:
         return "letsencrypt"
@@ -74,7 +74,7 @@ def detect_ca_from_cert(pem_text: str) -> Optional[str]:
             return "zerossl"
         return "sectigo"
 
-    return None
+    return "digicert"
 
 
 # ─── Internal helpers ──────────────────────────────────────────────────────────
