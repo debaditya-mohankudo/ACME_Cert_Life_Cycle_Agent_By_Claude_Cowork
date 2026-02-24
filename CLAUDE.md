@@ -338,10 +338,6 @@ After running tests:
 
 * Update [`doc/CI_TEST_COVERAGE.md`](doc/CI_TEST_COVERAGE.md) — test groups, counts, and CI workflow description
 
-After adding a git tag:
-
-* Update [`doc/TAG_SUMMARY.md`](doc/TAG_SUMMARY.md) — add the tag, commit SHA, date, and what it marks
-
 ---
 
 # 🏁 Final Reminder
