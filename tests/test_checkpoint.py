@@ -202,13 +202,13 @@ def mocked_acme_nodes():
             NODE_REGISTRY[name] = mock_callable
         
         yield {
-            "account": mock_account.return_value,
-            "order": mock_order.return_value,
-            "challenge_setup": mock_challenge_setup.return_value,
-            "challenge_verify": mock_challenge_verify.return_value,
-            "csr": mock_csr.return_value,
-            "finalizer": mock_finalizer.return_value,
-            "downloader": mock_downloader.return_value,
+            "account": mock_account,
+            "order": mock_order,
+            "challenge_setup": mock_challenge_setup,
+            "challenge_verify": mock_challenge_verify,
+            "csr": mock_csr,
+            "finalizer": mock_finalizer,
+            "downloader": mock_downloader,
             "storage": mock_storage,
         }
     finally:
