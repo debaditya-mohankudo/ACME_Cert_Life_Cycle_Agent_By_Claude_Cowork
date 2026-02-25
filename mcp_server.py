@@ -159,10 +159,8 @@ def health(
     ):
         current_settings = config.settings
         missing_llm_key = (
-            current_settings.LLM_PROVIDER == "anthropic"
-            and not current_settings.ANTHROPIC_API_KEY
-            or current_settings.LLM_PROVIDER == "openai"
-            and not current_settings.OPENAI_API_KEY
+            (current_settings.LLM_PROVIDER == "anthropic" and not current_settings.ANTHROPIC_API_KEY)
+            or (current_settings.LLM_PROVIDER == "openai" and not current_settings.OPENAI_API_KEY)
         )
 
         warnings: list[str] = []
