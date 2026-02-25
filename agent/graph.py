@@ -32,24 +32,13 @@ from __future__ import annotations
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from agent.nodes.account import acme_account_setup
-from agent.nodes.challenge import challenge_setup, challenge_verifier
-from agent.nodes.csr import csr_generator
-from agent.nodes.error_handler import error_handler
-from agent.nodes.finalizer import cert_downloader, order_finalizer
-from agent.nodes.order import order_initializer
-from agent.nodes.planner import renewal_planner
-from agent.nodes.reporter import summary_reporter
-from agent.nodes.retry_scheduler import retry_scheduler
+from agent.nodes.registry import get_node
 from agent.nodes.router import (
     challenge_router,
     domain_loop_router,
     error_action_router,
-    pick_next_domain,
     renewal_router,
 )
-from agent.nodes.scanner import certificate_scanner
-from agent.nodes.storage import storage_manager
 from agent.state import AgentState
 
 
@@ -65,21 +54,25 @@ def build_graph(use_checkpointing: bool = False):
     """
     builder = StateGraph(AgentState)
 
-    # ── Register nodes ────────────────────────────────────────────────────
-    builder.add_node("certificate_scanner", certificate_scanner)
-    builder.add_node("renewal_planner", renewal_planner)
-    builder.add_node("acme_account_setup", acme_account_setup)
-    builder.add_node("pick_next_domain", pick_next_domain)
-    builder.add_node("order_initializer", order_initializer)
-    builder.add_node("challenge_setup", challenge_setup)
-    builder.add_node("challenge_verifier", challenge_verifier)
-    builder.add_node("csr_generator", csr_generator)
-    builder.add_node("order_finalizer", order_finalizer)
-    builder.add_node("cert_downloader", cert_downloader)
-    builder.add_node("storage_manager", storage_manager)
-    builder.add_node("error_handler", error_handler)
-    builder.add_node("retry_scheduler", retry_scheduler)
-    builder.add_node("summary_reporter", summary_reporter)
+    # ── Register nodes from registry ──────────────────────────────────────
+    acme_nodes = [
+        "certificate_scanner",
+        "renewal_planner",
+        "acme_account_setup",
+        "pick_next_domain",
+        "order_initializer",
+        "challenge_setup",
+        "challenge_verifier",
+        "csr_generator",
+        "order_finalizer",
+        "cert_downloader",
+        "storage_manager",
+        "error_handler",
+        "retry_scheduler",
+        "summary_reporter",
+    ]
+    for node_name in acme_nodes:
+        builder.add_node(node_name, get_node(node_name))
 
     # ── Deterministic edges ───────────────────────────────────────────────
     builder.add_edge(START, "certificate_scanner")

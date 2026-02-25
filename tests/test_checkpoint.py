@@ -142,49 +142,65 @@ def _mock_storage_manager_side_effect(state: dict) -> dict:
 @pytest.fixture()
 def mocked_acme_nodes():
     """
-    Patch all network-calling ACME nodes with minimal valid returns.
-    Each node increments nonce to verify state flow.
-    Patches at agent.graph level to override already-imported references.
+    Patch NODE_REGISTRY to replace ACME node classes with callable mocks.
+    Each mock returns minimal valid state updates and increments nonce.
+    Since mocks are callable instances (not classes), get_node returns them as-is.
     """
-    with patch("agent.graph.acme_account_setup") as mock_account, \
-         patch("agent.graph.order_initializer") as mock_order, \
-         patch("agent.graph.challenge_setup") as mock_challenge_setup, \
-         patch("agent.graph.challenge_verifier") as mock_challenge_verify, \
-         patch("agent.graph.csr_generator") as mock_csr, \
-         patch("agent.graph.order_finalizer") as mock_finalizer, \
-         patch("agent.graph.cert_downloader") as mock_downloader, \
-         patch("agent.graph.storage_manager") as mock_storage:
+    # Define mock callables for each node
+    mock_account = MagicMock(return_value={
+        "acme_account_url": "https://mock.acme/account/1",
+        "current_nonce": "nonce-account",
+    })
+    mock_order = MagicMock(return_value={
+        "current_order": MOCK_ORDER,
+        "current_nonce": "nonce-order",
+    })
+    mock_challenge_setup = MagicMock(return_value={
+        "current_order": MOCK_ORDER_SETUP,
+        "current_nonce": "nonce-setup",
+    })
+    mock_challenge_verify = MagicMock(return_value={
+        "current_order": MOCK_ORDER_READY,
+        "current_nonce": "nonce-verify",
+    })
+    mock_csr = MagicMock(return_value={
+        "current_order": {
+            **MOCK_ORDER_CSR,
+            "csr_der_hex": MOCK_ORDER_CSR.get("csr_hex"),
+        },
+        "current_nonce": "nonce-csr",
+    })
+    mock_finalizer = MagicMock(return_value={
+        "current_order": MOCK_ORDER_FINAL,
+        "current_nonce": "nonce-finalizer",
+    })
+    mock_downloader = MagicMock(return_value={
+        "current_order": MOCK_ORDER_CERT,
+        "current_nonce": "nonce-downloader",
+    })
+    mock_storage = MagicMock(side_effect=_mock_storage_manager_side_effect)
 
-        mock_account.return_value = {
-            "acme_account_url": "https://mock.acme/account/1",
-            "current_nonce": "nonce-account",
-        }
-        mock_order.return_value = {
-            "current_order": MOCK_ORDER,
-            "current_nonce": "nonce-order",
-        }
-        mock_challenge_setup.return_value = {
-            "current_order": MOCK_ORDER_SETUP,
-            "current_nonce": "nonce-setup",
-        }
-        mock_challenge_verify.return_value = {
-            "current_order": MOCK_ORDER_READY,
-            "current_nonce": "nonce-verify",
-        }
-        mock_csr.return_value = {
-            "current_order": MOCK_ORDER_CSR,
-            "current_nonce": "nonce-csr",
-        }
-        mock_finalizer.return_value = {
-            "current_order": MOCK_ORDER_FINAL,
-            "current_nonce": "nonce-finalizer",
-        }
-        mock_downloader.return_value = {
-            "current_order": MOCK_ORDER_CERT,
-            "current_nonce": "nonce-downloader",
-        }
-        mock_storage.side_effect = _mock_storage_manager_side_effect
-
+    # Patch the registry dict entries for ACME nodes
+    # Store originals for restoration
+    from agent.nodes.registry import NODE_REGISTRY
+    
+    originals = {}
+    patches = {
+        "acme_account_setup": mock_account,
+        "order_initializer": mock_order,
+        "challenge_setup": mock_challenge_setup,
+        "challenge_verifier": mock_challenge_verify,
+        "csr_generator": mock_csr,
+        "order_finalizer": mock_finalizer,
+        "cert_downloader": mock_downloader,
+        "storage_manager": mock_storage,
+    }
+    
+    try:
+        for name, mock_callable in patches.items():
+            originals[name] = NODE_REGISTRY[name]
+            NODE_REGISTRY[name] = mock_callable
+        
         yield {
             "account": mock_account,
             "order": mock_order,
@@ -195,6 +211,10 @@ def mocked_acme_nodes():
             "downloader": mock_downloader,
             "storage": mock_storage,
         }
+    finally:
+        # Restore originals
+        for name, original in originals.items():
+            NODE_REGISTRY[name] = original
 
 
 def _run_checkpoint_graph(checkpoint_settings):

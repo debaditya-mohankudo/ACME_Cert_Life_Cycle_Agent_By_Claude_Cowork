@@ -19,10 +19,8 @@ from __future__ import annotations
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from agent.nodes.account import acme_account_setup
-from agent.nodes.reporter import revocation_reporter
-from agent.nodes.revocation_router import pick_next_revocation_domain, revocation_loop_router
-from agent.nodes.revoker import cert_revoker
+from agent.nodes.registry import get_node
+from agent.nodes.revocation_router import revocation_loop_router
 from agent.state import AgentState
 
 
@@ -38,11 +36,15 @@ def build_revocation_graph(use_checkpointing: bool = False):
     """
     builder = StateGraph(AgentState)
 
-    # ── Register nodes ────────────────────────────────────────────────────
-    builder.add_node("revocation_account_setup", acme_account_setup)
-    builder.add_node("pick_next_revocation_domain", pick_next_revocation_domain)
-    builder.add_node("cert_revoker", cert_revoker)
-    builder.add_node("revocation_reporter", revocation_reporter)
+    # ── Register nodes from registry ──────────────────────────────────────
+    revocation_nodes = [
+        "revocation_account_setup",
+        "pick_next_revocation_domain",
+        "cert_revoker",
+        "revocation_reporter",
+    ]
+    for node_name in revocation_nodes:
+        builder.add_node(node_name, get_node(node_name))
 
     # ── Deterministic edges ───────────────────────────────────────────────
     builder.add_edge(START, "revocation_account_setup")

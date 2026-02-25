@@ -20,71 +20,77 @@ from agent.state import AgentState
 logger = logging.getLogger(__name__)
 
 
-def storage_manager(state: AgentState) -> dict:
-    """
-    Write all PEM files and metadata for the current domain.
+class StorageManagerNode:
+    """Callable storage manager implementation."""
 
-    Returns updates to: completed_renewals, cert_metadata, error_log on failure.
-    """
-    domain = state["current_domain"]
-    if not domain:
-        return {"error_log": state.get("error_log", []) + ["storage_manager called with no current_domain"]}
-    cert_store_path = state["cert_store_path"]
-    order = state.get("current_order") or {}
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
 
-    full_chain_pem: str = order.get("full_chain_pem", "")
-    if not full_chain_pem:
-        error = f"storage_manager: no full_chain_pem in state for {domain}"
-        logger.error(error)
-        return {
-            "failed_renewals": state.get("failed_renewals", []) + [domain],
-            "error_log": state.get("error_log", []) + [error],
-        }
+    def run(self, state: AgentState) -> dict:
+        domain = state["current_domain"]
+        if not domain:
+            return {"error_log": state.get("error_log", []) + ["storage_manager called with no current_domain"]}
+        cert_store_path = state["cert_store_path"]
+        order = state.get("current_order") or {}
 
-    cert_pem, chain_pem = _split_pem_chain(full_chain_pem)
+        full_chain_pem: str = order.get("full_chain_pem", "")
+        if not full_chain_pem:
+            error = f"storage_manager: no full_chain_pem in state for {domain}"
+            logger.error(error)
+            return {
+                "failed_renewals": state.get("failed_renewals", []) + [domain],
+                "error_log": state.get("error_log", []) + [error],
+            }
 
-    # Read privkey.pem that csr_generator already wrote
-    privkey_path = Path(cert_store_path) / domain / "privkey.pem"
-    if not privkey_path.exists():
-        error = f"storage_manager: privkey.pem not found for {domain}"
-        logger.error(error)
-        return {
-            "failed_renewals": state.get("failed_renewals", []) + [domain],
-            "error_log": state.get("error_log", []) + [error],
-        }
-    privkey_pem = privkey_path.read_text()
+        cert_pem, chain_pem = _split_pem_chain(full_chain_pem)
 
-    try:
-        metadata = fs.write_cert_files(
-            cert_store_path=cert_store_path,
-            domain=domain,
-            cert_pem=cert_pem,
-            chain_pem=chain_pem,
-            privkey_pem=privkey_pem,
-            acme_order_url=order.get("order_url", ""),
-            ca_provider=config.settings.CA_PROVIDER,
+        safe_domain = fs.sanitize_domain_for_path(domain)
+        privkey_path = Path(cert_store_path) / safe_domain / "privkey.pem"
+        if not privkey_path.exists():
+            error = f"storage_manager: privkey.pem not found for {domain}"
+            logger.error(error)
+            return {
+                "failed_renewals": state.get("failed_renewals", []) + [domain],
+                "error_log": state.get("error_log", []) + [error],
+            }
+        privkey_pem = privkey_path.read_text()
+
+        try:
+            metadata = fs.write_cert_files(
+                cert_store_path=cert_store_path,
+                domain=domain,
+                cert_pem=cert_pem,
+                chain_pem=chain_pem,
+                privkey_pem=privkey_pem,
+                acme_order_url=order.get("order_url", ""),
+                ca_provider=config.settings.CA_PROVIDER,
+            )
+        except Exception as exc:
+            error = f"storage_manager: failed to write PEM files for {domain}: {exc}"
+            logger.error(error)
+            return {
+                "failed_renewals": state.get("failed_renewals", []) + [domain],
+                "error_log": state.get("error_log", []) + [error],
+            }
+
+        logger.info(
+            "Stored PEM files for %s (expires %s)",
+            domain,
+            metadata.get("expires_at", "?")[:10],
         )
-    except Exception as exc:
-        error = f"storage_manager: failed to write PEM files for {domain}: {exc}"
-        logger.error(error)
+
+        existing_metadata = dict(state.get("cert_metadata") or {})
+        existing_metadata[domain] = metadata
+
         return {
-            "failed_renewals": state.get("failed_renewals", []) + [domain],
-            "error_log": state.get("error_log", []) + [error],
+            "completed_renewals": state.get("completed_renewals", []) + [domain],
+            "cert_metadata": existing_metadata,
         }
 
-    logger.info(
-        "Stored PEM files for %s (expires %s)",
-        domain,
-        metadata.get("expires_at", "?")[:10],
-    )
 
-    existing_metadata = dict(state.get("cert_metadata") or {})
-    existing_metadata[domain] = metadata
-
-    return {
-        "completed_renewals": state.get("completed_renewals", []) + [domain],
-        "cert_metadata": existing_metadata,
-    }
+def storage_manager(state: AgentState) -> dict:
+    """Compatibility wrapper delegating to `StorageManagerNode`."""
+    return StorageManagerNode().run(state)
 
 
 def _split_pem_chain(full_chain: str) -> tuple[str, str]:

@@ -17,82 +17,84 @@ from llm.factory import make_llm
 logger = logging.getLogger(__name__)
 
 
-def error_handler(state: AgentState) -> dict:
-    """
-    LLM node: reason about the last error and decide next action.
+class ErrorHandlerNode:
+    """Callable error-handler implementation."""
 
-    Returns updates to: error_analysis, retry_count, retry_delay_seconds, messages,
-                        failed_renewals (if skipping).
-    """
-    domain = state.get("current_domain", "unknown")
-    order = state.get("current_order") or {}
-    error_log = state.get("error_log", [])
-    last_error = error_log[-1] if error_log else "Unknown error"
-    retry_count = state.get("retry_count", 0)
-    max_retries = state.get("max_retries", 3)
-    retry_delay = state.get("retry_delay_seconds", 5)
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
 
-    llm = make_llm(model=config.settings.LLM_MODEL_ERROR_HANDLER, max_tokens=256)
+    def run(self, state: AgentState) -> dict:
+        """LLM node: reason about the last error and decide next action."""
+        domain = state.get("current_domain", "unknown")
+        order = state.get("current_order") or {}
+        error_log = state.get("error_log", [])
+        last_error = error_log[-1] if error_log else "Unknown error"
+        retry_count = state.get("retry_count", 0)
+        max_retries = state.get("max_retries", 3)
+        retry_delay = state.get("retry_delay_seconds", 5)
 
-    messages = [
-        SystemMessage(content=ERROR_HANDLER_SYSTEM),
-        HumanMessage(
-            content=ERROR_HANDLER_USER.format(
-                domain=domain,
-                error=last_error,
-                retry_count=retry_count,
-                max_retries=max_retries,
-                order_status=order.get("status", "unknown"),
+        llm = make_llm(model=config.settings.LLM_MODEL_ERROR_HANDLER, max_tokens=256)
+
+        messages = [
+            SystemMessage(content=ERROR_HANDLER_SYSTEM),
+            HumanMessage(
+                content=ERROR_HANDLER_USER.format(
+                    domain=domain,
+                    error=last_error,
+                    retry_count=retry_count,
+                    max_retries=max_retries,
+                    order_status=order.get("status", "unknown"),
+                )
+            ),
+        ]
+
+        response = llm.invoke(messages)
+        raw = response.content.strip()
+        logger.debug("Error handler LLM response for %s: %s", domain, raw)
+
+        try:
+            decision = json.loads(raw)
+            action = decision.get("action", "skip")
+            suggested_delay = int(decision.get("suggested_delay_seconds", retry_delay * 2))
+        except Exception:
+            action = "skip"
+            suggested_delay = retry_delay * 2
+
+        updates: dict = {
+            "error_analysis": raw,
+            "messages": messages + [response],
+        }
+
+        if action == "retry":
+            new_retry_count = retry_count + 1
+            new_delay = suggested_delay if suggested_delay > 0 else min(retry_delay * 2, 300)
+            now = time.time()
+            retry_not_before = now + new_delay
+
+            logger.info(
+                "Error handler: RETRY #%d for %s (backoff %ds, will retry at %d)",
+                new_retry_count,
+                domain,
+                new_delay,
+                int(retry_not_before),
             )
-        ),
-    ]
 
-    response = llm.invoke(messages)
-    raw = response.content.strip()
-    logger.debug("Error handler LLM response for %s: %s", domain, raw)
+            updates["retry_count"] = new_retry_count
+            updates["retry_delay_seconds"] = new_delay
+            updates["retry_not_before"] = retry_not_before
+        elif action == "abort":
+            logger.error("Error handler: ABORT — stopping all renewals")
+            pending = state.get("pending_renewals", [])
+            failed = state.get("failed_renewals", []) + [domain] + list(pending)
+            updates["failed_renewals"] = failed
+            updates["pending_renewals"] = []
+        else:
+            logger.warning("Error handler: SKIP domain %s", domain)
+            updates["failed_renewals"] = state.get("failed_renewals", []) + [domain]
 
-    # Parse the decision
-    try:
-        decision = json.loads(raw)
-        action = decision.get("action", "skip")
-        suggested_delay = int(decision.get("suggested_delay_seconds", retry_delay * 2))
-    except Exception:
-        action = "skip"
-        suggested_delay = retry_delay * 2
+        return updates
 
-    updates: dict = {
-        "error_analysis": raw,
-        "messages": messages + [response],
-    }
 
-    if action == "retry":
-        new_retry_count = retry_count + 1
-        new_delay = suggested_delay if suggested_delay > 0 else min(retry_delay * 2, 300)
-
-        # Schedule retry with backoff (to be applied by retry_scheduler node)
-        now = time.time()
-        retry_not_before = now + new_delay
-
-        logger.info(
-            "Error handler: RETRY #%d for %s (backoff %ds, will retry at %d)",
-            new_retry_count,
-            domain,
-            new_delay,
-            int(retry_not_before),
-        )
-
-        updates["retry_count"] = new_retry_count
-        updates["retry_delay_seconds"] = new_delay
-        updates["retry_not_before"] = retry_not_before
-    elif action == "abort":
-        logger.error("Error handler: ABORT — stopping all renewals")
-        # Mark all remaining pending as failed
-        pending = state.get("pending_renewals", [])
-        failed = state.get("failed_renewals", []) + [domain] + list(pending)
-        updates["failed_renewals"] = failed
-        updates["pending_renewals"] = []
-    else:
-        logger.warning("Error handler: SKIP domain %s", domain)
-        updates["failed_renewals"] = state.get("failed_renewals", []) + [domain]
-
-    return updates
+def error_handler(state: AgentState) -> dict:
+    """Compatibility wrapper delegating to `ErrorHandlerNode`."""
+    return ErrorHandlerNode().run(state)

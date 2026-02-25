@@ -29,9 +29,33 @@ from storage.atomic import atomic_write_text, atomic_write_bytes
 # ─── Public helpers ────────────────────────────────────────────────────────────
 
 
+def sanitize_domain_for_path(domain: str) -> str:
+    """
+    Sanitize a domain name for use as a filesystem directory name.
+    
+    Transformations:
+      - Wildcards: "*.example.com" → "wildcard.example.com"
+      - Path separators: Remove "/" and "\\" to prevent directory traversal
+    
+    Args:
+        domain: Raw domain name (may contain wildcards or unsafe characters)
+    
+    Returns:
+        Filesystem-safe directory name
+    
+    Examples:
+        >>> sanitize_domain_for_path("*.example.com")
+        'wildcard.example.com'
+        >>> sanitize_domain_for_path("example.com")
+        'example.com'
+    """
+    return domain.replace("*.", "wildcard.").replace("/", "").replace("\\", "")
+
+
 def cert_dir(cert_store_path: str, domain: str) -> Path:
     """Return the Path for a domain's cert directory (creates it if needed)."""
-    p = Path(cert_store_path) / domain
+    safe_domain = sanitize_domain_for_path(domain)
+    p = Path(cert_store_path) / safe_domain
     p.mkdir(parents=True, exist_ok=True)
     return p
 

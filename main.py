@@ -231,6 +231,7 @@ def generate_test_cert(
     import config
     from pathlib import Path
     from scripts.generate_test_cert import generate_self_signed_cert
+    from storage.filesystem import sanitize_domain_for_path
     
     if not domain:
         log.error("Domain is required for test certificate generation.")
@@ -241,12 +242,12 @@ def generate_test_cert(
         sys.exit(1)
     
     try:
-        cert_path = Path(config.settings.CERT_STORE_PATH) / domain / "cert.pem"
-        key_path = Path(config.settings.CERT_STORE_PATH) / domain / "privkey.pem"
+        safe_domain = sanitize_domain_for_path(domain)
+        cert_path = Path(config.settings.CERT_STORE_PATH) / safe_domain / "cert.pem"
+        key_path = Path(config.settings.CERT_STORE_PATH) / safe_domain / "privkey.pem"
         generate_self_signed_cert(
             domain=domain,
             validity_days=days,
-            output_dir=Path(config.settings.CERT_STORE_PATH) / domain,
         )
         log.info(
             "Test certificate generated successfully.\n"

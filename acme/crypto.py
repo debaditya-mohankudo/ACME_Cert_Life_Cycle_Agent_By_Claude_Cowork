@@ -23,11 +23,23 @@ def generate_rsa_key(key_size: int = 2048) -> rsa.RSAPrivateKey:
     )
 
 
-def generate_ec_key() -> ec.EllipticCurvePrivateKey:
-    """Generate an EC P-256 private key (smaller, faster than RSA)."""
+def generate_ec_key(curve_name: str = "secp256r1") -> ec.EllipticCurvePrivateKey:
+    """Generate an EC private key using the requested named curve."""
     from cryptography.hazmat.backends import default_backend
 
-    return ec.generate_private_key(ec.SECP256R1(), default_backend())
+    curves: dict[str, ec.EllipticCurve] = {
+        "secp256r1": ec.SECP256R1(),
+        "secp384r1": ec.SECP384R1(),
+        "secp521r1": ec.SECP521R1(),
+    }
+    curve = curves.get(curve_name.lower())
+    if curve is None:
+        raise ValueError(
+            "Unsupported ECC curve: "
+            f"{curve_name}. Supported: secp256r1, secp384r1, secp521r1"
+        )
+
+    return ec.generate_private_key(curve, default_backend())
 
 
 def private_key_to_pem(key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey) -> str:

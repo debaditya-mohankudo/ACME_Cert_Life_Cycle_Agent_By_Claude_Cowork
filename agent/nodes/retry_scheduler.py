@@ -27,43 +27,41 @@ from agent.state import AgentState
 logger = logging.getLogger(__name__)
 
 
+class RetrySchedulerNode:
+    """Callable retry scheduler implementation."""
+
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
+
+    def run(self, state: AgentState) -> dict:
+        retry_not_before = state.get("retry_not_before")
+
+        if retry_not_before is None:
+            logger.debug("No scheduled retry. Passing through.")
+            return {}
+
+        now = time_module.time()
+        wait_time = retry_not_before - now
+
+        if wait_time > 0:
+            logger.info(
+                "Retry backoff: waiting %.1f seconds (retry_not_before=%d, now=%d)",
+                wait_time,
+                int(retry_not_before),
+                int(now),
+            )
+            time_module.sleep(wait_time)
+
+        logger.debug("Retry backoff complete. Proceeding with retry.")
+
+        return {
+            "retry_not_before": None,
+        }
+
+
 def retry_scheduler(state: AgentState) -> dict:
-    """
-    Check if retry_not_before time has arrived. If not, wait.
-
-    This is the synchronous version. For async execution, use retry_scheduler_async().
-
-    Args:
-        state: AgentState with retry_not_before (Unix timestamp or None)
-
-    Returns:
-        dict: Clears retry_not_before after applying backoff.
-    """
-    retry_not_before = state.get("retry_not_before")
-
-    if retry_not_before is None:
-        # No scheduled retry (should not reach this node if routing is correct)
-        logger.debug("No scheduled retry. Passing through.")
-        return {}
-
-    now = time_module.time()
-    wait_time = retry_not_before - now
-
-    if wait_time > 0:
-        logger.info(
-            "Retry backoff: waiting %.1f seconds (retry_not_before=%d, now=%d)",
-            wait_time,
-            int(retry_not_before),
-            int(now),
-        )
-        time_module.sleep(wait_time)
-
-    logger.debug("Retry backoff complete. Proceeding with retry.")
-
-    # Clear the scheduled retry time
-    return {
-        "retry_not_before": None,
-    }
+    """Compatibility wrapper delegating to `RetrySchedulerNode`."""
+    return RetrySchedulerNode().run(state)
 
 
 async def retry_scheduler_async(state: AgentState) -> dict:
