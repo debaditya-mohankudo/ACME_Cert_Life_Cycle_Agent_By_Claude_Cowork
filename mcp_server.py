@@ -6,13 +6,13 @@ Tools:
   - renew_once: run one renewal cycle
   - revoke_cert: revoke one or more certificates
   - expiring_in_30_days: list domains with certs expiring in <= 30 days
-  - domain_status: get cert status for one or more domains
-"""
+  - domain_status: get cert status for one or more domains  - generate_test_cert: generate self-signed test certificate with configurable validity"""
 from __future__ import annotations
 
 import asyncio
 import logging
 from contextlib import asynccontextmanager, contextmanager
+from pathlib import Path
 from typing import Any, Literal
 
 try:
@@ -345,6 +345,73 @@ async def domain_status(domains: list[str]) -> dict[str, Any]:
             }
     except Exception as e:
         logging.exception("domain_status failed")
+        return {
+            "status": "failed",
+            "error": str(e),
+        }
+
+
+@mcp.tool()
+async def generate_test_cert(
+    domain: str,
+    days: int,
+    cert_store_path: str | None = None,
+) -> dict[str, Any]:
+    """Generate a self-signed test certificate with configurable validity period.
+    
+    Args:
+        domain: Domain name to use as Common Name (CN) in the certificate
+        days: Validity period in days from now (use negative for expired certs)
+        cert_store_path: Directory to store certificate files (default: ./certs)
+    
+    Returns:
+        Dictionary with status, certificate details, and file paths
+    """
+    try:
+        from scripts.generate_test_cert import generate_self_signed_cert
+        import datetime
+        
+        if not domain:
+            raise ValueError("domain cannot be empty")
+        
+        # Use provided cert_store_path or default to ./certs
+        store_path = Path(cert_store_path or "certs")
+        output_dir = store_path / domain
+        
+        # Generate the certificate
+        async with _operation_lock(required=True):
+            generate_self_signed_cert(
+                domain=domain,
+                validity_days=days,
+                output_dir=output_dir,
+            )
+        
+        # Calculate expiry status
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if days < 0:
+            not_valid_after = now + datetime.timedelta(days=days)
+        else:
+            not_valid_after = now + datetime.timedelta(days=days)
+        
+        days_remaining = (not_valid_after - now).days
+        status_text = "EXPIRED" if days_remaining < 0 else ("EXPIRING SOON" if days_remaining <= 30 else "VALID")
+        
+        return {
+            "status": "success",
+            "message": f"Generated self-signed certificate for {domain}",
+            "domain": domain,
+            "validity_days": days,
+            "cert_status": status_text,
+            "days_remaining": days_remaining,
+            "output_directory": str(output_dir),
+            "files": [
+                str(output_dir / "cert.pem"),
+                str(output_dir / "privkey.pem"),
+                str(output_dir / "metadata.json"),
+            ],
+        }
+    except Exception as e:
+        logging.exception("generate_test_cert failed")
         return {
             "status": "failed",
             "error": str(e),
