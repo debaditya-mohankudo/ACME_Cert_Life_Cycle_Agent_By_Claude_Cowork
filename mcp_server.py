@@ -45,18 +45,30 @@ def _resolve_ca_inputs(
     """Resolve CA inputs from explicit mode selection.
 
     - config: use config.py/.env values, ignore custom inputs
-    - custom: require both ca_provider and acme_directory_url
+    - custom: require both ca_provider and acme_directory_url (validates ca_provider against known choices)
     """
     if ca_input_mode not in CA_INPUT_MODE_CHOICES:
-        raise ValueError("ca_input_mode must be one of: config, custom")
+        raise ValueError(f"ca_input_mode must be one of: {', '.join(sorted(CA_INPUT_MODE_CHOICES))}")
 
     if ca_input_mode == "config":
         return None, None
 
+    # Validate custom mode inputs
     if not ca_provider or not acme_directory_url:
         raise ValueError(
             "When ca_input_mode='custom', both ca_provider and acme_directory_url are required"
         )
+    
+    # Validate ca_provider is a known choice
+    if ca_provider not in CA_PROVIDER_CHOICES:
+        raise ValueError(
+            f"ca_provider must be one of: {', '.join(sorted(CA_PROVIDER_CHOICES))}"
+        )
+    
+    # Basic URL validation
+    if not acme_directory_url.startswith(("http://", "https://")):
+        raise ValueError("acme_directory_url must start with http:// or https://")
+    
     return ca_provider, acme_directory_url
 
 
