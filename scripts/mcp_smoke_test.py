@@ -126,7 +126,10 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=0,
         choices=[0, 1, 4, 5],
-        help="Revocation reason code (0,1,4,5)",
+        help=(
+            "Revocation reason code: "
+            "0=unspecified, 1=keyCompromise, 4=superseded, 5=cessationOfOperation"
+        ),
     )
     parser.add_argument("--checkpoint", action="store_true", help="Enable checkpoint mode")
     return parser
