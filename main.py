@@ -364,13 +364,17 @@ Examples:
 
     args = parser.parse_args()
 
-    if (
-        not args.once
-        and not args.schedule
-        and not args.revoke_cert
-        and not args.expiring_in_30_days
-        and not args.domain_status
-    ):
+    def _has_selected_action(parsed_args: argparse.Namespace) -> bool:
+        """Return True if at least one primary CLI action flag was provided."""
+        return (
+            parsed_args.once
+            or parsed_args.schedule
+            or parsed_args.revoke_cert
+            or parsed_args.expiring_in_30_days
+            or bool(parsed_args.domain_status)
+        )
+
+    if not _has_selected_action(args):
         parser.print_help()
         sys.exit(1)
 
