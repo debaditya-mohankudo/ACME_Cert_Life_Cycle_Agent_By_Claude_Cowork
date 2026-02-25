@@ -310,11 +310,11 @@ async def revoke_cert(
 
 @mcp.tool()
 async def expiring_in_30_days(domains: list[str] | None = None) -> dict[str, Any]:
-    """List domains whose current cert expires in 30 days or less."""
+    """List domains whose current cert expires in 30 days or less (read-only, not serialized)."""
     try:
         import config
 
-        async with _operation_lock(required=True):
+        async with _operation_lock(required=False):
             expiring_domains = _run_expiring_in_30_days(domains=domains, settings=config.settings)
         return {
             "status": "success",
@@ -331,14 +331,14 @@ async def expiring_in_30_days(domains: list[str] | None = None) -> dict[str, Any
 
 @mcp.tool()
 async def domain_status(domains: list[str]) -> dict[str, Any]:
-    """Get certificate status details for one or more domains."""
+    """Get certificate status details for one or more domains (read-only, not serialized)."""
     try:
         import config
 
         if not domains:
             raise ValueError("domains must contain at least one domain")
 
-        async with _operation_lock(required=True):
+        async with _operation_lock(required=False):
             return {
                 "status": "success",
                 "domain_statuses": _run_domain_status(domains=domains, settings=config.settings),

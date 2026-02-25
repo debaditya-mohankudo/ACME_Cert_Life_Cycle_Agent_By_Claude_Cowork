@@ -67,7 +67,7 @@ def test_mutating_tools_always_request_operation_lock(monkeypatch):
     assert calls == [True, True, True]
 
 
-def test_read_only_tools_are_always_serialized(monkeypatch):
+def test_read_only_tools_are_not_serialized(monkeypatch):
     calls: list[bool] = []
 
     @asynccontextmanager
@@ -86,6 +86,6 @@ def test_read_only_tools_are_always_serialized(monkeypatch):
     asyncio.run(mcp_server.expiring_in_30_days(domains=["a.example.com"]))
     asyncio.run(mcp_server.domain_status(domains=["a.example.com"]))
 
-    assert calls == [True, True]
+    assert calls == [False, False]
 
 
