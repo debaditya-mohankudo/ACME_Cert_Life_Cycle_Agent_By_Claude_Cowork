@@ -13,14 +13,14 @@ requests==2.32.3                # HTTP client for ACME calls
 
 # Configuration & Settings
 pydantic-settings==2.8.0
-pydantic==2.10.6
+pydantic==2.11.7
 python-dotenv==1.0.1
 
 # Storage & Utils
 certifi==2024.12.14             # CA bundle
 schedule==1.2.2                 # Job scheduling
 structlog==25.1.0               # Structured logging
-mcp>=1.6                        # MCP server SDK (FastMCP)
+mcp>=1.26.0                     # MCP server SDK (FastMCP); 1.12.x fails on postponed annotations
 
 # Dev / Testing
 pytest==8.3.5
