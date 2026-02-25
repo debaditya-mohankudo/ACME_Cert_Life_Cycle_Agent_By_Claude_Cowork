@@ -64,3 +64,32 @@ def test_main_graph_uses_callable_registered_nodes(monkeypatch):
     graph.invoke(state)
 
     assert calls == ["scanner", "planner", "reporter"]
+
+
+def test_node_registry_all_entries_are_classes():
+    """
+    Verify NODE_REGISTRY architectural consistency after Protocol pattern migration.
+    
+    All entries must have:
+    - String keys (node names)
+    - Class values (not function instances)
+    
+    This ensures get_node() can consistently instantiate all nodes.
+    """
+    from agent.nodes.registry import NODE_REGISTRY
+    
+    for node_name, node_value in NODE_REGISTRY.items():
+        # All keys must be strings
+        assert isinstance(node_name, str), f"Registry key {node_name!r} is not a string"
+        
+        # All values must be classes (not function instances or other callables)
+        assert isinstance(node_value, type), (
+            f"Registry entry '{node_name}' is {type(node_value).__name__}, "
+            f"expected a class. All nodes must follow the callable class pattern."
+        )
+        
+        # Verify the class is instantiable (has __init__)
+        assert hasattr(node_value, "__init__"), (
+            f"Registry entry '{node_name}' class {node_value.__name__} "
+            f"has no __init__ method"
+        )
