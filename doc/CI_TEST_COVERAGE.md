@@ -16,6 +16,27 @@ pre-installed. Git is installed before checkout since the slim image omits it.
 Toolchain: `uv` via `astral-sh/setup-uv` (no `python-version` override —
 container already owns Python 3.12).
 
+### Checkout note (container jobs)
+
+The workflow uses `actions/checkout@v4` with:
+
+```yaml
+with:
+  persist-credentials: false
+```
+
+Reason: in container-based jobs, checkout post-run credential cleanup can emit
+non-fatal git warnings (for example, exit code 128). Disabling persisted
+credentials avoids that post-run cleanup path.
+
+Impact:
+
+- No meaningful performance impact.
+- No change to `uv` cache behavior or test caching.
+- Safe for this repo's current CI workflow, which does not run `git push`.
+- If future workflows need authenticated `git push`, credentials must be
+  provided explicitly for that step.
+
 ### Command
 
 ```bash
