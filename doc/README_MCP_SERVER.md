@@ -105,5 +105,5 @@ Example request for domain status:
 ## Notes
 
 - The MCP tools reuse the existing graph entrypoints in `main.py` to preserve deterministic ACME flow and retry behavior.
-- A process-wide operation lock serializes all MCP tool calls (`health`, `renew_once`, `revoke_cert`, `expiring_in_30_days`, `domain_status`).
+- A process-wide operation lock serializes mutating MCP tool calls (`health`, `renew_once`, `revoke_cert`). Read-only tools (`expiring_in_30_days`, `domain_status`) do not require this lock and are not serialized.
 - Long-running schedule mode is intentionally not exposed as an MCP tool.
