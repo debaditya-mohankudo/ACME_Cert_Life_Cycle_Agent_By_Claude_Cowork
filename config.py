@@ -155,7 +155,7 @@ class Settings(BaseSettings):
             raise ValueError(f"HTTP_CHALLENGE_MODE must be one of {allowed}")
         return v
 
-    @field_validator("KEY_TYPE")
+    @field_validator("KEY_TYPE", mode="before")
     @classmethod
     def validate_key_type(cls, v: str) -> str:
         """Normalize and validate supported certificate key types."""
