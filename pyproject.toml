@@ -30,5 +30,6 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.25",
     "responses>=0.25",
+    "schedule>=1.2",
     "structlog>=25.1",
 ]

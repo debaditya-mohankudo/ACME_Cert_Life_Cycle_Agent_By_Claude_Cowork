@@ -5,26 +5,13 @@ Requires: docker compose -f docker-compose.pebble.yml up -d
 """
 from __future__ import annotations
 
-import os
-from pathlib import Path
-
 import pytest
+from tests.conftest import requires_pebble
 
 from agent.revocation_graph import build_revocation_graph, revocation_initial_state
-from agent.nodes.account import acme_account_setup
-from config import settings
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
-
-
-@pytest.fixture
-def pebble_settings(tmp_path, pebble_settings):
-    """Use Pebble ACME config and temp cert/account paths."""
-    pebble_settings.ACME_INSECURE = True
-    pebble_settings.CERT_STORE_PATH = str(tmp_path / "certs")
-    pebble_settings.ACCOUNT_KEY_PATH = str(tmp_path / "account.key")
-    return pebble_settings
 
 
 @pytest.fixture
@@ -59,7 +46,7 @@ def issued_cert_domain(pebble_settings, mock_llm_nodes, tmp_path):
 
 # ── Integration tests ──────────────────────────────────────────────────────
 
-
+@requires_pebble
 def test_revocation_graph_basic_against_pebble(pebble_settings, mock_llm_nodes, tmp_path, issued_cert_domain):
     """Should successfully revoke a certificate against Pebble."""
     domain = issued_cert_domain
@@ -80,7 +67,7 @@ def test_revocation_graph_basic_against_pebble(pebble_settings, mock_llm_nodes, 
     assert domain in final_state["revoked_domains"]
     assert final_state["failed_revocations"] == []
 
-
+@requires_pebble
 def test_revocation_reason_codes_against_pebble(pebble_settings, mock_llm_nodes, tmp_path, issued_cert_domain):
     """Should accept valid RFC 5280 reason codes."""
     domain = issued_cert_domain
@@ -101,7 +88,7 @@ def test_revocation_reason_codes_against_pebble(pebble_settings, mock_llm_nodes,
     assert domain in final_state["revoked_domains"]
     assert final_state["revocation_reason"] == 1
 
-
+@requires_pebble
 def test_revocation_nonexistent_cert_against_pebble(pebble_settings, mock_llm_nodes, tmp_path, issued_cert_domain):
     """Should fail gracefully if cert file doesn't exist."""
     domain = "nonexistent.localhost"  # not issued
