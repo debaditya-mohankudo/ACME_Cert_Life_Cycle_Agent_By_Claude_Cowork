@@ -408,11 +408,7 @@ async def generate_test_cert(
         
         # Calculate expiry status
         now = datetime.datetime.now(datetime.timezone.utc)
-        if days < 0:
-            not_valid_after = now + datetime.timedelta(days=days)
-        else:
-            not_valid_after = now + datetime.timedelta(days=days)
-        
+        not_valid_after = now + datetime.timedelta(days=days)
         days_remaining = (not_valid_after - now).days
         status_text = "EXPIRED" if days_remaining < 0 else ("EXPIRING SOON" if days_remaining <= 30 else "VALID")
         
