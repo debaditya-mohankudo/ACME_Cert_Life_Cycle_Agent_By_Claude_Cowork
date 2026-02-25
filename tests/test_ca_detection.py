@@ -369,7 +369,7 @@ class TestCertificateScannerCADetection:
         from agent.nodes.scanner import certificate_scanner
 
         state = self._make_state(str(tmp_path), ["example.com"])
-        with patch("agent.nodes.scanner.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.CA_PROVIDER = "letsencrypt"
             result = certificate_scanner(state)
 
@@ -387,7 +387,7 @@ class TestCertificateScannerCADetection:
         (d / "cert.pem").write_text(pem)
 
         state = self._make_state(str(tmp_path), [domain])
-        with patch("agent.nodes.scanner.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.CA_PROVIDER = "digicert"
             result = certificate_scanner(state)
 
@@ -405,7 +405,7 @@ class TestCertificateScannerCADetection:
         (d / "cert.pem").write_text(pem)
 
         state = self._make_state(str(tmp_path), [domain])
-        with patch("agent.nodes.scanner.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.CA_PROVIDER = "custom"
             result = certificate_scanner(state)
 
@@ -423,7 +423,7 @@ class TestCertificateScannerCADetection:
         (d / "cert.pem").write_text(pem)
 
         state = self._make_state(str(tmp_path), [domain])
-        with patch("agent.nodes.scanner.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.CA_PROVIDER = "custom"
             with caplog.at_level(logging.WARNING, logger="agent.nodes.scanner"):
                 certificate_scanner(state)
@@ -441,7 +441,7 @@ class TestCertificateScannerCADetection:
         (d / "cert.pem").write_text(pem)
 
         state = self._make_state(str(tmp_path), [domain])
-        with patch("agent.nodes.scanner.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.CA_PROVIDER = "digicert"  # mismatch, but named — no warning
             with caplog.at_level(logging.WARNING, logger="agent.nodes.scanner"):
                 certificate_scanner(state)

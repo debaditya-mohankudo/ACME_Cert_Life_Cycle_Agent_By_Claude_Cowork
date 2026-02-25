@@ -553,7 +553,7 @@ class TestOrderInitializerDns01:
         with patch("agent.nodes.order.make_client", return_value=mock_client), \
              patch("agent.nodes.order.jwslib.load_account_key", return_value=mock_account_key), \
              patch("agent.nodes.order.jwslib.compute_jwk_thumbprint", return_value="thumbprint"), \
-             patch("agent.nodes.order.settings") as mock_settings:
+             patch("config.settings") as mock_settings:
 
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
 
@@ -583,7 +583,7 @@ class TestOrderInitializerDns01:
         with patch("agent.nodes.order.make_client", return_value=mock_client), \
              patch("agent.nodes.order.jwslib.load_account_key", return_value=MagicMock()), \
              patch("agent.nodes.order.jwslib.compute_jwk_thumbprint", return_value="tp"), \
-             patch("agent.nodes.order.settings") as mock_settings:
+             patch("config.settings") as mock_settings:
 
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
 
@@ -613,7 +613,7 @@ class TestOrderInitializerDns01:
         with patch("agent.nodes.order.make_client", return_value=mock_client), \
              patch("agent.nodes.order.jwslib.load_account_key", return_value=MagicMock()), \
              patch("agent.nodes.order.jwslib.compute_jwk_thumbprint", return_value="tp"), \
-             patch("agent.nodes.order.settings") as mock_settings:
+             patch("config.settings") as mock_settings:
 
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
 
@@ -643,7 +643,7 @@ class TestOrderInitializerDns01:
         with patch("agent.nodes.order.make_client", return_value=mock_client), \
              patch("agent.nodes.order.jwslib.load_account_key", return_value=MagicMock()), \
              patch("agent.nodes.order.jwslib.compute_jwk_thumbprint", return_value="tp"), \
-             patch("agent.nodes.order.settings") as mock_settings:
+             patch("config.settings") as mock_settings:
 
             mock_settings.HTTP_CHALLENGE_MODE = "standalone"
 
@@ -679,7 +679,7 @@ class TestOrderInitializerDns01:
         with patch("agent.nodes.order.make_client", return_value=mock_client), \
              patch("agent.nodes.order.jwslib.load_account_key", return_value=MagicMock()), \
              patch("agent.nodes.order.jwslib.compute_jwk_thumbprint", return_value="tp"), \
-             patch("agent.nodes.order.settings") as mock_settings:
+             patch("config.settings") as mock_settings:
 
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
 
@@ -722,7 +722,7 @@ class TestChallengeSetupDns:
         state = self._make_state(order)
         mock_provider = MagicMock()
 
-        with patch("agent.nodes.challenge.settings") as mock_settings, \
+        with patch("config.settings") as mock_settings, \
              patch("agent.nodes.challenge.make_dns_provider", return_value=mock_provider):
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
             mock_settings.DNS_PROPAGATION_WAIT_SECONDS = 0
@@ -741,7 +741,7 @@ class TestChallengeSetupDns:
         state = self._make_state(order)
         mock_provider = MagicMock()
 
-        with patch("agent.nodes.challenge.settings") as mock_settings, \
+        with patch("config.settings") as mock_settings, \
              patch("agent.nodes.challenge.make_dns_provider", return_value=mock_provider), \
              patch("agent.nodes.challenge.time.sleep") as mock_sleep:
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
@@ -759,7 +759,7 @@ class TestChallengeSetupDns:
         state = self._make_state(order)
         mock_provider = MagicMock()
 
-        with patch("agent.nodes.challenge.settings") as mock_settings, \
+        with patch("config.settings") as mock_settings, \
              patch("agent.nodes.challenge.make_dns_provider", return_value=mock_provider), \
              patch("agent.nodes.challenge.time.sleep") as mock_sleep:
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
@@ -777,7 +777,7 @@ class TestChallengeSetupDns:
         state = self._make_state(order)
         mock_provider = MagicMock()
 
-        with patch("agent.nodes.challenge.settings") as mock_settings, \
+        with patch("config.settings") as mock_settings, \
              patch("agent.nodes.challenge.make_dns_provider", return_value=mock_provider):
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
             mock_settings.DNS_PROPAGATION_WAIT_SECONDS = 0
@@ -814,7 +814,7 @@ class TestCleanupChallengeDns:
         mock_provider = MagicMock()
         challenge_mod._dns_provider = mock_provider
 
-        with patch("agent.nodes.challenge.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
             _cleanup_challenge(state)
 
@@ -840,7 +840,7 @@ class TestCleanupChallengeDns:
         mock_provider.delete_txt_record.side_effect = [RuntimeError("API down"), None]
         challenge_mod._dns_provider = mock_provider
 
-        with patch("agent.nodes.challenge.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
             # Must not raise
             _cleanup_challenge(state)
@@ -855,7 +855,7 @@ class TestCleanupChallengeDns:
         challenge_mod._dns_provider = None
         state = {"current_order": self._make_order()}
 
-        with patch("agent.nodes.challenge.settings") as mock_settings:
+        with patch("config.settings") as mock_settings:
             mock_settings.HTTP_CHALLENGE_MODE = "dns"
             # Must not raise
             _cleanup_challenge(state)
