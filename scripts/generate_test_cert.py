@@ -28,12 +28,13 @@ from cryptography.x509.oid import NameOID
 
 import config
 from storage.atomic import atomic_write_bytes, atomic_write_text
+from storage.filesystem import sanitize_domain_for_path
 
 
 def generate_self_signed_cert(
     domain: str,
     validity_days: int,
-    output_dir: Path = Path(config.settings.CERT_STORE_PATH),
+    output_dir: Path | None = None,
 ) -> None:
     """
     Generate a self-signed certificate and write cert.pem, privkey.pem, and metadata.json.
@@ -41,12 +42,21 @@ def generate_self_signed_cert(
     Args:
         domain: Common Name (CN) for the certificate
         validity_days: Validity period in days (can be negative for expired certs)
-        output_dir: Directory to write certificate files (e.g., certs/my.local/)
+        output_dir: Directory to write certificate files. If None, defaults to
+                    config.settings.CERT_STORE_PATH/<sanitized_domain>/
 
     Note:
         This module is library-only and designed for internal use via main.py CLI.
         Use: python main.py --generate-test-cert DOMAIN --days N
     """
+    # Determine output directory with proper domain sanitization
+    if output_dir is None:
+        safe_domain = sanitize_domain_for_path(domain)
+        output_dir = Path(config.settings.CERT_STORE_PATH) / safe_domain
+    
+    # Ensure directory exists
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
     # Generate private key
     private_key = rsa.generate_private_key(
         public_exponent=65537,

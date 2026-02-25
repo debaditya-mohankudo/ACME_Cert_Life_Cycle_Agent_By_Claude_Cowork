@@ -44,7 +44,8 @@ class StorageManagerNode:
 
         cert_pem, chain_pem = _split_pem_chain(full_chain_pem)
 
-        privkey_path = Path(cert_store_path) / domain / "privkey.pem"
+        safe_domain = fs.sanitize_domain_for_path(domain)
+        privkey_path = Path(cert_store_path) / safe_domain / "privkey.pem"
         if not privkey_path.exists():
             error = f"storage_manager: privkey.pem not found for {domain}"
             logger.error(error)

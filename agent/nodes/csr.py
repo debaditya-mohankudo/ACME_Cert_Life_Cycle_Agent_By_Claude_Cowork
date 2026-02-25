@@ -16,6 +16,7 @@ import config
 from acme.crypto import create_csr, generate_ec_key, generate_rsa_key, private_key_to_pem
 from agent.state import AgentState
 from storage.atomic import atomic_write_text
+from storage.filesystem import sanitize_domain_for_path
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class CsrGeneratorNode:
             domain_key = generate_rsa_key(key_size=key_size)
         key_pem = private_key_to_pem(domain_key)
 
-        safe_domain = domain.replace("*.", "wildcard.").replace("/", "").replace("\\", "")
+        safe_domain = sanitize_domain_for_path(domain)
         key_dir = Path(cert_store_path) / safe_domain
         key_path = key_dir / "privkey.pem"
         atomic_write_text(key_path, key_pem)
