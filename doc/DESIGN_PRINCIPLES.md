@@ -157,6 +157,73 @@ The `certificate_scanner` node optionally detects which CA issued an existing ce
 
 ---
 
+## 13. Node Architecture — Callable Classes with Minimal Structural Contract
+
+All LangGraph nodes are implemented as callable classes conforming to the `NodeCallable` Protocol. No inheritance hierarchy or adapter layer is required.
+
+**Pattern:**
+```python
+class SomeNode:
+    """Node description."""
+    
+    def __call__(self, state: AgentState) -> dict:
+        """LangGraph entry point."""
+        return self.run(state)
+    
+    def run(self, state: AgentState) -> dict:
+        """Business logic."""
+        # ... implementation
+        return {"key": value}
+```
+
+**Graph registration:**
+```python
+builder.add_node("node_name", SomeNode())
+```
+
+**Why callable classes over abstract base classes:**
+
+1. **Minimal contract** — Only `__call__(state) -> dict` is required. No properties, no abstract methods, no hooks to implement.
+
+2. **Structural typing** — The `NodeCallable` Protocol uses structural subtyping (duck typing with type safety). Any class with the right signature is automatically compatible. No explicit inheritance needed.
+
+3. **No adapter layer** — Previous designs required `FunctionNodeAdapter` to wrap functions. Direct callable registration eliminates this indirection.
+
+4. **Pythonic** — Follows Python's "consenting adults" philosophy. Classes that look like callables are callables.
+
+5. **Testable** — Mock by patching class constructors: `patch("agent.graph.SomeNode", MagicMock(...))`. Clear, explicit, no hidden state.
+
+**Why keep function wrappers:**
+
+Original node functions remain as thin wrappers calling class instances:
+```python
+def some_function_node(state: AgentState) -> dict:
+    return SomeNode().run(state)
+```
+
+This preserves backward compatibility for imports and documentation references with negligible overhead.
+
+**Why no `name` property:**
+
+LangGraph requires names at registration time: `add_node("name", callable)`. The node instance doesn't need to know its own name, eliminating synchronization between class-level names and graph-level names.
+
+**Constraints:**
+
+- Node classes must remain stateless (no mutable instance attributes shared between invocations)
+- All state flows through `AgentState` parameter
+- Network calls must be explicit (no hidden side effects in helpers)
+- Return value must be a dict suitable for LangGraph's state merging
+
+**Testing:**
+
+- `tests/test_node_base.py` validates the `NodeCallable` Protocol contract
+- `tests/test_node_parity.py` validates function wrapper → class delegation
+- Checkpoint tests mock callable classes by patching constructors
+
+→ See: [agent/nodes/base.py](../agent/nodes/base.py), [doc/TASK_ABSTRACT_NODE_MIGRATION.md](TASK_ABSTRACT_NODE_MIGRATION.md)
+
+---
+
 ## 11. Revocation as a Separate Subgraph
 
 Certificate revocation uses a dedicated LangGraph state machine (`agent/revocation_graph.py`) rather than being integrated into the renewal graph. The revocation subgraph is simpler: account setup → loop through domains → revoke each → reporter.
@@ -185,3 +252,4 @@ Certificate revocation uses a dedicated LangGraph state machine (`agent/revocati
 | Factory pattern | No provider branches in nodes | `llm/factory.py` |
 | Network calls named | All side effects in graph | `agent/graph.py` |
 | CA detection gated | Advisory only; skipped for named providers | `acme/ca_detection.py` |
+| Node architecture | Callable classes with Protocol | `agent/nodes/base.py` |

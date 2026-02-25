@@ -20,54 +20,63 @@ from llm.factory import make_llm
 logger = logging.getLogger(__name__)
 
 
+class RenewalPlannerNode:
+    """Callable renewal planner implementation."""
+
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
+
+    def run(self, state: AgentState) -> dict:
+        """
+        LLM node: produce a JSON renewal plan from cert_records.
+        Returns: renewal_plan (str), pending_renewals (list[str]), messages update.
+        """
+        cert_records = state["cert_records"]
+        managed_domains = set(state["managed_domains"])
+        threshold = state["renewal_threshold_days"]
+
+        lines = []
+        for rec in cert_records:
+            if rec["days_until_expiry"] is None:
+                lines.append(f"  {rec['domain']} → no certificate found (needs renewal)")
+            else:
+                lines.append(
+                    f"  {rec['domain']} → expires {rec['expiry_date'][:10]} "
+                    f"({rec['days_until_expiry']} days)"
+                )
+        cert_summary = "\n".join(lines)
+
+        llm = make_llm(model=config.settings.LLM_MODEL_PLANNER, max_tokens=512)
+
+        messages = [
+            SystemMessage(content=PLANNER_SYSTEM),
+            HumanMessage(
+                content=PLANNER_USER.format(
+                    cert_summary=cert_summary,
+                    managed_domains=", ".join(sorted(managed_domains)),
+                    threshold=threshold,
+                )
+            ),
+        ]
+
+        response = llm.invoke(messages)
+        raw = response.content.strip()
+        logger.debug("Planner LLM raw response: %s", raw)
+
+        plan = _parse_and_validate(raw, managed_domains)
+
+        pending: list[str] = plan.get("urgent", []) + plan.get("routine", [])
+
+        return {
+            "renewal_plan": raw,
+            "pending_renewals": pending,
+            "messages": messages + [response],
+        }
+
+
 def renewal_planner(state: AgentState) -> dict:
-    """
-    LLM node: produce a JSON renewal plan from cert_records.
-    Returns: renewal_plan (str), pending_renewals (list[str]), messages update.
-    """
-    cert_records = state["cert_records"]
-    managed_domains = set(state["managed_domains"])
-    threshold = state["renewal_threshold_days"]
-
-    # Build a human-readable summary for the LLM
-    lines = []
-    for rec in cert_records:
-        if rec["days_until_expiry"] is None:
-            lines.append(f"  {rec['domain']} → no certificate found (needs renewal)")
-        else:
-            lines.append(
-                f"  {rec['domain']} → expires {rec['expiry_date'][:10]} "
-                f"({rec['days_until_expiry']} days)"
-            )
-    cert_summary = "\n".join(lines)
-
-    llm = make_llm(model=config.settings.LLM_MODEL_PLANNER, max_tokens=512)
-
-    messages = [
-        SystemMessage(content=PLANNER_SYSTEM),
-        HumanMessage(
-            content=PLANNER_USER.format(
-                cert_summary=cert_summary,
-                managed_domains=", ".join(sorted(managed_domains)),
-                threshold=threshold,
-            )
-        ),
-    ]
-
-    response = llm.invoke(messages)
-    raw = response.content.strip()
-    logger.debug("Planner LLM raw response: %s", raw)
-
-    plan = _parse_and_validate(raw, managed_domains)
-
-    # Build ordered pending_renewals: urgent first, then routine
-    pending: list[str] = plan.get("urgent", []) + plan.get("routine", [])
-
-    return {
-        "renewal_plan": raw,
-        "pending_renewals": pending,
-        "messages": messages + [response],
-    }
+    """Compatibility wrapper delegating to `RenewalPlannerNode`."""
+    return RenewalPlannerNode().run(state)
 
 
 def _parse_and_validate(raw: str, managed_domains: set[str]) -> dict[str, Any]:

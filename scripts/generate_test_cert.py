@@ -26,13 +26,14 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
+import config
 from storage.atomic import atomic_write_bytes, atomic_write_text
 
 
 def generate_self_signed_cert(
     domain: str,
     validity_days: int,
-    output_dir: Path,
+    output_dir: Path = Path(config.settings.CERT_STORE_PATH),
 ) -> None:
     """
     Generate a self-signed certificate and write cert.pem, privkey.pem, and metadata.json.

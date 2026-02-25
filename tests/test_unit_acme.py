@@ -978,3 +978,66 @@ def test_config_accepts_both_eab_credentials_empty():
         MANAGED_DOMAINS=["example.com"],
     )
     assert s.ACME_EAB_KEY_ID == ""
+
+
+def test_config_rejects_domain_key_size_below_2048_for_rsa():
+    """Settings raises ValidationError when RSA DOMAIN_KEY_SIZE is below minimum."""
+    from pydantic import ValidationError
+    from config import Settings
+
+    with pytest.raises(ValidationError, match="DOMAIN_KEY_SIZE must be >= 2048 when KEY_TYPE='rsa'"):
+        Settings(
+            KEY_TYPE="rsa",
+            DOMAIN_KEY_SIZE=1024,
+            MANAGED_DOMAINS=["example.com"],
+        )
+
+
+def test_config_accepts_domain_key_size_4096():
+    """Settings accepts DOMAIN_KEY_SIZE values >= 2048."""
+    from config import Settings
+
+    s = Settings(
+        KEY_TYPE="rsa",
+        DOMAIN_KEY_SIZE=4096,
+        MANAGED_DOMAINS=["example.com"],
+    )
+    assert s.DOMAIN_KEY_SIZE == 4096
+
+
+def test_config_accepts_ecc_with_default_curve():
+    """Settings accepts KEY_TYPE=ecc with default ECC curve."""
+    from config import Settings
+
+    s = Settings(
+        KEY_TYPE="ecc",
+        MANAGED_DOMAINS=["example.com"],
+    )
+    assert s.KEY_TYPE == "ecc"
+    assert s.ECC_CURVE == "secp256r1"
+
+
+def test_config_accepts_ecc_with_explicit_curve():
+    """Settings accepts explicit ECC curve when KEY_TYPE=ecc."""
+    from config import Settings
+
+    s = Settings(
+        KEY_TYPE="ecc",
+        ECC_CURVE="secp384r1",
+        MANAGED_DOMAINS=["example.com"],
+    )
+    assert s.KEY_TYPE == "ecc"
+    assert s.ECC_CURVE == "secp384r1"
+
+
+def test_config_rejects_ecc_without_curve():
+    """Settings rejects KEY_TYPE=ecc when ECC_CURVE is empty."""
+    from pydantic import ValidationError
+    from config import Settings
+
+    with pytest.raises(ValidationError, match="ECC_CURVE"):
+        Settings(
+            KEY_TYPE="ecc",
+            ECC_CURVE="",
+            MANAGED_DOMAINS=["example.com"],
+        )

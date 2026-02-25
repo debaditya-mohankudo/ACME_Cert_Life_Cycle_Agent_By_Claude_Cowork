@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     # ── Storage ────────────────────────────────────────────────────────────
     CERT_STORE_PATH: str = "./certs"
     ACCOUNT_KEY_PATH: str = "./account.key"
+    KEY_TYPE: Literal["rsa", "ecc"] = "rsa"
+    DOMAIN_KEY_SIZE: int = 2048
+    ECC_CURVE: Literal["secp256r1", "secp384r1", "secp521r1"] = "secp256r1"
 
     # ── HTTP-01 / DNS-01 Challenge ─────────────────────────────────────────
     HTTP_CHALLENGE_MODE: str = "standalone"   # "standalone" | "webroot" | "dns"
@@ -146,10 +149,30 @@ class Settings(BaseSettings):
     @field_validator("HTTP_CHALLENGE_MODE")
     @classmethod
     def validate_challenge_mode(cls, v: str) -> str:
+        """Validate supported HTTP challenge mode values."""
         allowed = {"standalone", "webroot", "dns"}
         if v not in allowed:
             raise ValueError(f"HTTP_CHALLENGE_MODE must be one of {allowed}")
         return v
+
+    @field_validator("KEY_TYPE")
+    @classmethod
+    def validate_key_type(cls, v: str) -> str:
+        """Normalize and validate supported certificate key types."""
+        normalized = v.strip().lower()
+        allowed = {"rsa", "ecc"}
+        if normalized not in allowed:
+            raise ValueError(f"KEY_TYPE must be one of {allowed}")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_key_type_settings(self) -> "Settings":
+        """Validate key-type dependent settings for RSA and ECC."""
+        if self.KEY_TYPE == "rsa" and self.DOMAIN_KEY_SIZE < 2048:
+            raise ValueError("DOMAIN_KEY_SIZE must be >= 2048 when KEY_TYPE='rsa'")
+        if self.KEY_TYPE == "ecc" and not self.ECC_CURVE:
+            raise ValueError("ECC_CURVE must be set when KEY_TYPE='ecc'")
+        return self
 
     @model_validator(mode="after")
     def validate_eab_credentials(self) -> "Settings":
@@ -167,6 +190,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_webroot(self) -> "Settings":
+        """Require WEBROOT_PATH when webroot challenge mode is selected."""
         if self.HTTP_CHALLENGE_MODE == "webroot" and not self.WEBROOT_PATH:
             raise ValueError(
                 "WEBROOT_PATH must be set when HTTP_CHALLENGE_MODE='webroot'"
@@ -175,6 +199,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_dns_config(self) -> "Settings":
+        """Validate required DNS provider settings for DNS-01 mode."""
         if self.HTTP_CHALLENGE_MODE != "dns":
             return self
         if self.DNS_PROVIDER == "cloudflare" and not self.CLOUDFLARE_API_TOKEN:
@@ -189,6 +214,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def resolve_acme_directory(self) -> "Settings":
+        """Resolve ACME directory URL from provider presets or custom value."""
         if any(os.environ.get(k) for k in (
             "DIGICERT_ACME_DIRECTORY", "DIGICERT_EAB_KEY_ID", "DIGICERT_EAB_HMAC_KEY"
         )):

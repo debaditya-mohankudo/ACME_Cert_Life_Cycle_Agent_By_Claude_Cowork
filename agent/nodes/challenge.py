@@ -37,6 +37,26 @@ _standalone_server: StandaloneHttpChallenge | None = None
 _dns_provider: DnsProvider | None = None
 
 
+class ChallengeSetupNode:
+    """Callable challenge setup implementation."""
+
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
+
+    def run(self, state: AgentState) -> dict:
+        return challenge_setup(state)
+
+
+class ChallengeVerifierNode:
+    """Callable challenge verifier implementation."""
+
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
+
+    def run(self, state: AgentState) -> dict:
+        return challenge_verifier(state)
+
+
 # ─── challenge_setup ──────────────────────────────────────────────────────────
 
 
