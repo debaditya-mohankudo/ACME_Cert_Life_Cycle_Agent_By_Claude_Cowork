@@ -43,7 +43,6 @@ def generate_self_signed_cert(
 
     # Calculate validity period
     now = datetime.datetime.now(datetime.timezone.utc)
-    
     if validity_days < 0:
         # For expired certs: certificate was valid for abs(validity_days) and expired abs(validity_days) ago
         not_valid_before = now + datetime.timedelta(days=validity_days * 2)
