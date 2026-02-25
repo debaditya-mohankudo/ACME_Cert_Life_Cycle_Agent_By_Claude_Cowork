@@ -8,10 +8,13 @@ Usage:
   python main.py --domains a.com b.com  # Override managed domains for this run
   python main.py --expiring-in-30-days  # Query-only: list domains with certs expiring in <= 30 days (no renewals)
   python main.py --domain-status my.local  # Query-only: print status for one or more domains (no renewals)
+  python main.py --generate-test-cert example.com --days 90  # Generate self-signed test cert for 90 days
 
 These CLI commands are read-only unless explicitly documented otherwise; in particular,
 the --expiring-in-30-days and --domain-status options never perform certificate issuance,
 renewal, revocation, or other state-changing operations.
+
+The --generate-test-cert option generates a self-signed certificate (does not contact ACME servers).
 """
 from __future__ import annotations
 
@@ -220,6 +223,50 @@ def list_domains_expiring_within(
     return [domain for domain, _ in expiring]
 
 
+def generate_test_cert(
+    domain: str,
+    days: int = 30,
+) -> None:
+    """Generate a self-signed test certificate for a domain."""
+    import config
+    from pathlib import Path
+    from scripts.generate_test_cert import generate_self_signed_cert
+    
+    if not domain:
+        log.error("Domain is required for test certificate generation.")
+        sys.exit(1)
+    
+    if days < 1 or days > 3650:
+        log.error("Days must be between 1 and 3650.")
+        sys.exit(1)
+    
+    try:
+        output_dir = Path(config.settings.CERT_STORE_PATH) / domain
+        generate_self_signed_cert(
+            domain=domain,
+            validity_days=days,
+            output_dir=output_dir,
+        )
+        cert_path = output_dir / "cert.pem"
+        key_path = output_dir / "privkey.pem"
+        log.info(
+            "Test certificate generated successfully.\n"
+            "  Domain: %s\n"
+            "  Validity: %d days\n"
+            "  Cert: %s\n"
+            "  Key: %s",
+            domain,
+            days,
+            cert_path,
+            key_path,
+        )
+        print(f"✓ Test certificate generated: {cert_path}")
+        print(f"✓ Private key: {key_path}")
+    except Exception as exc:
+        log.error("Failed to generate test certificate: %s", exc)
+        sys.exit(1)
+
+
 def get_domain_statuses(
     domains: list[str],
     settings: Any | None = None,
@@ -405,6 +452,18 @@ Examples:
         metavar="URL",
         help="Override ACME directory URL for this process only (typically with --ca-provider custom)",
     )
+    parser.add_argument(
+        "--generate-test-cert",
+        metavar="DOMAIN",
+        help="Generate a self-signed test certificate for the specified domain",
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=30,
+        metavar="N",
+        help="Validity period in days for generated test certificate (default: 30; range: 1-3650)",
+    )
 
     args = parser.parse_args()
 
@@ -416,6 +475,7 @@ Examples:
             or parsed_args.revoke_cert
             or parsed_args.expiring_in_30_days
             or bool(parsed_args.domain_status)
+            or bool(parsed_args.generate_test_cert)
         )
 
     if not _has_selected_action(args):
@@ -437,6 +497,8 @@ Examples:
             print("\n".join(expiring_domains))
         else:
             print("No domains expiring within 30 days.")
+    elif args.generate_test_cert:
+        generate_test_cert(domain=args.generate_test_cert, days=args.days)
     elif args.revoke_cert:
         run_revocation(domains=args.revoke_cert, reason=args.reason, use_checkpoint=args.checkpoint)
     elif args.once:
