@@ -30,6 +30,9 @@ env/
 *.swp
 *.swo
 
+# Claude AI worktrees
+.claude/worktrees/
+
 # OS
 .DS_Store
 Thumbs.db
