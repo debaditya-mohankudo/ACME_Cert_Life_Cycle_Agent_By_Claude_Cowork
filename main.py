@@ -241,14 +241,13 @@ def generate_test_cert(
         sys.exit(1)
     
     try:
-        output_dir = Path(config.settings.CERT_STORE_PATH) / domain
+        cert_path = Path(config.settings.CERT_STORE_PATH) / domain / "cert.pem"
+        key_path = Path(config.settings.CERT_STORE_PATH) / domain / "privkey.pem"
         generate_self_signed_cert(
             domain=domain,
             validity_days=days,
-            output_dir=output_dir,
+            output_dir=Path(config.settings.CERT_STORE_PATH) / domain,
         )
-        cert_path = output_dir / "cert.pem"
-        key_path = output_dir / "privkey.pem"
         log.info(
             "Test certificate generated successfully.\n"
             "  Domain: %s\n"

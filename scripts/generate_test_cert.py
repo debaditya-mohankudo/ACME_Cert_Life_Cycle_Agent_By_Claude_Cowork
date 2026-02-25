@@ -134,3 +134,13 @@ def generate_self_signed_cert(
     print(f"    - cert.pem")
     print(f"    - privkey.pem")
     print(f"    - metadata.json")
+
+
+if __name__ == "__main__":
+    print(
+        "❌ This module is library-only and cannot be executed directly.\n"
+        "ℹ️  Use: python main.py --generate-test-cert DOMAIN --days N\n"
+        "Examples:\n"
+        "  python main.py --generate-test-cert example.com --days 90\n"
+        "  python main.py --generate-test-cert test.local --days 7"
+    )
