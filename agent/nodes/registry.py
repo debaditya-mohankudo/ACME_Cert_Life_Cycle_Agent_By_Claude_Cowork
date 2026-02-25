@@ -19,7 +19,6 @@ from agent.nodes.revocation_router import (
     pick_next_revocation_domain,
 )
 from agent.nodes.router import pick_next_domain
-from agent.nodes.router import pick_next_domain
 from agent.nodes.revoker import CertRevokerNode
 from agent.nodes.scanner import CertificateScannerNode
 from agent.nodes.storage import StorageManagerNode
