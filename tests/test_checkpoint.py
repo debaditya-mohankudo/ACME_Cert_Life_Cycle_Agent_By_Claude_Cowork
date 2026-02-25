@@ -164,7 +164,10 @@ def mocked_acme_nodes():
         "current_nonce": "nonce-verify",
     })
     mock_csr = MagicMock(return_value={
-        "current_order": MOCK_ORDER_CSR,
+        "current_order": {
+            **MOCK_ORDER_CSR,
+            "csr_der_hex": MOCK_ORDER_CSR.get("csr_hex"),
+        },
         "current_nonce": "nonce-csr",
     })
     mock_finalizer = MagicMock(return_value={
