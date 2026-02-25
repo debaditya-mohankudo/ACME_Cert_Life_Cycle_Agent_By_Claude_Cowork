@@ -6,7 +6,7 @@ Tools:
   - renew_once: run one renewal cycle
   - revoke_cert: revoke one or more certificates
   - expiring_in_30_days: list domains with certs expiring in <= 30 days
-    - domain_status: get cert status for one or more domains
+  - domain_status: get cert status for one or more domains
 """
 from __future__ import annotations
 
