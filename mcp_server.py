@@ -97,6 +97,24 @@ def _validate_reason(reason: int) -> int:
     return reason
 
 
+def _validate_domain_for_cert_generation(domain: str) -> None:
+    """Validate domain to prevent path traversal and directory escape attacks.
+    
+    Ensures domain is:
+    - Non-empty
+    - Does not contain path separators or traversal sequences
+    - Safe to use as a subdirectory within CERT_STORE_PATH
+    """
+    if not domain:
+        raise ValueError("domain cannot be empty")
+    if "/" in domain or "\\" in domain:
+        raise ValueError("domain cannot contain path separators")
+    if ".." in domain or domain.startswith("."):
+        raise ValueError("domain cannot contain path traversal sequences")
+    if domain in {".", ".."}:
+        raise ValueError("invalid domain name")
+
+
 @asynccontextmanager
 async def _operation_lock(*, required: bool):
     """Acquire process-wide operation lock when required by policy."""
@@ -355,14 +373,15 @@ async def domain_status(domains: list[str]) -> dict[str, Any]:
 async def generate_test_cert(
     domain: str,
     days: int,
-    cert_store_path: str | None = None,
 ) -> dict[str, Any]:
     """Generate a self-signed test certificate with configurable validity period.
     
+    Certificates are stored in the configured CERT_STORE_PATH, with one directory per domain.
+    
     Args:
         domain: Domain name to use as Common Name (CN) in the certificate
+                (must not contain path separators or traversal sequences)
         days: Validity period in days from now (use negative for expired certs)
-        cert_store_path: Directory to store certificate files (default: ./certs)
     
     Returns:
         Dictionary with status, certificate details, and file paths
@@ -370,12 +389,13 @@ async def generate_test_cert(
     try:
         from scripts.generate_test_cert import generate_self_signed_cert
         import datetime
+        import config
         
-        if not domain:
-            raise ValueError("domain cannot be empty")
+        # Validate domain to prevent path traversal attacks
+        _validate_domain_for_cert_generation(domain)
         
-        # Use provided cert_store_path or default to ./certs
-        store_path = Path(cert_store_path or "certs")
+        # Always use the configured CERT_STORE_PATH (never accept arbitrary paths)
+        store_path = Path(config.settings.CERT_STORE_PATH)
         output_dir = store_path / domain
         
         # Generate the certificate
