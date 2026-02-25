@@ -37,6 +37,7 @@ python main.py --once
 python main.py --schedule
 python main.py --expiring-in-30-days
 python main.py --domain-status my.local api.example.com
+python main.py --generate-test-cert example.com --days 90
 python main.py --revoke-cert example.com --reason 4
 python mcp_server.py
 ```

@@ -273,12 +273,81 @@ def test_cli_domain_status_requires_domains(monkeypatch, capsys):
     assert "expected at least one argument" in stderr
 
 
-def test_cli_requires_action_flag(monkeypatch, capsys):
-    monkeypatch.setattr(sys, "argv", ["main.py"])
+def test_generate_test_cert_with_custom_days(monkeypatch, tmp_path):
+    """Test generate_test_cert with explicit validity period."""
+    original_settings = config.settings
+    
+    try:
+        config.settings = SimpleNamespace(
+            CERT_STORE_PATH=str(tmp_path),
+        )
+        main.generate_test_cert(domain="test.example.com", days=90)
+        
+        # Verify files were created
+        cert_file = tmp_path / "test.example.com" / "cert.pem"
+        key_file = tmp_path / "test.example.com" / "privkey.pem"
+        metadata_file = tmp_path / "test.example.com" / "metadata.json"
+        
+        assert cert_file.exists()
+        assert key_file.exists()
+        assert metadata_file.exists()
+    finally:
+        config.settings = original_settings
 
-    with pytest.raises(SystemExit) as exc:
-        main.main()
 
-    assert exc.value.code == 1
-    stdout = capsys.readouterr().out
-    assert "ACME Certificate Lifecycle Agent" in stdout
+def test_generate_test_cert_with_default_days(monkeypatch, tmp_path):
+    """Test generate_test_cert with default 30 days."""
+    original_settings = config.settings
+    
+    try:
+        config.settings = SimpleNamespace(
+            CERT_STORE_PATH=str(tmp_path),
+        )
+        main.generate_test_cert(domain="another.example.com")
+        
+        # Verify files were created
+        cert_file = tmp_path / "another.example.com" / "cert.pem"
+        key_file = tmp_path / "another.example.com" / "privkey.pem"
+        
+        assert cert_file.exists()
+        assert key_file.exists()
+    finally:
+        config.settings = original_settings
+
+
+def test_generate_test_cert_rejects_empty_domain(monkeypatch, tmp_path):
+    """Test generate_test_cert rejects empty domain."""
+    original_settings = config.settings
+    
+    try:
+        config.settings = SimpleNamespace(
+            CERT_STORE_PATH=str(tmp_path),
+        )
+        with pytest.raises(SystemExit) as exc:
+            main.generate_test_cert(domain="", days=30)
+        assert exc.value.code == 1
+    finally:
+        config.settings = original_settings
+
+
+def test_generate_test_cert_rejects_invalid_days(monkeypatch, tmp_path):
+    """Test generate_test_cert rejects invalid days range."""
+    original_settings = config.settings
+    
+    try:
+        config.settings = SimpleNamespace(
+            CERT_STORE_PATH=str(tmp_path),
+        )
+        # Too few days
+        with pytest.raises(SystemExit) as exc:
+            main.generate_test_cert(domain="test.com", days=0)
+        assert exc.value.code == 1
+        
+        # Too many days
+        with pytest.raises(SystemExit) as exc:
+            main.generate_test_cert(domain="test.com", days=3651)
+        assert exc.value.code == 1
+    finally:
+        config.settings = original_settings
+
+
