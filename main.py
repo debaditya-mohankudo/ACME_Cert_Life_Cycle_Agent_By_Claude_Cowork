@@ -6,8 +6,8 @@ Usage:
   python main.py --schedule             # Run on the configured schedule (default 06:00 UTC)
   python main.py --once --checkpoint    # Run with MemorySaver checkpointing
   python main.py --domains a.com b.com  # Override managed domains for this run
-    python main.py --expiring-in-30-days  # Print domains with certs expiring in <= 30 days
-    python main.py --domain-status my.local  # Print status for one or more domains
+  python main.py --expiring-in-30-days  # Print domains with certs expiring in <= 30 days
+  python main.py --domain-status my.local  # Print status for one or more domains
 """
 from __future__ import annotations
 
