@@ -9,11 +9,11 @@ detection is skipped — detected_ca_provider is left as None.
 """
 from __future__ import annotations
 
+import config
 import logging
 from typing import Optional
 
 from agent.state import AgentState, CertRecord
-from config import settings
 from storage import filesystem as fs
 
 logger = logging.getLogger(__name__)
@@ -53,9 +53,9 @@ def certificate_scanner(state: AgentState) -> dict:
         else:
             # Only detect CA when using a custom ACME endpoint; for named
             # providers the configured CA_PROVIDER is authoritative.
-            if settings.CA_PROVIDER == "custom":
+            if config.settings.CA_PROVIDER == "custom":
                 detected_ca = fs.detect_ca_for_domain(cert_store_path, domain, pem)
-                _warn_if_ca_mismatch(domain, detected_ca, settings.CA_PROVIDER)
+                _warn_if_ca_mismatch(domain, detected_ca, config.settings.CA_PROVIDER)
             else:
                 detected_ca = None
 

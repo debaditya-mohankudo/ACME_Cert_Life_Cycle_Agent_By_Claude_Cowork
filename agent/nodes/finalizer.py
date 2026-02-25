@@ -15,7 +15,6 @@ import logging
 from acme import jws as jwslib
 from acme.client import AcmeError, make_client
 from agent.state import AgentState
-from config import settings
 
 logger = logging.getLogger(__name__)
 

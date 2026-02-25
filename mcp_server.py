@@ -14,8 +14,6 @@ import os
 from contextlib import contextmanager
 from typing import Any, Literal
 
-from config import settings
-
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError as exc:  # pragma: no cover

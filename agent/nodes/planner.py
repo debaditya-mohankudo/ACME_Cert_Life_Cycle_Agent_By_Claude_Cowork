@@ -6,6 +6,7 @@ Output validation: ensures every domain in LLM JSON output is in managed_domains
 """
 from __future__ import annotations
 
+import config
 import json
 import logging
 from typing import Any
@@ -14,7 +15,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from agent.prompts import PLANNER_SYSTEM, PLANNER_USER
 from agent.state import AgentState
-from config import settings
 from llm.factory import make_llm
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ def renewal_planner(state: AgentState) -> dict:
             )
     cert_summary = "\n".join(lines)
 
-    llm = make_llm(model=settings.LLM_MODEL_PLANNER, max_tokens=512)
+    llm = make_llm(model=config.settings.LLM_MODEL_PLANNER, max_tokens=512)
 
     messages = [
         SystemMessage(content=PLANNER_SYSTEM),
