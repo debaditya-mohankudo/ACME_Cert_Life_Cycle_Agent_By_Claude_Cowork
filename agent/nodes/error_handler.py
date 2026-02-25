@@ -3,6 +3,7 @@ error_handler (LLM) node — analyze a renewal failure and decide: retry, skip, 
 """
 from __future__ import annotations
 
+import config
 import json
 import logging
 import time
@@ -11,7 +12,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from agent.prompts import ERROR_HANDLER_SYSTEM, ERROR_HANDLER_USER
 from agent.state import AgentState
-from config import settings
 from llm.factory import make_llm
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def error_handler(state: AgentState) -> dict:
     max_retries = state.get("max_retries", 3)
     retry_delay = state.get("retry_delay_seconds", 5)
 
-    llm = make_llm(model=settings.LLM_MODEL_ERROR_HANDLER, max_tokens=256)
+    llm = make_llm(model=config.settings.LLM_MODEL_ERROR_HANDLER, max_tokens=256)
 
     messages = [
         SystemMessage(content=ERROR_HANDLER_SYSTEM),

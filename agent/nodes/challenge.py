@@ -23,7 +23,7 @@ from acme.http_challenge import (
     write_webroot_challenge,
 )
 from agent.state import AgentState
-from config import settings
+import config
 
 if TYPE_CHECKING:
     from acme.dns_challenge import DnsProvider
@@ -59,12 +59,12 @@ def challenge_setup(state: AgentState) -> dict:
     if not order:
         return {"error_log": state.get("error_log", []) + ["challenge_setup: no current_order in state"]}
 
-    mode = settings.HTTP_CHALLENGE_MODE
+    mode = config.settings.HTTP_CHALLENGE_MODE
     challenge_tokens = order["challenge_tokens"]
     key_authorizations = order["key_authorizations"]
 
     if mode == "webroot":
-        webroot = settings.WEBROOT_PATH
+        webroot = config.settings.WEBROOT_PATH
         for token, key_auth in zip(challenge_tokens, key_authorizations):
             write_webroot_challenge(webroot, token, key_auth)
             logger.info("Wrote webroot challenge token %s", token)
@@ -77,7 +77,7 @@ def challenge_setup(state: AgentState) -> dict:
             _dns_provider.create_txt_record(domain, txt_value)
             logger.info("Created TXT _acme-challenge.%s", domain)
 
-        wait = settings.DNS_PROPAGATION_WAIT_SECONDS
+        wait = config.settings.DNS_PROPAGATION_WAIT_SECONDS
         if wait > 0:
             logger.info("Waiting %d seconds for DNS propagation...", wait)
             time.sleep(wait)
@@ -87,12 +87,12 @@ def challenge_setup(state: AgentState) -> dict:
         if _standalone_server is not None:
             _standalone_server.stop()
 
-        _standalone_server = StandaloneHttpChallenge(port=settings.HTTP_CHALLENGE_PORT)
+        _standalone_server = StandaloneHttpChallenge(port=config.settings.HTTP_CHALLENGE_PORT)
         # We serve each token one at a time; challenge_verifier will cycle through
         _standalone_server.start(challenge_tokens[0], key_authorizations[0])
         logger.info(
             "Standalone HTTP server started on port %d serving token %s",
-            settings.HTTP_CHALLENGE_PORT,
+            config.settings.HTTP_CHALLENGE_PORT,
             challenge_tokens[0],
         )
 
@@ -135,9 +135,9 @@ def challenge_verifier(state: AgentState) -> dict:
         zip(auth_urls, challenge_urls, challenge_tokens, key_authorizations)
     ):
         # In standalone mode, swap to this iteration's token
-        if settings.HTTP_CHALLENGE_MODE == "standalone" and _standalone_server and i > 0:
+        if config.settings.HTTP_CHALLENGE_MODE == "standalone" and _standalone_server and i > 0:
             _standalone_server.stop()
-            _standalone_server = StandaloneHttpChallenge(port=settings.HTTP_CHALLENGE_PORT)
+            _standalone_server = StandaloneHttpChallenge(port=config.settings.HTTP_CHALLENGE_PORT)
             _standalone_server.start(token, key_auth)
             logger.info("Switched standalone server to token %s", token)
 
@@ -181,13 +181,13 @@ def _cleanup_challenge(state: AgentState) -> None:
     global _standalone_server, _dns_provider
     order = state.get("current_order")
 
-    if settings.HTTP_CHALLENGE_MODE == "standalone" and _standalone_server:
+    if config.settings.HTTP_CHALLENGE_MODE == "standalone" and _standalone_server:
         _standalone_server.stop()
         _standalone_server = None
-    elif settings.HTTP_CHALLENGE_MODE == "webroot" and order:
+    elif config.settings.HTTP_CHALLENGE_MODE == "webroot" and order:
         for token in order.get("challenge_tokens", []):
-            remove_webroot_challenge(settings.WEBROOT_PATH, token)
-    elif settings.HTTP_CHALLENGE_MODE == "dns" and _dns_provider is not None:
+            remove_webroot_challenge(config.settings.WEBROOT_PATH, token)
+    elif config.settings.HTTP_CHALLENGE_MODE == "dns" and _dns_provider is not None:
         auth_domains = order.get("auth_domains", []) if order else []
         dns_txt_values = order.get("dns_txt_values", []) if order else []
         for domain, txt_value in zip(auth_domains, dns_txt_values):

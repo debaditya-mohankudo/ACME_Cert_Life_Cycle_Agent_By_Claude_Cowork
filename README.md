@@ -16,6 +16,8 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 | Setup | [SETUP.md](doc/README_SETUP.md) |
 | Running with Docker | [DOCKER.md](doc/README_DOCKER.md) |
 | Usage | [USAGE.md](doc/README_USAGE.md) |
+| MCP server usage | [MCP_SERVER.md](doc/README_MCP_SERVER.md) |
+| MCP implementation details | [MCP_IMPLEMENTATION_DETAILS.md](doc/README_MCP_IMPLEMENTATION_DETAILS.md) |
 | Pebble testing server | [PEBBLE_TESTING_SERVER.md](doc/PEBBLE_TESTING_SERVER.md) |
 | Configuration reference | [CONFIGURATION.md](doc/README_CONFIGURATION.md) |
 | Certificate revocation | [REVOCATION_IMPLEMENTATION.md](doc/REVOCATION_IMPLEMENTATION.md) |
@@ -27,6 +29,17 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 | Observability | [OBSERVABILITY.md](doc/README_OBSERVABILITY.md) |
 | Security considerations | [SECURITY.md](doc/README_SECURITY.md) |
 | Dependencies | [DEPENDENCIES.md](doc/README_DEPENDENCIES.md) |
+
+## Quick CLI examples
+
+```bash
+python main.py --once
+python main.py --schedule
+python main.py --expiring-in-30-days
+python main.py --domain-status my.local api.example.com
+python main.py --revoke-cert example.com --reason 4
+python mcp_server.py
+```
 
 
 ## License

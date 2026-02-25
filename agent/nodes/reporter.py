@@ -4,13 +4,13 @@ revocation_reporter (LLM) node — generate a final human-readable revocation su
 """
 from __future__ import annotations
 
+import config
 import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from agent.prompts import REPORTER_SYSTEM, REPORTER_USER, REVOCATION_REPORTER_USER
 from agent.state import AgentState
-from config import settings
 from llm.factory import make_llm
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def summary_reporter(state: AgentState) -> dict:
 
     error_summary = "\n".join(f"  - {e}" for e in error_log) if error_log else "  (none)"
 
-    llm = make_llm(model=settings.LLM_MODEL_REPORTER, max_tokens=512)
+    llm = make_llm(model=config.settings.LLM_MODEL_REPORTER, max_tokens=512)
 
     messages = [
         SystemMessage(content=REPORTER_SYSTEM),
@@ -81,7 +81,7 @@ def revocation_reporter(state: AgentState) -> dict:
 
     error_summary = "\n".join(f"  - {e}" for e in error_log) if error_log else "  (none)"
 
-    llm = make_llm(model=settings.LLM_MODEL_REPORTER, max_tokens=512)
+    llm = make_llm(model=config.settings.LLM_MODEL_REPORTER, max_tokens=512)
 
     messages = [
         SystemMessage(content=REPORTER_SYSTEM),

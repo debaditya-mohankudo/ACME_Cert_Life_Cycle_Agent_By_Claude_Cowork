@@ -9,13 +9,13 @@ per §8.4).
 """
 from __future__ import annotations
 
+import config
 import logging
 
 from acme import jws as jwslib
 from acme.client import make_client
 from acme.dns_challenge import compute_dns_txt_value
 from agent.state import AgentState, AcmeOrder
-from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ def order_initializer(state: AgentState) -> dict:
     dns_txt_values: list[str] = []
     thumbprint = jwslib.compute_jwk_thumbprint(account_key)
 
-    challenge_type = "dns-01" if settings.HTTP_CHALLENGE_MODE == "dns" else "http-01"
+    challenge_type = "dns-01" if config.settings.HTTP_CHALLENGE_MODE == "dns" else "http-01"
 
     for auth_url in auth_urls:
         authz = client.get_authorization(auth_url, account_key, account_url)
@@ -83,7 +83,7 @@ def order_initializer(state: AgentState) -> dict:
         challenge_tokens.append(token)
         key_authorizations.append(key_auth)
 
-        if settings.HTTP_CHALLENGE_MODE == "dns":
+        if config.settings.HTTP_CHALLENGE_MODE == "dns":
             dns_txt_values.append(compute_dns_txt_value(key_auth))
 
     current_order: AcmeOrder = {

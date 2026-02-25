@@ -25,11 +25,11 @@ uv run pytest -v \
   --ignore=tests/test_lifecycle_pebble.py
 ```
 
-**219 tests, 0 skips, no external services required.**
+**254 tests, 0 skips, no external services required.**
 
 ---
 
-## Tests Currently in CI (219 total)
+## Tests Currently in CI (254 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -165,6 +165,69 @@ CA detection from X.509 issuer fields; no network calls (synthetic certs built i
 | `write_cert_files()` metadata | 2 tests | `ca_provider` written to `metadata.json`; defaults to empty string when omitted |
 | `_warn_if_ca_mismatch()` | 6 tests | no warning when detected is `None`; no warning on match; letsencrypt/staging treated as equivalent (both directions); warning logged on real mismatch; domain name included in warning |
 | Scanner integration | 5 tests | no cert → `detected_ca_provider` is `None`; named `CA_PROVIDER` skips detection (returns `None`); `CA_PROVIDER=custom` runs detection; mismatch warning emitted only for `custom`; no warning emitted for named providers |
+
+---
+
+### `tests/test_cli_overrides.py` — 12 tests
+CLI argument parsing and runtime settings override validation.
+
+| Test | What is verified |
+|---|---|
+| `test_apply_runtime_settings_overrides_custom` | Custom CA provider + directory URL override via CLI |
+| `test_apply_runtime_settings_overrides_named_provider_uses_preset` | Named provider (e.g., digicert) applies preset URL |
+| `test_list_domains_expiring_within_filters_and_sorts` | `--domain-status` command filters by expiry threshold |
+| `test_list_domains_expiring_within_exits_when_no_domains_configured` | Graceful exit if no domains configured |
+| `test_get_domain_statuses_classifies_domains` | Domains classified into valid / expiring / missing |
+| `test_get_domain_statuses_exits_when_empty_domains` | Graceful exit on empty domain list |
+| `test_cli_domain_status_prints_results` | CLI formatter outputs status table |
+| `test_cli_expiring_in_30_days_uses_domains_override` | CLI respects `--domains` override |
+| `test_cli_applies_runtime_overrides_before_action` | Overrides applied before main action executes |
+| `test_cli_rejects_unknown_ca_provider` | Unknown CA provider rejected with error |
+| `test_cli_domain_status_requires_domains` | `--domain-status` requires `--domains` |
+| `test_cli_requires_action_flag` | CLI rejects commands without action flag |
+
+---
+
+### `tests/test_docker_config.py` — 11 tests
+Dockerfile and docker-compose non-root user security + capability hardening.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| Dockerfile non-root | 5 tests | `useradd -S` creates system user; UID 1001; chown data dir; no root in final image |
+| docker-compose capabilities | 6 tests | `NET_BIND_SERVICE` added (for port 80); all others dropped; `no-new-privileges` set; port 80 still mapped; data volume mounted |
+
+---
+
+### `tests/test_retry_scheduler.py` — 11 tests
+Retry scheduling logic; exponential backoff timing and event integration.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| Sync scheduler | 5 tests | no scheduled retry passes through; past retry time doesn't wait; future retry time waits; clears retry if not before time limit; long backoff (300s cap) |
+| Async scheduler | 4 tests | async variants pass through, wait, don't block, respect boundaries |
+| Integration | 2 tests | retry scheduler with error handler state machine; multi-domain concurrent retries |
+
+---
+
+### `tests/test_mcp_server_locking.py` — 2 tests
+MCP tool async lock serialization policy.
+
+| Test | What is verified |
+|---|---|
+| `test_mutating_tools_always_request_operation_lock` | `health`, `renew_once`, `revoke_cert`, `generate_test_cert` all set `required=True` |
+| `test_read_only_tools_are_not_serialized` | `expiring_in_30_days`, `domain_status` set `required=False` for concurrent execution |
+
+---
+
+### `tests/test_mcp_server_security.py` — 21 tests
+MCP server input validation and exception handling.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| Path injection prevention | 8 tests | Forward slash, backslash, `..`, single `.`, double `.`, empty domain all rejected; valid domain generates cert |
+| CA input validation | 7 tests | Unknown CA provider rejected with valid choices shown; `file://`, `ftp://` URLs rejected; valid `http(s)` URLs accepted; known providers accepted; config mode ignores custom inputs |
+| Exception handling | 4 tests | `health`, `renew_once`, `revoke_cert`, `generate_test_cert` return `{"status": "failed", "error": str(...)}` on exception |
+| Revocation reason validation | 2 tests | RFC 5280 reasons 0, 1, 4, 5 accepted; invalid reasons rejected with valid choices shown |
 
 ---
 

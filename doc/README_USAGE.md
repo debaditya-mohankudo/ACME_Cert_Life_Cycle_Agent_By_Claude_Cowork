@@ -20,6 +20,15 @@ Runs immediately on start, then repeats daily at `SCHEDULE_TIME` (default `06:00
 python main.py --once --domains api.example.com shop.example.com
 ```
 
+## Override CA provider for a run
+
+Use CLI overrides when you want to switch CA without editing `.env`:
+
+```bash
+python main.py --once --ca-provider letsencrypt --domains api.example.com
+python main.py --once --ca-provider custom --acme-directory-url https://localhost:14000/dir --domains my.local
+```
+
 ## Enable checkpointing (resume interrupted runs)
 
 ```bash
@@ -27,6 +36,29 @@ python main.py --once --checkpoint
 ```
 
 Uses LangGraph's `MemorySaver` to checkpoint state after each node. If a run is interrupted mid-flow (e.g., a network failure during finalization), the graph can resume from the last completed node.
+
+## List domains expiring within 30 days
+
+Prints managed domains that already have a stored certificate expiring in 30 days or less (one domain per line):
+
+```bash
+python main.py --expiring-in-30-days
+```
+
+Use with `--domains` to scope the check to a subset:
+
+```bash
+python main.py --expiring-in-30-days --domains api.example.com shop.example.com
+```
+
+## Check status for specific domains
+
+Print certificate status details (`missing`, `expired`, `expiring_soon`, `valid`) for one or more domains:
+
+```bash
+python main.py --domain-status my.local
+python main.py --domain-status my.local api.example.com
+```
 
 ## Revoke certificates
 
@@ -60,3 +92,11 @@ The revocation graph:
 5. Generates a summary report of successes and failures
 
 If a certificate file is not found, revocation fails for that domain and continues with the next one (best-effort).
+
+## Run as MCP server
+
+```bash
+python mcp_server.py
+```
+
+See [MCP server usage](./README_MCP_SERVER.md) for the tool list and integration notes.

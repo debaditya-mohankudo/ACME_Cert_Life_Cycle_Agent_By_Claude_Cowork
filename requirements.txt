@@ -20,6 +20,7 @@ python-dotenv==1.0.1
 certifi==2024.12.14             # CA bundle
 schedule==1.2.2                 # Job scheduling
 structlog==25.1.0               # Structured logging
+mcp>=1.6                        # MCP server SDK (FastMCP)
 
 # Dev / Testing
 pytest==8.3.5
