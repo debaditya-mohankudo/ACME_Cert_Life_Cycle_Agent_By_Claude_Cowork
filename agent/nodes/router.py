@@ -15,27 +15,41 @@ from agent.state import AgentState
 logger = logging.getLogger(__name__)
 
 
+class PickNextDomainNode:
+    """Callable domain router implementation."""
+
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
+
+    def run(self, state: AgentState) -> dict:
+        """
+        Node that pops the next domain from pending_renewals and sets current_domain.
+        Also resets per-domain state (retry_count, current_order, current_nonce).
+        """
+        pending = list(state.get("pending_renewals", []))
+        if not pending:
+            return {}
+
+        next_domain = pending[0]
+        remaining = pending[1:]
+
+        logger.info("Starting renewal for domain: %s", next_domain)
+        return {
+            "current_domain": next_domain,
+            "pending_renewals": remaining,
+            "current_order": None,
+            "current_nonce": None,
+            "retry_count": 0,
+            "retry_delay_seconds": 5,
+        }
+
+
+# ─── Compatibility wrapper ────────────────────────────────────────────────────
+
+
 def pick_next_domain(state: AgentState) -> dict:
-    """
-    Node that pops the next domain from pending_renewals and sets current_domain.
-    Also resets per-domain state (retry_count, current_order, current_nonce).
-    """
-    pending = list(state.get("pending_renewals", []))
-    if not pending:
-        return {}
-
-    next_domain = pending[0]
-    remaining = pending[1:]
-
-    logger.info("Starting renewal for domain: %s", next_domain)
-    return {
-        "current_domain": next_domain,
-        "pending_renewals": remaining,
-        "current_order": None,
-        "current_nonce": None,
-        "retry_count": 0,
-        "retry_delay_seconds": 5,
-    }
+    """Compatibility wrapper delegating to PickNextDomainNode."""
+    return PickNextDomainNode().run(state)
 
 
 def domain_loop_router(state: AgentState) -> str:

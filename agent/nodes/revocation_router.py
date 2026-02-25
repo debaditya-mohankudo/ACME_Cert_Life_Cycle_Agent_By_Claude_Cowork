@@ -13,28 +13,42 @@ from agent.state import AgentState
 logger = logging.getLogger(__name__)
 
 
+class PickNextRevocationDomainNode:
+    """Callable revocation domain router implementation."""
+
+    def __call__(self, state: AgentState) -> dict:
+        return self.run(state)
+
+    def run(self, state: AgentState) -> dict:
+        """
+        Pop the next domain from revocation_targets and set current_revocation_domain.
+        Also clear current_nonce so the next cert_revoker invocation fetches a fresh one.
+
+        If revocation_targets is empty, this node should not be called (the router
+        should have routed to all_done).
+        """
+        targets = list(state.get("revocation_targets", []))
+        if not targets:
+            logger.warning("pick_next_revocation_domain called with empty revocation_targets")
+            return {}
+
+        next_domain = targets[0]
+        remaining = targets[1:]
+
+        logger.info("Starting revocation for domain: %s", next_domain)
+        return {
+            "current_revocation_domain": next_domain,
+            "revocation_targets": remaining,
+            "current_nonce": None,  # Clear so cert_revoker fetches a fresh nonce
+        }
+
+
+# ─── Compatibility wrapper ────────────────────────────────────────────────────
+
+
 def pick_next_revocation_domain(state: AgentState) -> dict:
-    """
-    Pop the next domain from revocation_targets and set current_revocation_domain.
-    Also clear current_nonce so the next cert_revoker invocation fetches a fresh one.
-
-    If revocation_targets is empty, this node should not be called (the router
-    should have routed to all_done).
-    """
-    targets = list(state.get("revocation_targets", []))
-    if not targets:
-        logger.warning("pick_next_revocation_domain called with empty revocation_targets")
-        return {}
-
-    next_domain = targets[0]
-    remaining = targets[1:]
-
-    logger.info("Starting revocation for domain: %s", next_domain)
-    return {
-        "current_revocation_domain": next_domain,
-        "revocation_targets": remaining,
-        "current_nonce": None,  # Clear so cert_revoker fetches a fresh nonce
-    }
+    """Compatibility wrapper delegating to PickNextRevocationDomainNode."""
+    return PickNextRevocationDomainNode().run(state)
 
 
 def revocation_loop_router(state: AgentState) -> str:

@@ -15,10 +15,8 @@ from agent.nodes.order import OrderInitializerNode
 from agent.nodes.planner import RenewalPlannerNode
 from agent.nodes.reporter import RevocationReporterNode, SummaryReporterNode
 from agent.nodes.retry_scheduler import RetrySchedulerNode
-from agent.nodes.revocation_router import (
-    pick_next_revocation_domain,
-)
-from agent.nodes.router import pick_next_domain
+from agent.nodes.revocation_router import PickNextRevocationDomainNode
+from agent.nodes.router import PickNextDomainNode
 from agent.nodes.revoker import CertRevokerNode
 from agent.nodes.scanner import CertificateScannerNode
 from agent.nodes.storage import StorageManagerNode
@@ -30,7 +28,7 @@ NODE_REGISTRY = {
     "certificate_scanner": CertificateScannerNode,
     "renewal_planner": RenewalPlannerNode,
     "acme_account_setup": AcmeAccountSetupNode,
-    "pick_next_domain": pick_next_domain,
+    "pick_next_domain": PickNextDomainNode,
     "order_initializer": OrderInitializerNode,
     "challenge_setup": ChallengeSetupNode,
     "challenge_verifier": ChallengeVerifierNode,
@@ -43,7 +41,7 @@ NODE_REGISTRY = {
     "summary_reporter": SummaryReporterNode,
     # Revocation graph nodes
     "revocation_account_setup": AcmeAccountSetupNode,
-    "pick_next_revocation_domain": pick_next_revocation_domain,
+    "pick_next_revocation_domain": PickNextRevocationDomainNode,
     "cert_revoker": CertRevokerNode,
     "revocation_reporter": RevocationReporterNode,
 }
