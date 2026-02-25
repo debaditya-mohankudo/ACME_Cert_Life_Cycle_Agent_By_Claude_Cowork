@@ -2,14 +2,16 @@
 """
 Generate self-signed test certificates with configurable validity periods.
 
-Usage:
-    python scripts/generate_test_cert.py my.local --days 90
-    python scripts/generate_test_cert.py example.com --days 7 --cert-store ./certs
-    python scripts/generate_test_cert.py api.example.com --days -5  # expired cert
+This module is library-only. It exports the generate_self_signed_cert() function
+for creating test certificates programmatically.
+
+Usage (via main.py CLI):
+    python main.py --generate-test-cert my.local --days 90
+    python main.py --generate-test-cert example.com --days 7
+    python main.py --generate-test-cert old.example.com --days -5  # expired cert
 """
 from __future__ import annotations
 
-import argparse
 import datetime
 import sys
 from pathlib import Path
@@ -39,6 +41,10 @@ def generate_self_signed_cert(
         domain: Common Name (CN) for the certificate
         validity_days: Validity period in days (can be negative for expired certs)
         output_dir: Directory to write certificate files (e.g., certs/my.local/)
+
+    Note:
+        This module is library-only and designed for internal use via main.py CLI.
+        Use: python main.py --generate-test-cert DOMAIN --days N
     """
     # Generate private key
     private_key = rsa.generate_private_key(
@@ -128,58 +134,3 @@ def generate_self_signed_cert(
     print(f"    - cert.pem")
     print(f"    - privkey.pem")
     print(f"    - metadata.json")
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Generate self-signed test certificates with configurable validity",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Generate a cert expiring in 90 days
-  python scripts/generate_test_cert.py my.local --days 90
-
-  # Generate a cert expiring in 7 days (test renewal threshold)
-  python scripts/generate_test_cert.py example.com --days 7
-
-  # Generate an expired cert (5 days ago)
-  python scripts/generate_test_cert.py old.example.com --days -5
-
-  # Specify custom cert storage directory
-  python scripts/generate_test_cert.py test.local --days 30 --cert-store /tmp/certs
-        """,
-    )
-    parser.add_argument(
-        "domain",
-        help="Domain name to use as Common Name (CN) in the certificate",
-    )
-    parser.add_argument(
-        "--days",
-        type=int,
-        required=True,
-        help="Validity period in days from now (use negative for expired certs)",
-    )
-    parser.add_argument(
-        "--cert-store",
-        type=Path,
-        default=Path("certs"),
-        help="Certificate storage directory (default: ./certs)",
-    )
-
-    args = parser.parse_args()
-
-    output_dir = args.cert_store / args.domain
-
-    try:
-        generate_self_signed_cert(
-            domain=args.domain,
-            validity_days=args.days,
-            output_dir=output_dir,
-        )
-    except Exception as exc:
-        print(f"❌ Error generating certificate: {exc}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
