@@ -17,8 +17,8 @@ from agent.nodes.reporter import RevocationReporterNode, SummaryReporterNode
 from agent.nodes.retry_scheduler import RetrySchedulerNode
 from agent.nodes.revocation_router import (
     pick_next_revocation_domain,
-    revocation_loop_router,
 )
+from agent.nodes.router import pick_next_domain
 from agent.nodes.router import pick_next_domain
 from agent.nodes.revoker import CertRevokerNode
 from agent.nodes.scanner import CertificateScannerNode
