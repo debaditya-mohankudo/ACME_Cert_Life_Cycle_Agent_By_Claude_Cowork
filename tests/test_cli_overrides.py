@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+import sys
 
 import pytest
 
@@ -156,3 +157,128 @@ def test_get_domain_statuses_exits_when_empty_domains():
     with pytest.raises(SystemExit) as exc:
         main.get_domain_statuses([])
     assert exc.value.code == 1
+
+
+def test_cli_domain_status_prints_results(monkeypatch, capsys):
+    received_domains = []
+
+    def _fake_statuses(domains):
+        received_domains.extend(domains)
+        return [
+            {"domain": "a.example.com", "status": "valid"},
+            {"domain": "b.example.com", "status": "expired"},
+        ]
+
+    monkeypatch.setattr(main, "get_domain_statuses", _fake_statuses)
+    monkeypatch.setattr(main, "apply_runtime_settings_overrides", lambda **_: None)
+    monkeypatch.setattr(sys, "argv", ["main.py", "--domain-status", "a.example.com", "b.example.com"])
+
+    main.main()
+
+    assert received_domains == ["a.example.com", "b.example.com"]
+    stdout = capsys.readouterr().out.strip().splitlines()
+    assert stdout == [
+        "{'domain': 'a.example.com', 'status': 'valid'}",
+        "{'domain': 'b.example.com', 'status': 'expired'}",
+    ]
+
+
+def test_cli_expiring_in_30_days_uses_domains_override(monkeypatch, capsys):
+    calls = []
+
+    def _fake_list(days, domains=None):
+        calls.append((days, domains))
+        return ["b.example.com", "a.example.com"]
+
+    monkeypatch.setattr(main, "list_domains_expiring_within", _fake_list)
+    monkeypatch.setattr(main, "apply_runtime_settings_overrides", lambda **_: None)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "main.py",
+            "--expiring-in-30-days",
+            "--domains",
+            "a.example.com",
+            "b.example.com",
+        ],
+    )
+
+    main.main()
+
+    assert calls == [(30, ["a.example.com", "b.example.com"])]
+    assert capsys.readouterr().out.strip().splitlines() == [
+        "b.example.com",
+        "a.example.com",
+    ]
+
+
+def test_cli_applies_runtime_overrides_before_action(monkeypatch):
+    order = []
+
+    def _fake_apply_runtime_settings_overrides(**kwargs):
+        order.append(("override", kwargs))
+
+    def _fake_run_once(domains=None, use_checkpoint=False):
+        order.append(("run_once", domains, use_checkpoint))
+        return {}
+
+    monkeypatch.setattr(main, "apply_runtime_settings_overrides", _fake_apply_runtime_settings_overrides)
+    monkeypatch.setattr(main, "run_once", _fake_run_once)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "main.py",
+            "--once",
+            "--domains",
+            "a.example.com",
+            "b.example.com",
+            "--ca-provider",
+            "custom",
+            "--acme-directory-url",
+            "https://localhost:14000/dir",
+        ],
+    )
+
+    main.main()
+
+    assert order[0][0] == "override"
+    assert order[0][1] == {
+        "ca_provider": "custom",
+        "acme_directory_url": "https://localhost:14000/dir",
+    }
+    assert order[1] == ("run_once", ["a.example.com", "b.example.com"], False)
+
+
+def test_cli_rejects_unknown_ca_provider(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["main.py", "--once", "--ca-provider", "nope"])
+
+    with pytest.raises(SystemExit) as exc:
+        main.main()
+
+    assert exc.value.code == 2
+    stderr = capsys.readouterr().err
+    assert "invalid choice" in stderr
+
+
+def test_cli_domain_status_requires_domains(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["main.py", "--domain-status"])
+
+    with pytest.raises(SystemExit) as exc:
+        main.main()
+
+    assert exc.value.code == 2
+    stderr = capsys.readouterr().err
+    assert "expected at least one argument" in stderr
+
+
+def test_cli_requires_action_flag(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["main.py"])
+
+    with pytest.raises(SystemExit) as exc:
+        main.main()
+
+    assert exc.value.code == 1
+    stdout = capsys.readouterr().out
+    assert "ACME Certificate Lifecycle Agent" in stdout

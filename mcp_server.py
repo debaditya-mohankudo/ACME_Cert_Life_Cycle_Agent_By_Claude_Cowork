@@ -11,6 +11,7 @@ Tools:
 from __future__ import annotations
 
 import os
+import threading
 from contextlib import contextmanager
 from typing import Any, Literal
 
@@ -32,6 +33,7 @@ CA_PROVIDER_CHOICES = {
     "custom",
 }
 CA_INPUT_MODE_CHOICES = {"config", "custom"}
+_MCP_OPERATION_LOCK = threading.RLock()
 
 
 def _resolve_ca_inputs(
@@ -100,6 +102,17 @@ def _validate_reason(reason: int) -> int:
     return reason
 
 
+@contextmanager
+def _operation_lock(*, required: bool):
+    """Acquire process-wide operation lock when required by policy."""
+    if not required:
+        yield
+        return
+
+    with _MCP_OPERATION_LOCK:
+        yield
+
+
 def _run_renew_once(domains: list[str] | None, checkpoint: bool) -> dict[str, Any]:
     from main import run_once
 
@@ -153,38 +166,39 @@ def health(
         acme_directory_url=acme_directory_url,
     )
 
-    with _temporary_settings_override(
-        ca_provider=resolved_provider,
-        acme_directory_url=resolved_directory,
-    ):
-        current_settings = config.settings
-        missing_llm_key = (
-            (current_settings.LLM_PROVIDER == "anthropic" and not current_settings.ANTHROPIC_API_KEY)
-            or (current_settings.LLM_PROVIDER == "openai" and not current_settings.OPENAI_API_KEY)
-        )
-
-        warnings: list[str] = []
-        if not current_settings.MANAGED_DOMAINS:
-            warnings.append("MANAGED_DOMAINS is empty")
-        if missing_llm_key:
-            warnings.append(f"{current_settings.LLM_PROVIDER.upper()} API key is not set")
-        if (
-            current_settings.HTTP_CHALLENGE_MODE == "standalone"
-            and current_settings.HTTP_CHALLENGE_PORT != 80
+    with _operation_lock(required=True):
+        with _temporary_settings_override(
+            ca_provider=resolved_provider,
+            acme_directory_url=resolved_directory,
         ):
-            warnings.append("HTTP_CHALLENGE_PORT is not 80; ensure public HTTP-01 reachability")
-        if current_settings.ACME_INSECURE:
-            warnings.append("ACME_INSECURE=true (testing only)")
+            current_settings = config.settings
+            missing_llm_key = (
+                (current_settings.LLM_PROVIDER == "anthropic" and not current_settings.ANTHROPIC_API_KEY)
+                or (current_settings.LLM_PROVIDER == "openai" and not current_settings.OPENAI_API_KEY)
+            )
 
-        return {
-            "ok": len(warnings) == 0,
-            "provider": current_settings.CA_PROVIDER,
-            "acme_directory": current_settings.ACME_DIRECTORY_URL,
-            "llm_provider": current_settings.LLM_PROVIDER,
-            "challenge_mode": current_settings.HTTP_CHALLENGE_MODE,
-            "managed_domain_count": len(current_settings.MANAGED_DOMAINS),
-            "warnings": warnings,
-        }
+            warnings: list[str] = []
+            if not current_settings.MANAGED_DOMAINS:
+                warnings.append("MANAGED_DOMAINS is empty")
+            if missing_llm_key:
+                warnings.append(f"{current_settings.LLM_PROVIDER.upper()} API key is not set")
+            if (
+                current_settings.HTTP_CHALLENGE_MODE == "standalone"
+                and current_settings.HTTP_CHALLENGE_PORT != 80
+            ):
+                warnings.append("HTTP_CHALLENGE_PORT is not 80; ensure public HTTP-01 reachability")
+            if current_settings.ACME_INSECURE:
+                warnings.append("ACME_INSECURE=true (testing only)")
+
+            return {
+                "ok": len(warnings) == 0,
+                "provider": current_settings.CA_PROVIDER,
+                "acme_directory": current_settings.ACME_DIRECTORY_URL,
+                "llm_provider": current_settings.LLM_PROVIDER,
+                "challenge_mode": current_settings.HTTP_CHALLENGE_MODE,
+                "managed_domain_count": len(current_settings.MANAGED_DOMAINS),
+                "warnings": warnings,
+            }
 
 
 @mcp.tool()
@@ -202,16 +216,17 @@ def renew_once(
         acme_directory_url=acme_directory_url,
     )
 
-    with _temporary_settings_override(
-        ca_provider=resolved_provider,
-        acme_directory_url=resolved_directory,
-    ):
-        final_state = _run_renew_once(domains=domains, checkpoint=checkpoint)
-        return {
-            "completed_renewals": final_state.get("completed_renewals", []),
-            "failed_renewals": final_state.get("failed_renewals", []),
-            "error_log": final_state.get("error_log", []),
-        }
+    with _operation_lock(required=True):
+        with _temporary_settings_override(
+            ca_provider=resolved_provider,
+            acme_directory_url=resolved_directory,
+        ):
+            final_state = _run_renew_once(domains=domains, checkpoint=checkpoint)
+            return {
+                "completed_renewals": final_state.get("completed_renewals", []),
+                "failed_renewals": final_state.get("failed_renewals", []),
+                "error_log": final_state.get("error_log", []),
+            }
 
 
 @mcp.tool()
@@ -233,26 +248,28 @@ def revoke_cert(
         acme_directory_url=acme_directory_url,
     )
 
-    with _temporary_settings_override(
-        ca_provider=resolved_provider,
-        acme_directory_url=resolved_directory,
-    ):
-        final_state = _run_revoke(
-            domains=domains,
-            reason=_validate_reason(reason),
-            checkpoint=checkpoint,
-        )
-        return {
-            "revoked_domains": final_state.get("revoked_domains", []),
-            "failed_revocations": final_state.get("failed_revocations", []),
-            "error_log": final_state.get("error_log", []),
-        }
+    with _operation_lock(required=True):
+        with _temporary_settings_override(
+            ca_provider=resolved_provider,
+            acme_directory_url=resolved_directory,
+        ):
+            final_state = _run_revoke(
+                domains=domains,
+                reason=_validate_reason(reason),
+                checkpoint=checkpoint,
+            )
+            return {
+                "revoked_domains": final_state.get("revoked_domains", []),
+                "failed_revocations": final_state.get("failed_revocations", []),
+                "error_log": final_state.get("error_log", []),
+            }
 
 
 @mcp.tool()
 def expiring_in_30_days(domains: list[str] | None = None) -> dict[str, Any]:
     """List domains whose current cert expires in 30 days or less."""
-    expiring_domains = _run_expiring_in_30_days(domains=domains)
+    with _operation_lock(required=True):
+        expiring_domains = _run_expiring_in_30_days(domains=domains)
     return {
         "window_days": 30,
         "expiring_domains": expiring_domains,
@@ -265,9 +282,10 @@ def domain_status(domains: list[str]) -> dict[str, Any]:
     if not domains:
         raise ValueError("domains must contain at least one domain")
 
-    return {
-        "domain_statuses": _run_domain_status(domains=domains),
-    }
+    with _operation_lock(required=True):
+        return {
+            "domain_statuses": _run_domain_status(domains=domains),
+        }
 
 
 if __name__ == "__main__":

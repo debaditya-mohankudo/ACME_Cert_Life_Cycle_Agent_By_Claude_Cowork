@@ -14,11 +14,17 @@ import datetime
 import sys
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+
+from storage.atomic import atomic_write_bytes, atomic_write_text
 
 
 def generate_self_signed_cert(
@@ -84,9 +90,6 @@ def generate_self_signed_cert(
     # Sign the certificate
     certificate = cert_builder.sign(private_key, hashes.SHA256(), default_backend())
 
-    # Ensure output directory exists
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     # Write private key
     privkey_path = output_dir / "privkey.pem"
     privkey_pem = private_key.private_bytes(
@@ -94,13 +97,13 @@ def generate_self_signed_cert(
         format=serialization.PrivateFormat.TraditionalOpenSSL,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    privkey_path.write_bytes(privkey_pem)
+    atomic_write_bytes(privkey_path, privkey_pem)
     privkey_path.chmod(0o600)
 
     # Write certificate
     cert_path = output_dir / "cert.pem"
     cert_pem = certificate.public_bytes(serialization.Encoding.PEM)
-    cert_path.write_bytes(cert_pem)
+    atomic_write_bytes(cert_path, cert_pem)
 
     # Write metadata.json
     metadata_path = output_dir / "metadata.json"
@@ -111,7 +114,7 @@ def generate_self_signed_cert(
   "ca_provider": "self-signed"
 }}
 """
-    metadata_path.write_text(metadata_content)
+    atomic_write_text(metadata_path, metadata_content)
 
     # Calculate days until expiry
     days_remaining = (not_valid_after - now).days
