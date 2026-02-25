@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 import sys
+from typing import Any
 
 import structlog
 
@@ -53,22 +53,28 @@ CA_PROVIDER_CHOICES = [
 # ── Agent runner ──────────────────────────────────────────────────────────────
 
 
-def run_once(domains: list[str] | None = None, use_checkpoint: bool = False) -> dict:
+def run_once(
+    domains: list[str] | None = None,
+    use_checkpoint: bool = False,
+    settings: Any | None = None,
+) -> dict:
     """Execute one full certificate lifecycle cycle and return final state."""
     from agent.graph import build_graph, initial_state
-    from config import settings
+    import config
 
-    effective_domains = domains or settings.MANAGED_DOMAINS
+    effective_settings = settings or config.settings
+
+    effective_domains = domains or effective_settings.MANAGED_DOMAINS
     if not effective_domains:
         log.error("No managed domains configured. Set MANAGED_DOMAINS in .env or pass --domains.")
         sys.exit(1)
 
-    _required_keys = {"anthropic": settings.ANTHROPIC_API_KEY, "openai": settings.OPENAI_API_KEY}
-    if settings.LLM_PROVIDER in _required_keys and not _required_keys[settings.LLM_PROVIDER]:
+    _required_keys = {"anthropic": effective_settings.ANTHROPIC_API_KEY, "openai": effective_settings.OPENAI_API_KEY}
+    if effective_settings.LLM_PROVIDER in _required_keys and not _required_keys[effective_settings.LLM_PROVIDER]:
         log.error(
             "%s_API_KEY is not set for LLM_PROVIDER=%r. Add it to .env.",
-            settings.LLM_PROVIDER.upper(),
-            settings.LLM_PROVIDER,
+            effective_settings.LLM_PROVIDER.upper(),
+            effective_settings.LLM_PROVIDER,
         )
         sys.exit(1)
 
@@ -78,11 +84,11 @@ def run_once(domains: list[str] | None = None, use_checkpoint: bool = False) -> 
     graph = build_graph(use_checkpointing=use_checkpoint)
     state = initial_state(
         managed_domains=effective_domains,
-        cert_store_path=settings.CERT_STORE_PATH,
-        account_key_path=settings.ACCOUNT_KEY_PATH,
-        renewal_threshold_days=settings.RENEWAL_THRESHOLD_DAYS,
-        max_retries=settings.MAX_RETRIES,
-        webroot_path=settings.WEBROOT_PATH,
+        cert_store_path=effective_settings.CERT_STORE_PATH,
+        account_key_path=effective_settings.ACCOUNT_KEY_PATH,
+        renewal_threshold_days=effective_settings.RENEWAL_THRESHOLD_DAYS,
+        max_retries=effective_settings.MAX_RETRIES,
+        webroot_path=effective_settings.WEBROOT_PATH,
     )
 
     config = {"configurable": {"thread_id": "main"}} if use_checkpoint else {}
@@ -96,10 +102,17 @@ def run_once(domains: list[str] | None = None, use_checkpoint: bool = False) -> 
     return final_state
 
 
-def run_revocation(domains: list[str], reason: int = 0, use_checkpoint: bool = False) -> dict:
+def run_revocation(
+    domains: list[str],
+    reason: int = 0,
+    use_checkpoint: bool = False,
+    settings: Any | None = None,
+) -> dict:
     """Execute a certificate revocation run and return final state."""
     from agent.revocation_graph import build_revocation_graph, revocation_initial_state
-    from config import settings
+    import config
+
+    effective_settings = settings or config.settings
 
     # Validate reason code
     if reason not in {0, 1, 4, 5}:
@@ -111,17 +124,17 @@ def run_revocation(domains: list[str], reason: int = 0, use_checkpoint: bool = F
         sys.exit(1)
 
     # Warn about unmanaged domains (informational only)
-    managed = set(settings.MANAGED_DOMAINS)
+    managed = set(effective_settings.MANAGED_DOMAINS)
     unmanaged = [d for d in domains if d not in managed]
     if unmanaged:
         log.warning("Revoking unmanaged domains: %s", ", ".join(unmanaged))
 
-    _required_keys = {"anthropic": settings.ANTHROPIC_API_KEY, "openai": settings.OPENAI_API_KEY}
-    if settings.LLM_PROVIDER in _required_keys and not _required_keys[settings.LLM_PROVIDER]:
+    _required_keys = {"anthropic": effective_settings.ANTHROPIC_API_KEY, "openai": effective_settings.OPENAI_API_KEY}
+    if effective_settings.LLM_PROVIDER in _required_keys and not _required_keys[effective_settings.LLM_PROVIDER]:
         log.error(
             "%s_API_KEY is not set for LLM_PROVIDER=%r. Add it to .env.",
-            settings.LLM_PROVIDER.upper(),
-            settings.LLM_PROVIDER,
+            effective_settings.LLM_PROVIDER.upper(),
+            effective_settings.LLM_PROVIDER,
         )
         sys.exit(1)
 
@@ -132,8 +145,8 @@ def run_revocation(domains: list[str], reason: int = 0, use_checkpoint: bool = F
     state = revocation_initial_state(
         domains=domains,
         reason=reason,
-        cert_store_path=settings.CERT_STORE_PATH,
-        account_key_path=settings.ACCOUNT_KEY_PATH,
+        cert_store_path=effective_settings.CERT_STORE_PATH,
+        account_key_path=effective_settings.ACCOUNT_KEY_PATH,
     )
 
     config = {"configurable": {"thread_id": "revocation"}} if use_checkpoint else {}
@@ -174,19 +187,25 @@ def run_scheduled(domains: list[str] | None = None, use_checkpoint: bool = False
         time.sleep(60)
 
 
-def list_domains_expiring_within(days: int, domains: list[str] | None = None) -> list[str]:
+def list_domains_expiring_within(
+    days: int,
+    domains: list[str] | None = None,
+    settings: Any | None = None,
+) -> list[str]:
     """Return domains whose current cert expires within `days` days."""
-    from config import settings
+    import config
     from storage import filesystem as fs
 
-    effective_domains = domains or settings.MANAGED_DOMAINS
+    effective_settings = settings or config.settings
+
+    effective_domains = domains or effective_settings.MANAGED_DOMAINS
     if not effective_domains:
         log.error("No managed domains configured. Set MANAGED_DOMAINS in .env or pass --domains.")
         sys.exit(1)
 
     expiring: list[tuple[str, int]] = []
     for domain in effective_domains:
-        pem = fs.read_cert_pem(settings.CERT_STORE_PATH, domain)
+        pem = fs.read_cert_pem(effective_settings.CERT_STORE_PATH, domain)
         if pem is None:
             continue
         try:
@@ -201,10 +220,15 @@ def list_domains_expiring_within(days: int, domains: list[str] | None = None) ->
     return [domain for domain, _ in expiring]
 
 
-def get_domain_statuses(domains: list[str]) -> list[dict[str, str | int | bool | None]]:
+def get_domain_statuses(
+    domains: list[str],
+    settings: Any | None = None,
+) -> list[dict[str, str | int | bool | None]]:
     """Return certificate status details for one or more domains."""
-    from config import settings
+    import config
     from storage import filesystem as fs
+
+    effective_settings = settings or config.settings
 
     if not domains:
         log.error("No domains provided for status lookup.")
@@ -212,7 +236,7 @@ def get_domain_statuses(domains: list[str]) -> list[dict[str, str | int | bool |
 
     statuses: list[dict[str, str | int | bool | None]] = []
     for domain in domains:
-        pem = fs.read_cert_pem(settings.CERT_STORE_PATH, domain)
+        pem = fs.read_cert_pem(effective_settings.CERT_STORE_PATH, domain)
         if pem is None:
             statuses.append(
                 {
@@ -262,22 +286,42 @@ def get_domain_statuses(domains: list[str]) -> list[dict[str, str | int | bool |
     return statuses
 
 
+def build_settings_from_override(
+    ca_provider: str | None = None,
+    acme_directory_url: str | None = None,
+    base_settings: Any | None = None,
+) -> Any:
+    """Build an explicit Settings object from base settings plus optional overrides."""
+    import config
+
+    effective_base = base_settings or config.settings
+    if not ca_provider and not acme_directory_url:
+        return effective_base
+
+    data = effective_base.model_dump()
+    if ca_provider is not None:
+        data["CA_PROVIDER"] = ca_provider
+    if acme_directory_url is not None:
+        data["ACME_DIRECTORY_URL"] = acme_directory_url
+
+    return config.Settings(**data)
+
+
 def apply_runtime_settings_overrides(
     ca_provider: str | None = None,
     acme_directory_url: str | None = None,
 ) -> None:
-    """Apply one-shot CLI settings overrides by reloading the settings singleton."""
+    """Apply one-shot CLI settings overrides by replacing the settings singleton."""
     if not ca_provider and not acme_directory_url:
         return
 
-    if ca_provider:
-        os.environ["CA_PROVIDER"] = ca_provider
-    if acme_directory_url:
-        os.environ["ACME_DIRECTORY_URL"] = acme_directory_url
-
     import config
 
-    config.settings = config.Settings()
+    config.settings = build_settings_from_override(
+        ca_provider=ca_provider,
+        acme_directory_url=acme_directory_url,
+        base_settings=config.settings,
+    )
 
     log.info(
         "Applied runtime config override: CA_PROVIDER=%s ACME_DIRECTORY_URL=%s",

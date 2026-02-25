@@ -6,7 +6,7 @@ This document explains why serializing MCP tool execution is beneficial for the 
 
 The MCP server exposes tools that run in a single Python process and can:
 
-- mutate process-level configuration (`os.environ`, `config.settings`)
+- mutate process-level configuration (`config.settings`)
 - execute ACME protocol operations (`renew_once`, `revoke_cert`)
 - read certificate state (`expiring_in_30_days`, `domain_status`)
 
@@ -37,7 +37,7 @@ In MCP execution, one request may temporarily override environment/config while 
 The GIL does not provide semantic isolation for this workflow:
 
 - network and file I/O release the GIL, so request execution can interleave
-- `os.environ` and `config.settings` are shared process state
+- `config.settings` is shared process state
 - overlapping overrides can cause cross-request configuration bleed
 
 Process-wide serialization protects this critical section and keeps per-request configuration deterministic.
@@ -73,3 +73,34 @@ The main trade-off is reduced throughput for concurrent requests. In this projec
 - All MCP tools are serialized with a process-wide lock.
 
 This enforces deterministic request handling and avoids cross-request configuration bleed in the shared process.
+
+## Why asyncio-lock instead of threading-lock
+
+FastMCP executes tool calls on an async path (tool dispatch, `call_tool`, and tool
+execution are awaited). Our tool handlers are `async def` and can run as
+concurrent asyncio tasks within the same process.
+
+For this execution model, `asyncio.Lock` is the correct synchronization primitive:
+
+1) Task-level mutual exclusion
+	- We need to serialize async tasks handling MCP requests.
+	- `asyncio.Lock` coordinates coroutine scheduling directly.
+
+2) Prevents cross-request config bleed in async interleavings
+	- Requests share process-global `config.settings`.
+	- Even in one OS thread, task switches can occur at `await` points and
+	  interleave critical sections unless guarded.
+
+3) Matches FastMCP runtime semantics
+	- FastMCP internals await tool execution; lock acquisition should therefore be
+	  `async with ...` to avoid blocking the event loop.
+
+4) Avoids event-loop blocking behavior
+	- Threading locks are designed for thread contention and can block in ways
+	  that are less natural for coroutine scheduling.
+	- `asyncio.Lock` yields control while waiting, preserving event-loop health.
+
+5) Determinism and auditability
+	- The project prioritizes deterministic, auditable operations over throughput.
+	- Serializing all tools with an async lock enforces predictable request order
+	  at the MCP boundary.
