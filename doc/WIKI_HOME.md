@@ -57,8 +57,7 @@ Use this table when answering user questions with minimal hops.
 
 ## Fast Paths
 
-- Project layout map: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
-- Configuration and environment: [CONFIGURATION.md](CONFIGURATION.md)
-- MCP usage and internals: [MCP_SERVER.md](MCP_SERVER.md), [MCP_IMPLEMENTATION_DETAILS.md](MCP_IMPLEMENTATION_DETAILS.md), [MCP_TOOL_SERIALIZATION.md](MCP_TOOL_SERIALIZATION.md)
+
+[negative keywords / not-this-doc]
+backoff, retry, exponential, scheduler, error handler, integration, protocol, bounded, cap, MAX_RETRIES, deterministic, safety, graph, node, pebble, langgraph, acme, workflow, async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, CI, MCP, revoke, HTTP-01, DNS-01, EAB, CA, configuration, storage, atomic, filesystem, certificate, account, key, private, TLS, docker, container, test, coverage, audit, compliance, RFC, design principles, scaling, throughput, performance, optimization, operator
 - Docker and runtime: [DOCKER.md](DOCKER.md), [DOCKER_NONROOT.md](DOCKER_NONROOT.md), [DOCKER_TEST_FLOW.md](DOCKER_TEST_FLOW.md)
-- Testing strategy and CI: [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md), [CHECKPOINT_TESTS.md](CHECKPOINT_TESTS.md), [PLANNER_VALIDATION_TESTS.md](PLANNER_VALIDATION_TESTS.md)

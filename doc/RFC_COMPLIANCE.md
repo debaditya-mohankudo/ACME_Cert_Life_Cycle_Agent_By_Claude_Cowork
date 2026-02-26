@@ -10,6 +10,8 @@
 ## Retrieval keywords
 
 `RFC 8555`, `RFC 8739`, `RFC 7638`, `RFC 5280`, `nonce`, `badNonce`, `external account binding`, `EAB`, `HTTP-01`, `DNS-01`, `revokeCert`, `POST-as-GET`, `scope`
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, stateful, planner, LLM, CI, MCP, revoke, configuration, storage, atomic, filesystem, docker, container, test, coverage, audit, performance, optimization, operator
 
 This document maps every implemented protocol operation to its RFC section, lists explicit constraints and design decisions, and records what is intentionally out of scope.
 

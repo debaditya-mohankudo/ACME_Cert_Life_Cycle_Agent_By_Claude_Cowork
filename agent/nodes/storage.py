@@ -17,7 +17,8 @@ from pathlib import Path
 from storage import filesystem as fs
 from agent.state import AgentState
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 
 class StorageManagerNode:

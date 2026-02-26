@@ -14,6 +14,8 @@ added.
 ## Retrieval keywords
 
 `ci`, `github actions`, `pytest`, `unit tests`, `integration tests`, `pebble`, `coverage`, `workflow`, `tests.yml`, `container job`, `uv`, `quality gate`
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, MCP, revoke, configuration, storage, atomic, filesystem, docker, container, audit, performance, optimization, operator
 
 ---
 

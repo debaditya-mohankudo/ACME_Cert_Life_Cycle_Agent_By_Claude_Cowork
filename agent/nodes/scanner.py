@@ -16,7 +16,8 @@ from typing import Optional
 from agent.state import AgentState, CertRecord
 from storage import filesystem as fs
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 
 class CertificateScannerNode:

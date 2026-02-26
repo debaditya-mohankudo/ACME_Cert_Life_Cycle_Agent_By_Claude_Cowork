@@ -13,6 +13,8 @@ where in the code it lives, and what threat it addresses.
 ## Retrieval keywords
 
 `security`, `private key`, `account key isolation`, `atomic writes`, `tls verification`, `ACME_INSECURE`, `credential handling`, `file permissions`, `container hardening`, `network exposure`, `retry safety`, `mcp security`
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, CI, MCP, revoke, configuration, storage, atomic, filesystem, docker, container, test, coverage, audit, performance, optimization, operator
 
 ---
 

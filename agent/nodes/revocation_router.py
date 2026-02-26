@@ -10,7 +10,8 @@ import logging
 
 from agent.state import AgentState
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 
 class PickNextRevocationDomainNode:

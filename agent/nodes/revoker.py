@@ -18,7 +18,8 @@ from acme.client import AcmeError, make_client
 from agent.state import AgentState
 from storage import filesystem as fs
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 
 class CertRevokerNode:

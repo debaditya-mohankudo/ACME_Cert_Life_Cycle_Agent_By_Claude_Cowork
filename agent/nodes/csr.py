@@ -18,7 +18,8 @@ from agent.state import AgentState
 from storage.atomic import atomic_write_text
 from storage.filesystem import sanitize_domain_for_path
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 
 class CsrGeneratorNode:
