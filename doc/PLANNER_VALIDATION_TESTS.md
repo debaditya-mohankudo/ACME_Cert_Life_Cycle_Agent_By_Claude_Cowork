@@ -1,5 +1,12 @@
 # Planner Validation Tests — LLM Hallucinated Domain Handling
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Security & quality hub: [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md)
+- CI test coverage: [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md)
+- LLM nodes: [LLM_NODES.md](LLM_NODES.md)
+
 ## Overview
 
 The renewal planner uses an LLM to classify domains into `urgent`, `routine`, and `skip` buckets based on certificate expiry analysis. Its validation logic (`_parse_and_validate`) guards against three failure modes:

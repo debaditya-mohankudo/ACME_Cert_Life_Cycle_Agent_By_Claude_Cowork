@@ -1,5 +1,12 @@
 # Certificate Revocation Implementation
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- RFC compliance: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
+- System flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
+
 **Date:** February 2026
 **Status:** ✅ Complete — 101 unit tests passing, zero regressions
 
@@ -327,11 +334,11 @@ Require `docker compose -f docker-compose.pebble.yml up -d`:
   - Added Principle 11: "Revocation as a Separate Subgraph"
   - Explains design rationale and no-retry philosophy
 
-- **`doc/README_ACME_AGENT_PLAN.md`**
+- **`doc/ACME_AGENT_PLAN.md`**
   - Added § 3.4: Revocation Subgraph Topology diagram
   - Documented key differences from renewal
 
-- **`doc/README_USAGE.md`**
+- **`doc/USAGE.md`**
   - Added "Revoke certificates" section with examples
   - RFC 5280 reason code table
   - Explanation of graph flow

@@ -1,6 +1,11 @@
 # Project Structure
 
-For wiki-style documentation navigation, start from [WIKI_HOME.md](WIKI_HOME.md).
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
+- System flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
+- Architecture principles: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
 
 ```
 acme-agent/

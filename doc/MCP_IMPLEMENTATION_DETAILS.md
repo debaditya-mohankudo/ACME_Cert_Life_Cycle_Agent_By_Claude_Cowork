@@ -1,5 +1,13 @@
 # MCP Server Implementation Details
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
+- MCP usage guide: [MCP_SERVER.md](MCP_SERVER.md)
+- MCP serialization policy: [MCP_TOOL_SERIALIZATION.md](MCP_TOOL_SERIALIZATION.md)
+- Security controls: [SECURITY.md](SECURITY.md)
+
 This document captures the implementation details added to expose this project as an MCP server.
 
 ## Scope implemented
@@ -114,9 +122,9 @@ uv run python scripts/mcp_smoke_test.py --run-revoke --revoke-domains example.co
 
 - `README.md`
   - Added docs table link to MCP server usage.
-- `doc/README_USAGE.md`
+- `doc/USAGE.md`
   - Added MCP server run section.
-- `doc/README_MCP_SERVER.md`
+- `doc/MCP_SERVER.md`
   - Added VS Code workspace configuration and smoke-test instructions.
 
 ## Validation performed

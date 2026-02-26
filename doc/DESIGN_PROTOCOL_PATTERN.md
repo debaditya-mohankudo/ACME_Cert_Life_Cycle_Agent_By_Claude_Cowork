@@ -1,5 +1,12 @@
 # Protocol Design Pattern for Node Architecture
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- Design principles: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
+- Node registry: [agent/nodes/registry.py](../agent/nodes/registry.py)
+
 ## Overview
 
 This project uses Python's `Protocol` (PEP 544) for structural subtyping instead of traditional inheritance-based polymorphism. This document explains why, how it works, and what advantages it provides.

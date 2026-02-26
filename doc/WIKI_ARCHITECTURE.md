@@ -8,7 +8,8 @@ Use this hub for system design decisions, invariants, and protocol-level rationa
 
 - Constitutional design rules: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
 - RFC constraints and protocol correctness: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
-- Graph topology and execution flow: [README_ACME_AGENT_PLAN.md](README_ACME_AGENT_PLAN.md)
+- Current graph flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
+- Original design specification: [ACME_AGENT_PLAN.md](ACME_AGENT_PLAN.md)
 - Protocol node pattern: [DESIGN_PROTOCOL_PATTERN.md](DESIGN_PROTOCOL_PATTERN.md)
 
 ---

@@ -1,5 +1,17 @@
 # ACME Certificate Lifecycle Agent — Architecture & Implementation Plan
 
+> **Note:** This is the original design specification written before implementation. Some sections (AgentState shape, config fields, node list) reflect the initial plan and may differ from the current codebase.
+> For the current system, see [HOW_IT_WORKS.md](HOW_IT_WORKS.md), [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md), and [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
+
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- Current graph flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
+- Design constitution: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
+
+---
+
 **Stack:** Python · LangGraph · Multi-CA ACME (DigiCert · Let's Encrypt · custom) · HTTP-01 Challenge · PEM Filesystem Storage
 **Author:** Deb | **Date:** February 2026
 

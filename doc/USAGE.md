@@ -4,8 +4,8 @@
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
 - Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
-- Configuration reference: [README_CONFIGURATION.md](README_CONFIGURATION.md)
-- Runtime flow: [README_HOW_IT_WORKS.md](README_HOW_IT_WORKS.md)
+- Configuration reference: [CONFIGURATION.md](CONFIGURATION.md)
+- Runtime flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 
 ## Run one renewal cycle immediately
 
@@ -106,4 +106,4 @@ If a certificate file is not found, revocation fails for that domain and continu
 python mcp_server.py
 ```
 
-See [MCP server usage](./README_MCP_SERVER.md) for the tool list and integration notes.
+See [MCP server usage](./MCP_SERVER.md) for the tool list and integration notes.

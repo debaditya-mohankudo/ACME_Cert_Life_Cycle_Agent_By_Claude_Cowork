@@ -1,5 +1,12 @@
 # Backoff Integration Analysis: Synchronous Sleep vs. Separate Node
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- Design principles: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
+- Security controls: [SECURITY.md](SECURITY.md)
+
 **Date:** 2026-02-21 (Analysis); Phase 3 Implemented 2026-02-21
 **Status:** ✅ Design Implemented (see [Phase 3 Implementation](#phase-3-implementation-february-2026) below)
 **Category:** Retry Logic & Resilience
@@ -367,7 +374,7 @@ There is currently no hard wall-clock limit on a single agent run. A future enha
 ## Related Documents
 
 - [`DESIGN_ASYNC_SCHEDULER_PLAN.md`](DESIGN_ASYNC_SCHEDULER_PLAN.md) — Phase 3-4 implementation plan and roadmap
-- [`README_SECURITY.md`](README_SECURITY.md#11-resilience-and-retry-safety) — Security implications of retry backoff
+- [`SECURITY.md`](SECURITY.md#11-resilience-and-retry-safety) — Security implications of retry backoff
 - [`agent/nodes/error_handler.py`](../agent/nodes/error_handler.py) — Scheduler decision logic
 - [`agent/nodes/retry_scheduler.py`](../agent/nodes/retry_scheduler.py) — Backoff enforcement (sync + async)
 - [`agent/graph.py`](../agent/graph.py) — Graph topology and routing

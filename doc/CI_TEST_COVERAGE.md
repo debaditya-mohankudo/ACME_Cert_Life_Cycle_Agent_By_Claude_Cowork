@@ -8,8 +8,8 @@ added.
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
 - Security & quality hub: [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md)
-- Checkpoint tests: [README_CHECKPOINT_TESTS.md](README_CHECKPOINT_TESTS.md)
-- Planner validation tests: [README_PLANNER_VALIDATION_TESTS.md](README_PLANNER_VALIDATION_TESTS.md)
+- Checkpoint tests: [CHECKPOINT_TESTS.md](CHECKPOINT_TESTS.md)
+- Planner validation tests: [PLANNER_VALIDATION_TESTS.md](PLANNER_VALIDATION_TESTS.md)
 
 ---
 

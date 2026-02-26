@@ -4,9 +4,9 @@
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
 - Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
-- Docker non-root hardening: [README_DOCKER_NONROOT.md](README_DOCKER_NONROOT.md)
-- Docker test flow: [README_DOCKER_TEST_FLOW.md](README_DOCKER_TEST_FLOW.md)
-- Security considerations: [README_SECURITY.md](README_SECURITY.md)
+- Docker non-root hardening: [DOCKER_NONROOT.md](DOCKER_NONROOT.md)
+- Docker test flow: [DOCKER_TEST_FLOW.md](DOCKER_TEST_FLOW.md)
+- Security considerations: [SECURITY.md](SECURITY.md)
 
 ## Prerequisites
 

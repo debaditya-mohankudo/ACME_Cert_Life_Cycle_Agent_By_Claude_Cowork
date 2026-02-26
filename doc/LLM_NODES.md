@@ -1,5 +1,12 @@
 # LLM Nodes and Provider Support
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Security & quality hub: [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md)
+- Configuration reference: [CONFIGURATION.md](CONFIGURATION.md)
+- LLM rationale: [DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md](DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md)
+
 All three LLM decision points use a **provider-agnostic factory** (`llm.factory.make_llm()`), allowing you to switch between vendors by changing a single config variable.
 
 | Node | Default model | Responsibility |

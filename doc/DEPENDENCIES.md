@@ -1,5 +1,11 @@
 # Dependencies
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
+- Setup guide: [SETUP.md](SETUP.md)
+
 | Package | Purpose |
 |---|---|
 | `langgraph` | Stateful agent graph execution |

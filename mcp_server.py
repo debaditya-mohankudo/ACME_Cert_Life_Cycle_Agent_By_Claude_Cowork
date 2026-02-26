@@ -35,7 +35,7 @@ CA_PROVIDER_CHOICES = {
     "custom",
 }
 CA_INPUT_MODE_CHOICES = {"config", "custom"}
-# Rationale: see doc/README_MCP_TOOL_SERIALIZATION.md#why-asyncio-lock-instead-of-threading-lock
+# Rationale: see doc/MCP_TOOL_SERIALIZATION.md#why-asyncio-lock-instead-of-threading-lock
 _MCP_OPERATION_LOCK = asyncio.Lock()
 
 

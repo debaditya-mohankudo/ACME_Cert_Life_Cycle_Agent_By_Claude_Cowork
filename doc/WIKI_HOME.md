@@ -6,10 +6,10 @@ This page is the canonical entry point for project documentation. It is organize
 
 ## Start Here
 
-- New contributor setup: [README_PREREQUISITES.md](README_PREREQUISITES.md) → [README_SETUP.md](README_SETUP.md) → [README_USAGE.md](README_USAGE.md)
-- System overview: [README_HOW_IT_WORKS.md](README_HOW_IT_WORKS.md)
+- New contributor setup: [SETUP.md](SETUP.md) → [USAGE.md](USAGE.md)
+- System overview: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 - Architecture constitution: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
-- Security baseline: [README_SECURITY.md](README_SECURITY.md)
+- Security baseline: [SECURITY.md](SECURITY.md)
 
 ---
 
@@ -33,7 +33,8 @@ This page is the canonical entry point for project documentation. It is organize
 
 ## Fast Paths
 
-- Configuration and environment: [README_CONFIGURATION.md](README_CONFIGURATION.md)
-- MCP usage and internals: [README_MCP_SERVER.md](README_MCP_SERVER.md), [README_MCP_IMPLEMENTATION_DETAILS.md](README_MCP_IMPLEMENTATION_DETAILS.md), [README_MCP_TOOL_SERIALIZATION.md](README_MCP_TOOL_SERIALIZATION.md)
-- Docker and runtime: [README_DOCKER.md](README_DOCKER.md), [README_DOCKER_NONROOT.md](README_DOCKER_NONROOT.md), [README_DOCKER_TEST_FLOW.md](README_DOCKER_TEST_FLOW.md)
-- Testing strategy and CI: [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md), [README_CHECKPOINT_TESTS.md](README_CHECKPOINT_TESTS.md), [README_PLANNER_VALIDATION_TESTS.md](README_PLANNER_VALIDATION_TESTS.md)
+- Project layout map: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
+- Configuration and environment: [CONFIGURATION.md](CONFIGURATION.md)
+- MCP usage and internals: [MCP_SERVER.md](MCP_SERVER.md), [MCP_IMPLEMENTATION_DETAILS.md](MCP_IMPLEMENTATION_DETAILS.md), [MCP_TOOL_SERIALIZATION.md](MCP_TOOL_SERIALIZATION.md)
+- Docker and runtime: [DOCKER.md](DOCKER.md), [DOCKER_NONROOT.md](DOCKER_NONROOT.md), [DOCKER_TEST_FLOW.md](DOCKER_TEST_FLOW.md)
+- Testing strategy and CI: [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md), [CHECKPOINT_TESTS.md](CHECKPOINT_TESTS.md), [PLANNER_VALIDATION_TESTS.md](PLANNER_VALIDATION_TESTS.md)

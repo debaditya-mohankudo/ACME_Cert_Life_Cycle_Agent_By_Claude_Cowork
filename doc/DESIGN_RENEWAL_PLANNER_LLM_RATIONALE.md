@@ -1,5 +1,12 @@
 # Why Keep the LLM for Renewal Planner
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- LLM nodes: [LLM_NODES.md](LLM_NODES.md)
+- Design principles: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
+
 **Date:** 2026-02-21
 **Status:** Architectural Decision
 **Category:** Agent Design Pattern
@@ -332,7 +339,7 @@ This means:
 
 ## Related Documents
 
-- [`README_ACME_AGENT_PLAN.md`](README_ACME_AGENT_PLAN.md) — Agent architecture overview
+- [`ACME_AGENT_PLAN.md`](ACME_AGENT_PLAN.md) — Agent architecture overview
 - [`agent/nodes/planner.py`](../agent/nodes/planner.py) — Implementation
 - [`agent/prompts.py`](../agent/prompts.py) — Prompt templates
 - [`TEST_RESULTS.md`](../TEST_RESULTS.md) — Planner validation tests

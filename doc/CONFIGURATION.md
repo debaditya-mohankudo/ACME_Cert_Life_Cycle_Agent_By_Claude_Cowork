@@ -6,8 +6,8 @@ All settings are read from environment variables or `.env`. Any variable can be 
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
 - Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
-- Usage guide: [README_USAGE.md](README_USAGE.md)
-- Security constraints: [README_SECURITY.md](README_SECURITY.md)
+- Usage guide: [USAGE.md](USAGE.md)
+- Security constraints: [SECURITY.md](SECURITY.md)
 
 | Variable | Default | Description |
 |---|---|---|

@@ -140,7 +140,7 @@ pytest -v
 
 # 🏗 Project Structure
 
-→ See [`doc/README_PROJECT_STRUCTURE.md`](doc/README_PROJECT_STRUCTURE.md) for the full annotated file tree.
+→ See [`doc/PROJECT_STRUCTURE.md`](doc/PROJECT_STRUCTURE.md) for the full annotated file tree.
 
 ```
 config.py       main.py
@@ -228,7 +228,7 @@ State must remain serializable and deterministic.
 
 # ⚙️ Configuration (.env)
 
-→ Full reference with defaults and valid values: [`doc/README_CONFIGURATION.md`](doc/README_CONFIGURATION.md)
+→ Full reference with defaults and valid values: [`doc/CONFIGURATION.md`](doc/CONFIGURATION.md)
 
 Core fields:
 
@@ -330,7 +330,7 @@ Scaling must preserve determinism.
 After modifying architecture or node behavior:
 
 * Update [`doc/DESIGN_PRINCIPLES.md`](doc/DESIGN_PRINCIPLES.md) if a principle changes
-* Update [`doc/README_ACME_AGENT_PLAN.md`](doc/README_ACME_AGENT_PLAN.md) if topology changes
+* Update [`doc/ACME_AGENT_PLAN.md`](doc/ACME_AGENT_PLAN.md) if topology changes
 * Update `README.md` if CLI or configuration changes
 * Update `CLAUDE.md` if project structure or invariants change
 

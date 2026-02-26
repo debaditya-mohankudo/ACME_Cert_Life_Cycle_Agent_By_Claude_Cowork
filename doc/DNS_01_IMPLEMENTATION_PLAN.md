@@ -1,5 +1,12 @@
 # DNS-01 Challenge Support — Implementation Plan
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- HTTP-01 configuration: [HTTP_CHALLENGE_CONFIGURATION.md](HTTP_CHALLENGE_CONFIGURATION.md)
+- RFC compliance: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
+
 ## Context
 
 The agent currently supports HTTP-01 challenges only (standalone HTTP server and webroot modes). DNS-01 is required for:
@@ -296,9 +303,9 @@ Add `dns_settings` fixture to `conftest.py` (extends `pebble_settings` with DNS-
 | `tests/test_dns_challenge.py` | **Create** | Full unit test suite (~35 tests) |
 | `tests/conftest.py` | Modify | `dns_settings` fixture |
 | `tests/test_integration_pebble.py` | Modify | `test_full_renewal_flow_dns01` |
-| `doc/README_DNS_CHALLENGE_MODES.md` | **Create** | DNS-01 user guide: flow, credentials per provider, zone discovery, propagation tuning |
+| `doc/DNS_CHALLENGE_MODES.md` | **Create** | DNS-01 user guide: flow, credentials per provider, zone discovery, propagation tuning |
 | `doc/DESIGN_PRINCIPLES.md` | Modify | DNS provider factory note under Principle 9 |
-| `doc/README_CONFIGURATION.md` | Modify | DNS-01 config section |
+| `doc/CONFIGURATION.md` | Modify | DNS-01 config section |
 | `CLAUDE.md` | Modify | `HTTP_CHALLENGE_MODE` valid values, project structure |
 | `README.md` | Modify | DNS-01 in feature list and documentation table |
 
@@ -346,7 +353,7 @@ python main.py --once
 
 ## Related Documentation
 
-- [`doc/README_HTTP_CHALLENGE_MODES.md`](README_HTTP_CHALLENGE_MODES.md) — HTTP-01 standalone/webroot modes
+- [`doc/HTTP_CHALLENGE_MODES.md`](HTTP_CHALLENGE_MODES.md) — HTTP-01 standalone/webroot modes
 - [`doc/HTTP_01_VALIDATION_EXPLAINED.md`](HTTP_01_VALIDATION_EXPLAINED.md) — How HTTP-01 security works
-- [`doc/README_CONFIGURATION.md`](README_CONFIGURATION.md) — Full configuration reference
+- [`doc/CONFIGURATION.md`](CONFIGURATION.md) — Full configuration reference
 - [`doc/DESIGN_PRINCIPLES.md`](DESIGN_PRINCIPLES.md) — Architectural invariants

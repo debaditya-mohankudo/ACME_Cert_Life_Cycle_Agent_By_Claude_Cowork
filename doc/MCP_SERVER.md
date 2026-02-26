@@ -6,8 +6,8 @@ This project can be run as an MCP server and expose ACME lifecycle services as t
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
 - Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
-- MCP implementation details: [README_MCP_IMPLEMENTATION_DETAILS.md](README_MCP_IMPLEMENTATION_DETAILS.md)
-- MCP serialization policy: [README_MCP_TOOL_SERIALIZATION.md](README_MCP_TOOL_SERIALIZATION.md)
+- MCP implementation details: [MCP_IMPLEMENTATION_DETAILS.md](MCP_IMPLEMENTATION_DETAILS.md)
+- MCP serialization policy: [MCP_TOOL_SERIALIZATION.md](MCP_TOOL_SERIALIZATION.md)
 
 ## Prerequisites
 

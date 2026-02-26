@@ -338,7 +338,7 @@ The agent process must own the key files for this to be effective. In the Docker
 deployment the container runs as **UID 1001** (`acme` system user — non-root).
 `/data` is `chown`'d to UID 1001 at image build time so the volume mount is
 writable without a privileged entrypoint. See
-[README_DOCKER_NONROOT.md](README_DOCKER_NONROOT.md) for details.
+[DOCKER_NONROOT.md](DOCKER_NONROOT.md) for details.
 
 Certificates (`cert.pem`, `chain.pem`, `fullchain.pem`, `metadata.json`) are not
 secret and are written without additional permission restrictions so that web servers
@@ -538,7 +538,7 @@ tracebacks to MCP clients.
 |---|---|---|
 | **Key encryption at rest** | Keys stored as unencrypted PEM (protected by 0o600 permissions) | Use an encrypted filesystem (LUKS) or a cloud KMS (AWS KMS, GCP Cloud KMS, HashiCorp Vault) to wrap keys at rest |
 | **Secrets management** | Credentials read from `.env` / environment variables | In production, inject secrets via a dedicated secrets manager (AWS Secrets Manager, Vault Agent, Kubernetes Secrets with RBAC) rather than a flat `.env` file |
-| **Container user** | Runs as UID 1001 (`acme`) — non-root; `NET_BIND_SERVICE` grants port-80 binding; all other capabilities dropped | ✅ Implemented — see [README_DOCKER_NONROOT.md](README_DOCKER_NONROOT.md) |
+| **Container user** | Runs as UID 1001 (`acme`) — non-root; `NET_BIND_SERVICE` grants port-80 binding; all other capabilities dropped | ✅ Implemented — see [DOCKER_NONROOT.md](DOCKER_NONROOT.md) |
 | **Port 80 access control** | Port 80 is mapped from host; no firewall rule restricts callers | Use firewall/security-group rules to allow inbound port 80 only from Let's Encrypt / DigiCert validation IP ranges during renewal windows, or switch to webroot mode |
 | **ACME CA certificate pinning** | Standard TLS chain validation; no certificate pinning | Pin the CA's ACME API certificate fingerprint for defence-in-depth against CA compromise or BGP hijack |
 | **Webroot file permissions** | Challenge files inherit the process umask | Explicitly `chmod 644` challenge files after writing, or verify the webroot directory's umask is set correctly |

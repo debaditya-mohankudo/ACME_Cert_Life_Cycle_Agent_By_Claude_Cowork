@@ -1,5 +1,12 @@
 # HTTP-01 Challenge Validation: Domain Ownership Without Authentication
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- RFC compliance: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
+- HTTP challenge configuration: [HTTP_CHALLENGE_CONFIGURATION.md](HTTP_CHALLENGE_CONFIGURATION.md)
+
 **Why HTTP-01 works despite the ACME server being unauthenticated**
 
 ---
@@ -331,8 +338,8 @@ There's no escaping this: to pass HTTP-01, you must control the domain's web ser
 
 ## Related Documentation
 
-- **[HTTP-01 Challenge Modes](README_HTTP_CHALLENGE_MODES.md)** — Standalone vs. webroot setup
-- **[ACME Agent Plan](README_ACME_AGENT_PLAN.md)** — Full ACME protocol flow (§ 3)
+- **[HTTP-01 Challenge Modes](HTTP_CHALLENGE_MODES.md)** — Standalone vs. webroot setup
+- **[ACME Agent Plan](ACME_AGENT_PLAN.md)** — Full ACME protocol flow (§ 3)
 - **[Challenge Setup Node](../agent/nodes/challenge.py)** — Implementation in agent
 - **[HTTP Challenge Server](../acme/http_challenge.py)** — Standalone HTTP server code
 

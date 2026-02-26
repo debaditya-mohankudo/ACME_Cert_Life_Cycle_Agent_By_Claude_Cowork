@@ -1,5 +1,12 @@
 # Stateful Client Design Analysis: Per-Domain AcmeClient with Private Nonce
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- Nonce management: [DESIGN_NONCE_MANAGEMENT_STRATEGY.md](DESIGN_NONCE_MANAGEMENT_STRATEGY.md)
+- Certificate storage: [CERTIFICATE_STORAGE.md](CERTIFICATE_STORAGE.md)
+
 **Date:** 2026-02-21
 **Status:** Design Exploration & Trade-off Analysis
 **Category:** Architecture Alternative
@@ -449,7 +456,7 @@ This is the most dangerous crash window. The CA has issued a certificate (order 
 
 1. LangGraph restores state from the last checkpoint — the `current_order` still contains `certificate_url`
 2. `cert_downloader` re-runs and re-fetches the certificate from `certificate_url` (ACME servers keep issued certs accessible)
-3. `storage_manager` then writes all PEM files **atomically** (temp + fsync + rename — see [CERTIFICATE_STORAGE.md](README_CERTIFICATE_STORAGE.md))
+3. `storage_manager` then writes all PEM files **atomically** (temp + fsync + rename — see [CERTIFICATE_STORAGE.md](CERTIFICATE_STORAGE.md))
 
 **Without checkpointing (`--once` mode):**
 
@@ -481,7 +488,7 @@ Covered files:
 
 A crash at any point in the write sequence leaves the **previous file intact**. There is no state where a corrupt half-written file is visible to readers.
 
-See [CERTIFICATE_STORAGE.md](README_CERTIFICATE_STORAGE.md) for full details and test coverage.
+See [CERTIFICATE_STORAGE.md](CERTIFICATE_STORAGE.md) for full details and test coverage.
 
 ---
 
@@ -548,6 +555,6 @@ Together these properties mean:
 ## Related Documents
 
 - [`DESIGN_NONCE_MANAGEMENT_STRATEGY.md`](DESIGN_NONCE_MANAGEMENT_STRATEGY.md) — Current design deep-dive
-- [`README_CERTIFICATE_STORAGE.md`](README_CERTIFICATE_STORAGE.md) — Atomic write implementation
+- [`CERTIFICATE_STORAGE.md`](CERTIFICATE_STORAGE.md) — Atomic write implementation
 - [`acme/client.py`](../acme/client.py) — Stateless client implementation
-- [`README_ACME_AGENT_PLAN.md`](README_ACME_AGENT_PLAN.md) — Agent architecture
+- [`ACME_AGENT_PLAN.md`](ACME_AGENT_PLAN.md) — Agent architecture

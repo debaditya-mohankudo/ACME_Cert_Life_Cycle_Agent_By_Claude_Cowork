@@ -1,5 +1,12 @@
 # Observability
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Security & quality hub: [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md)
+- CI test coverage: [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md)
+- Configuration reference: [CONFIGURATION.md](CONFIGURATION.md)
+
 ## Log output
 
 All nodes emit structured log lines via Python's standard `logging`:

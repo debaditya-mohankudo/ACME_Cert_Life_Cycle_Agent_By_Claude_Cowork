@@ -1,5 +1,12 @@
 # RFC Compliance & Feature Scope
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
+- Design principles: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
+- System flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
+
 This document maps every implemented protocol operation to its RFC section, lists explicit constraints and design decisions, and records what is intentionally out of scope.
 
 ---
