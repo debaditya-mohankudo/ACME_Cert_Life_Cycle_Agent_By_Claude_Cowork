@@ -222,7 +222,7 @@ LangGraph requires names at registration time: `add_node("name", callable)`. The
 - `tests/test_node_parity.py` validates function wrapper → class delegation
 - Checkpoint tests mock callable classes by patching constructors
 
-→ See: [agent/nodes/base.py](../agent/nodes/base.py), [tests/test_node_base.py](../tests/test_node_base.py), [tests/test_node_parity.py](../tests/test_node_parity.py)
+→ See: [doc/DESIGN_PROTOCOL_PATTERN.md](DESIGN_PROTOCOL_PATTERN.md), [agent/nodes/base.py](../agent/nodes/base.py), [tests/test_node_base.py](../tests/test_node_base.py), [tests/test_node_parity.py](../tests/test_node_parity.py)
 
 ---
 
