@@ -4,6 +4,13 @@ This document describes what the GitHub Actions workflow runs on every push and
 pull request to `main`, and analyses whether Pebble integration tests can be
 added.
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Security & quality hub: [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md)
+- Checkpoint tests: [README_CHECKPOINT_TESTS.md](README_CHECKPOINT_TESTS.md)
+- Planner validation tests: [README_PLANNER_VALIDATION_TESTS.md](README_PLANNER_VALIDATION_TESTS.md)
+
 ---
 
 ## Workflow: `.github/workflows/tests.yml`

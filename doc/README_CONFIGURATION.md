@@ -2,6 +2,13 @@
 
 All settings are read from environment variables or `.env`. Any variable can be overridden by setting it in the shell before running.
 
+## See also
+
+- Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
+- Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
+- Usage guide: [README_USAGE.md](README_USAGE.md)
+- Security constraints: [README_SECURITY.md](README_SECURITY.md)
+
 | Variable | Default | Description |
 |---|---|---|
 | `CA_PROVIDER` | `digicert` | CA to use: `digicert` · `letsencrypt` · `letsencrypt_staging` · `zerossl` · `sectigo` · `custom`. For named providers the config is authoritative and X.509 issuer detection is skipped. For `custom`, the scanner detects the issuing CA from existing certs and warns on mismatch (advisory only). |
