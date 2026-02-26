@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import pytest
 from typing import cast
 from unittest.mock import MagicMock
@@ -133,3 +134,29 @@ def test_get_node_returns_instance_with_run_method():
         assert callable(node_instance.run), (
             f"Node instance from get_node('{node_name}') has non-callable run"
         )
+
+
+def test_registry_nodes_accept_agent_state_input_signature():
+    """Every registry node callable contract should accept a single AgentState input."""
+    from agent.nodes.registry import NODE_REGISTRY
+
+    for node_name in NODE_REGISTRY:
+        node_instance = get_node(node_name)
+
+        for method_name in ("__call__", "run"):
+            method = getattr(node_instance, method_name)
+            signature = inspect.signature(method)
+            params = list(signature.parameters.values())
+
+            assert len(params) == 1, (
+                f"{node_name}.{method_name} must accept exactly one parameter (state)"
+            )
+
+            state_param = params[0]
+            assert state_param.name == "state", (
+                f"{node_name}.{method_name} parameter must be named 'state'"
+            )
+
+            assert state_param.annotation in {AgentState, "AgentState"}, (
+                f"{node_name}.{method_name} must annotate state as AgentState"
+            )
