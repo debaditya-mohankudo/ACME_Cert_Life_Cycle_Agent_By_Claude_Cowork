@@ -81,6 +81,8 @@ The graph is safe to resume or re-run at any node boundary. A crash at any point
 
 → Full analysis: [DESIGN_STATEFUL_CLIENT_ANALYSIS.md — Idempotency Philosophy](DESIGN_STATEFUL_CLIENT_ANALYSIS.md#idempotency-philosophy)
 
+→ Related node execution model: [DESIGN_PROTOCOL_PATTERN.md](DESIGN_PROTOCOL_PATTERN.md)
+
 ---
 
 ## 5. Retry Logic Isolated from Business Logic
