@@ -71,7 +71,7 @@ dev = [
     { name = "langgraph", specifier = ">=0.2" },
     { name = "langgraph-checkpoint", specifier = ">=2.1" },
     { name = "langsmith", specifier = ">=0.3" },
-    { name = "mcp", specifier = ">=1.6" },
+    { name = "mcp", specifier = ">=1.26.0" },
     { name = "pydantic-settings", specifier = ">=2.8" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "pytest-asyncio", specifier = ">=0.25" },
