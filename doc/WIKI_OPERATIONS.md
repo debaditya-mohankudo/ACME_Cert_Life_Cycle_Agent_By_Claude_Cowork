@@ -4,6 +4,14 @@ Use this hub for setup, runtime usage, environment configuration, and day-to-day
 
 ---
 
+## Agent Use Rules
+
+- Start here for "how to run", "which command", and "which setting" questions.
+- Answer CLI behavior from [USAGE.md](USAGE.md) and environment semantics from [CONFIGURATION.md](CONFIGURATION.md).
+- For HTTP-01, use [HTTP_CHALLENGE_MODES.md](HTTP_CHALLENGE_MODES.md) as short orientation and [HTTP_CHALLENGE_CONFIGURATION.md](HTTP_CHALLENGE_CONFIGURATION.md) as the detailed source.
+
+---
+
 ## Setup and Bootstrapping
 
 - Setup and prerequisites: [SETUP.md](SETUP.md)

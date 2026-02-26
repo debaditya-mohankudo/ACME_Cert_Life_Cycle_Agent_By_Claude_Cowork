@@ -4,6 +4,14 @@ Use this hub for system design decisions, invariants, and protocol-level rationa
 
 ---
 
+## Agent Use Rules
+
+- Start here for "why" and "design constraint" questions.
+- Prefer [HOW_IT_WORKS.md](HOW_IT_WORKS.md) for current flow descriptions, then validate constraints in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
+- Treat [ACME_AGENT_PLAN.md](ACME_AGENT_PLAN.md) as historical design context, not current implementation truth.
+
+---
+
 ## Core Design
 
 - Constitutional design rules: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)

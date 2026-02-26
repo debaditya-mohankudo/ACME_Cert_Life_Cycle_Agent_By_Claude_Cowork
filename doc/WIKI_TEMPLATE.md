@@ -18,6 +18,19 @@ One-line summary of the page purpose.
 - In scope
 - Out of scope
 
+## Canonicality
+
+- Canonical for: (what this page is the source-of-truth for)
+- Not canonical for: (which page owns adjacent details)
+
+## Agent retrieval hints
+
+- Typical user queries this page answers:
+  - Query pattern 1
+  - Query pattern 2
+- First follow-up page an agent should open next:
+  - [RelatedDoc.md](RelatedDoc.md)
+
 ## Main content
 
 (Author the topic details here. Prefer linking to canonical sources instead of duplicating long explanations.)

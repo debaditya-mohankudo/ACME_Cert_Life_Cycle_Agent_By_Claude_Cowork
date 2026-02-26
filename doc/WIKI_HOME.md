@@ -4,6 +4,30 @@ This page is the canonical entry point for project documentation. It is organize
 
 ---
 
+## Agent Routing (Copilot / Claude)
+
+Use this table when answering user questions with minimal hops.
+
+| User intent | Open first | Then open | Canonical answer source |
+|---|---|---|---|
+| "How does the protocol/graph work?" | [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md) | [HOW_IT_WORKS.md](HOW_IT_WORKS.md) | [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md), [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md) |
+| "How do I run/configure this?" | [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md) | [SETUP.md](SETUP.md), [USAGE.md](USAGE.md) | [CONFIGURATION.md](CONFIGURATION.md) |
+| "Is this secure/tested/observable?" | [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md) | [SECURITY.md](SECURITY.md), [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md) | [SECURITY.md](SECURITY.md) |
+| "How does MCP mode work?" | [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md) | [MCP_SERVER.md](MCP_SERVER.md), [MCP_IMPLEMENTATION_DETAILS.md](MCP_IMPLEMENTATION_DETAILS.md) | [MCP_SERVER.md](MCP_SERVER.md) |
+
+---
+
+## Canonical Sources (Single Source of Truth)
+
+- Runtime/config values: [CONFIGURATION.md](CONFIGURATION.md)
+- Graph behavior and invariants: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
+- RFC mapping and scope boundaries: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
+- Operator execution flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
+- Security controls and policy: [SECURITY.md](SECURITY.md)
+- Test policy and CI status model: [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md)
+
+---
+
 ## Start Here
 
 - New contributor setup: [SETUP.md](SETUP.md) → [USAGE.md](USAGE.md)

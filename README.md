@@ -13,8 +13,7 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 | Docs wiki home | [WIKI_HOME.md](doc/WIKI_HOME.md) |
 | How it works | [HOW_IT_WORKS.md](doc/HOW_IT_WORKS.md) |
 | Project structure | [PROJECT_STRUCTURE.md](doc/PROJECT_STRUCTURE.md) |
-| Prerequisites | [PREREQUISITES.md](doc/PREREQUISITES.md) |
-| Setup | [SETUP.md](doc/SETUP.md) |
+| Setup (includes prerequisites) | [SETUP.md](doc/SETUP.md) |
 | Running with Docker | [DOCKER.md](doc/DOCKER.md) |
 | Usage | [USAGE.md](doc/USAGE.md) |
 | MCP server usage | [MCP_SERVER.md](doc/MCP_SERVER.md) |

@@ -4,6 +4,14 @@ Use this hub for security posture, observability, and testing/quality references
 
 ---
 
+## Agent Use Rules
+
+- Start here for "is this safe", "how is it validated", and "what tests cover this" questions.
+- Use [SECURITY.md](SECURITY.md) for security controls, and [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md) for testing policy and suite composition.
+- For LLM behavior boundaries, use [LLM_NODES.md](LLM_NODES.md) and cross-check architectural limits in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
+
+---
+
 ## Security
 
 - Security design and controls: [SECURITY.md](SECURITY.md)
