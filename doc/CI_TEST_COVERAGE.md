@@ -46,11 +46,11 @@ uv run pytest -v \
   --ignore=tests/test_lifecycle_pebble.py
 ```
 
-**254 tests, 0 skips, no external services required.**
+**285 tests, 0 skips, no external services required.**
 
 ---
 
-## Tests Currently in CI (254 total)
+## Tests Currently in CI (285 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -160,6 +160,18 @@ LangGraph `MemorySaver` checkpoint mechanics; all ACME nodes mocked.
 | State integrity | 3 tests | config fields preserved; completed renewals in final state; messages accumulate |
 | Thread isolation | 1 test | two `thread_id` values produce independent state |
 | Advanced | 1 test | `update_state` injects domain before resume |
+
+---
+
+### `tests/test_node_base.py` — 6 tests
+Node callable contract and registry architectural constraints.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| Callable contract | 2 tests | callable node structural compatibility and exception propagation |
+| Graph integration | 1 test | graph execution invokes registry-provided callable class nodes |
+| Registry shape | 1 test | all `NODE_REGISTRY` entries are classes |
+| Registry negative cases | 2 tests | `get_node()` rejects function entries and non-class callable objects (e.g., `MagicMock`) |
 
 ---
 
