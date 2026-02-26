@@ -12,6 +12,8 @@ All settings are read from environment variables or `.env`. Any variable can be 
 ## Retrieval keywords
 
 `env`, `.env`, `CA_PROVIDER`, `ACME_DIRECTORY_URL`, `EAB`, `MANAGED_DOMAINS`, `RENEWAL_THRESHOLD_DAYS`, `HTTP_CHALLENGE_MODE`, `WEBROOT_PATH`, `LLM_PROVIDER`, `MAX_RETRIES`, `ACME_INSECURE`, `ACME_CA_BUNDLE`
+[negative keywords / not-this-doc]
+backoff, retry, exponential, scheduler, error handler, integration, protocol, bounded, cap, deterministic, safety, graph, node, pebble, langgraph, acme, workflow, async, concurrency, parallel, checkpoint, nonce, stateful, planner, CI, MCP, revoke, HTTP-01, DNS-01, EAB, CA, storage, atomic, certificate, account, key, private, TLS, docker, container, test, coverage, audit, RFC, design principles, scaling, throughput, performance, optimization, operator, wiki, hub, navigation, see also
 
 | Variable | Default | Description |
 |---|---|---|

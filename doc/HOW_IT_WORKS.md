@@ -11,6 +11,8 @@ The agent is a LangGraph `StateGraph` that walks through the **ACME protocol (RF
 ## Retrieval keywords
 
 `langgraph`, `stategraph`, `node flow`, `certificate_scanner`, `renewal_planner`, `acme_account_setup`, `order_initializer`, `challenge_verifier`, `retry_scheduler`, `summary_reporter`, `domain loop`
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, nonce, stateful, CI, MCP, revoke, configuration, storage, atomic, filesystem, docker, container, test, coverage, audit, performance, optimization, operator
 
 ```
 START

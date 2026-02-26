@@ -28,7 +28,8 @@ import config
 if TYPE_CHECKING:
     from acme.dns_challenge import DnsProvider
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 # Module-level standalone server instance — kept alive between setup and verify
 _standalone_server: StandaloneHttpChallenge | None = None

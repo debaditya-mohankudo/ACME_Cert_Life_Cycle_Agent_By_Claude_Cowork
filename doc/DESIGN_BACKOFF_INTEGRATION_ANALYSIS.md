@@ -18,12 +18,11 @@
 ## Phase 3 Implementation (February 2026)
 
 ✅ **The recommended "Best Solution" design has been implemented.** Backoff now uses:
-- **State-driven scheduling** with `retry_not_before` timestamp (not embedded sleep)
-- **Separate `retry_scheduler` node** in the graph (visible, testable, observable)
-- **Both sync and async implementations** ready for future graph conversion
 
 ### How It Works (Phase 3)
 
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, security, CI, MCP, revoke, HTTP-01, DNS-01, EAB, CA, configuration, storage, atomic, filesystem, certificate, account, key, private, TLS, docker, container, test, coverage, audit, compliance, RFC, design principles, architecture, operations, scaling, throughput, performance, optimization, human, operator, documentation, wiki, hub, navigation, see also
 **error_handler node** (decision only, no sleep):
 ```python
 # From agent/nodes/error_handler.py (lines 68-86)

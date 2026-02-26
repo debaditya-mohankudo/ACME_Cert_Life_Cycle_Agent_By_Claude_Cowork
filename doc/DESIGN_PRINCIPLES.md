@@ -13,6 +13,8 @@ Each principle is a deliberate trade-off, documented with rationale and a link t
 ## Retrieval keywords
 
 `design principles`, `invariants`, `determinism`, `agent state`, `stateless client`, `nonce lifecycle`, `no concurrency`, `llm boundaries`, `retry isolation`, `atomic writes`, `security auditability`, `graph topology`
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, nonce, stateful, CI, MCP, revoke, HTTP-01, DNS-01, EAB, configuration, storage, atomic, filesystem, docker, container, test, coverage, audit, performance, optimization, operator
 
 ---
 

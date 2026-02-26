@@ -14,7 +14,8 @@ from agent.prompts import ERROR_HANDLER_SYSTEM, ERROR_HANDLER_USER
 from agent.state import AgentState
 from llm.factory import make_llm
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 
 class ErrorHandlerNode:

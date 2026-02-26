@@ -13,7 +13,8 @@ from agent.prompts import REPORTER_SYSTEM, REPORTER_USER, REVOCATION_REPORTER_US
 from agent.state import AgentState
 from llm.factory import make_llm
 
-logger = logging.getLogger(__name__)
+from logger import LoggerWithRunID
+logger = LoggerWithRunID()
 
 
 class SummaryReporterNode:

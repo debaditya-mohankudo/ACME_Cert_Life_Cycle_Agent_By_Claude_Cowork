@@ -12,6 +12,8 @@ This project can be run as an MCP server and expose ACME lifecycle services as t
 ## Retrieval keywords
 
 `mcp`, `stdio transport`, `mcp_server.py`, `tool list`, `health`, `renew_once`, `domain_status`, `revoke_cert`, `vscode mcp`, `.vscode/mcp.json`, `smoke test`
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, CI, revoke, configuration, storage, atomic, filesystem, docker, container, test, coverage, audit, performance, optimization, operator
 
 ## Prerequisites
 

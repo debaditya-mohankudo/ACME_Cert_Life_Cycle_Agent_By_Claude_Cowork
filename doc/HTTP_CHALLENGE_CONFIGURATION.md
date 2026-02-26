@@ -11,6 +11,8 @@
 ## Retrieval keywords
 
 `http-01`, `challenge`, `standalone`, `webroot`, `HTTP_CHALLENGE_MODE`, `HTTP_CHALLENGE_PORT`, `WEBROOT_PATH`, `port 80`, `authbind`, `setcap`, `iptables redirect`, `troubleshooting`
+[negative keywords / not-this-doc]
+async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, CI, MCP, revoke, configuration, storage, atomic, filesystem, docker, container, test, coverage, audit, performance, optimization, operator
 
 This guide explains how to configure HTTP-01 challenge modes for the ACME Certificate Lifecycle Agent.
 
