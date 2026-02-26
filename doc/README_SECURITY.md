@@ -18,8 +18,9 @@ where in the code it lives, and what threat it addresses.
 9. [Docker and Container Security](#9-docker-and-container-security)
 10. [Network Exposure](#10-network-exposure)
 11. [Resilience and Retry Safety](#11-resilience-and-retry-safety)
-12. [Known Constraints and Hardening Recommendations](#12-known-constraints-and-hardening-recommendations)
-13. [Summary Table](#13-summary-table)
+12. [MCP Server Security Controls](#12-mcp-server-security-controls)
+13. [Known Constraints and Hardening Recommendations](#13-known-constraints-and-hardening-recommendations)
+14. [Summary Table](#14-summary-table)
 
 ---
 
@@ -462,7 +463,69 @@ response to an LLM failure.
 
 ---
 
-## 12. Known Constraints and Hardening Recommendations
+## 12. MCP Server Security Controls
+
+The MCP server in [mcp_server.py](../mcp_server.py) exposes operational tools for
+renewal, revocation, status, and test certificate generation. Security controls are
+enforced at MCP entrypoints before graph execution.
+
+### Input validation and allowlisting
+
+All CA-related MCP inputs are validated in `_resolve_ca_inputs()`:
+
+| Control | Enforcement | Threat addressed |
+|---|---|---|
+| CA input mode restriction | `ca_input_mode` must be `config` or `custom` | Invalid modes and ambiguous execution paths |
+| Provider allowlist | `ca_provider` must be one of known providers | Arbitrary provider injection |
+| Directory URL scheme check | `acme_directory_url` must begin with `http://` or `https://` | Non-network URI abuse (e.g., `file://`) |
+
+Revocation reasons are validated by `_validate_reason()` and restricted to
+`0, 1, 4, 5`.
+
+These controls are covered by
+[tests/test_mcp_server_security.py](../tests/test_mcp_server_security.py).
+
+### Path traversal prevention for test certificate generation
+
+`generate_test_cert` validates the requested domain with
+`_validate_domain_for_cert_generation()`:
+
+- rejects empty values,
+- rejects path separators (`/` and `\\`),
+- rejects traversal patterns (`..`) and dot-prefixed names.
+
+This prevents directory escape attacks when writing test certificate artifacts.
+
+### Side-effect serialization policy
+
+Mutating tools are serialized with a process-wide async lock via
+`_operation_lock(required=True)`:
+
+- `health`
+- `renew_once`
+- `revoke_cert`
+- `generate_test_cert`
+
+Read-only tools explicitly do not acquire serialization (`required=False`):
+
+- `expiring_in_30_days`
+- `domain_status`
+
+This reduces race conditions around shared settings and filesystem state while
+allowing concurrent read-only requests.
+
+Lock behavior is validated in
+[tests/test_mcp_server_locking.py](../tests/test_mcp_server_locking.py).
+
+### Failure containment
+
+Tool entrypoints catch exceptions and return structured failure payloads (for
+example, `{"status": "failed", "error": "..."}`) instead of propagating
+tracebacks to MCP clients.
+
+---
+
+## 13. Known Constraints and Hardening Recommendations
 
 | Area | Current state | Recommended hardening |
 |---|---|---|
@@ -476,7 +539,7 @@ response to an LLM failure.
 
 ---
 
-## 13. Summary Table
+## 14. Summary Table
 
 | Security aspect | Mechanism | Location |
 |---|---|---|
@@ -499,3 +562,7 @@ response to an LLM failure.
 | Scheduled backoff enforcement | retry_scheduler node sleeps until `retry_not_before` arrives before retry | [agent/nodes/retry_scheduler.py](../agent/nodes/retry_scheduler.py) |
 | Async backoff support | retry_scheduler_async (non-blocking) for future graph async conversion | [agent/nodes/retry_scheduler.py](../agent/nodes/retry_scheduler.py) |
 | Domain failure isolation | One failed domain does not block others | [agent/graph.py](../agent/graph.py) |
+| MCP CA input hardening | `ca_input_mode`/`ca_provider` allowlist + `http(s)` directory URL validation | [mcp_server.py](../mcp_server.py) |
+| MCP path traversal protection | Test-cert domain validation blocks separators and traversal patterns | [mcp_server.py](../mcp_server.py), [tests/test_mcp_server_security.py](../tests/test_mcp_server_security.py) |
+| MCP operation serialization | Process-wide async lock for mutating tools; read-only tools not serialized | [mcp_server.py](../mcp_server.py), [tests/test_mcp_server_locking.py](../tests/test_mcp_server_locking.py) |
+| MCP tool failure containment | Exceptions mapped to structured `status=failed` responses | [mcp_server.py](../mcp_server.py), [tests/test_mcp_server_security.py](../tests/test_mcp_server_security.py) |
