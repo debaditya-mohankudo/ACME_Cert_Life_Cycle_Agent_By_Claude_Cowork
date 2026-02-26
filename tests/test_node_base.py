@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import importlib
+import inspect
+import pkgutil
 import pytest
 from typing import cast
 from unittest.mock import MagicMock
@@ -119,3 +122,47 @@ def test_get_node_rejects_mock_callable_registry_entry(monkeypatch):
 
     with pytest.raises(TypeError, match="must be a class"):
         get_node("certificate_scanner")
+
+
+def test_get_node_returns_instance_with_run_method():
+    """Every registry node instantiated via get_node() must expose run()."""
+    from agent.nodes.registry import NODE_REGISTRY
+
+    for node_name in NODE_REGISTRY:
+        node_instance = get_node(node_name)
+        assert hasattr(node_instance, "run"), (
+            f"Node instance from get_node('{node_name}') must define run()"
+        )
+        assert callable(node_instance.run), (
+            f"Node instance from get_node('{node_name}') has non-callable run"
+        )
+
+
+def test_all_node_classes_except_base_define_callable_run_method():
+    """Validate run() contract across all node classes in agent.nodes (except base)."""
+    import agent.nodes as nodes_pkg
+
+    excluded_modules = {"base", "registry", "__init__"}
+
+    for module_info in pkgutil.iter_modules(nodes_pkg.__path__):
+        module_name = module_info.name
+        if module_name in excluded_modules:
+            continue
+
+        module = importlib.import_module(f"agent.nodes.{module_name}")
+        node_classes = [
+            cls
+            for _, cls in inspect.getmembers(module, inspect.isclass)
+            if cls.__module__ == module.__name__ and cls.__name__.endswith("Node")
+        ]
+
+        assert node_classes, f"No *Node classes discovered in module {module.__name__}"
+
+        for node_cls in node_classes:
+            node_instance = node_cls()
+            assert hasattr(node_instance, "run"), (
+                f"{node_cls.__name__} must define run()"
+            )
+            assert callable(node_instance.run), (
+                f"{node_cls.__name__}.run must be callable"
+            )
