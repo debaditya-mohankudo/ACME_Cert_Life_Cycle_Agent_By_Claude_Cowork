@@ -1,5 +1,7 @@
 # Project Structure
 
+For wiki-style documentation navigation, start from [WIKI_HOME.md](WIKI_HOME.md).
+
 ```
 acme-agent/
 ├── main.py                      # CLI entry point

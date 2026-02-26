@@ -10,6 +10,7 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 
 | Topic | Link |
 |---|---|
+| Docs wiki home | [WIKI_HOME.md](doc/WIKI_HOME.md) |
 | How it works | [HOW_IT_WORKS.md](doc/README_HOW_IT_WORKS.md) |
 | Project structure | [PROJECT_STRUCTURE.md](doc/README_PROJECT_STRUCTURE.md) |
 | Prerequisites | [PREREQUISITES.md](doc/README_PREREQUISITES.md) |
