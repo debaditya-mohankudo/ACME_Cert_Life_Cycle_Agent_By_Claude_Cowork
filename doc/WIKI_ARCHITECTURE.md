@@ -8,6 +8,7 @@ Use this hub for system design decisions, invariants, and protocol-level rationa
 
 - Start here for "why" and "design constraint" questions.
 - Prefer [HOW_IT_WORKS.md](HOW_IT_WORKS.md) for current flow descriptions, then validate constraints in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
+- Project Strcuture [PROJECT_STRUCTURE.md]
 - Treat [ACME_AGENT_PLAN.md](ACME_AGENT_PLAN.md) as historical design context, not current implementation truth.
 
 ---
@@ -34,14 +35,13 @@ Use this hub for system design decisions, invariants, and protocol-level rationa
 
 ## Domain-specific Features
 
-- Revocation graph and behavior: [REVOCATION_IMPLEMENTATION.md](REVOCATION_IMPLEMENTATION.md)
-- DNS-01 design/plan: [DNS_01_IMPLEMENTATION_PLAN.md](DNS_01_IMPLEMENTATION_PLAN.md)
-- HTTP-01 validation details: [HTTP_01_VALIDATION_EXPLAINED.md](HTTP_01_VALIDATION_EXPLAINED.md)
 
----
 
+## Retrieval keywords
+architecture, design, invariants, protocol, graph, node, RFC, constraint, rationale, hub, agent, copilot, claude, wiki, navigation, see also
+[negative keywords / not-this-doc]
+backoff, retry, exponential, scheduler, error handler, integration, bounded, cap, MAX_RETRIES, deterministic, safety, pebble, langgraph, acme, workflow, async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, CI, MCP, revoke, HTTP-01, DNS-01, EAB, CA, configuration, storage, atomic, certificate, account, key, private, TLS, docker, container, test, coverage, audit, compliance, scaling, throughput, performance, optimization, operator
 ## See also
 
 - Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
 - Security & quality hub: [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md)
-- Docs home: [WIKI_HOME.md](WIKI_HOME.md)
