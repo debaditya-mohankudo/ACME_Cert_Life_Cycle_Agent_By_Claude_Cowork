@@ -8,6 +8,10 @@
 - Protocol mechanics: [HTTP_01_VALIDATION_EXPLAINED.md](HTTP_01_VALIDATION_EXPLAINED.md)
 - Configuration reference: [CONFIGURATION.md](CONFIGURATION.md)
 
+## Retrieval keywords
+
+`http-01`, `challenge`, `standalone`, `webroot`, `HTTP_CHALLENGE_MODE`, `HTTP_CHALLENGE_PORT`, `WEBROOT_PATH`, `port 80`, `authbind`, `setcap`, `iptables redirect`, `troubleshooting`
+
 This guide explains how to configure HTTP-01 challenge modes for the ACME Certificate Lifecycle Agent.
 
 ## Overview

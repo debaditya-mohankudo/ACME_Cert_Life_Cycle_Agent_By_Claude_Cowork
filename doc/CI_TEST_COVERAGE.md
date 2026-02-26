@@ -11,6 +11,10 @@ added.
 - Checkpoint tests: [CHECKPOINT_TESTS.md](CHECKPOINT_TESTS.md)
 - Planner validation tests: [PLANNER_VALIDATION_TESTS.md](PLANNER_VALIDATION_TESTS.md)
 
+## Retrieval keywords
+
+`ci`, `github actions`, `pytest`, `unit tests`, `integration tests`, `pebble`, `coverage`, `workflow`, `tests.yml`, `container job`, `uv`, `quality gate`
+
 ---
 
 ## Workflow: `.github/workflows/tests.yml`

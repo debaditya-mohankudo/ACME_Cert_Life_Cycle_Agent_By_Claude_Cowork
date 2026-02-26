@@ -9,6 +9,10 @@ All settings are read from environment variables or `.env`. Any variable can be 
 - Usage guide: [USAGE.md](USAGE.md)
 - Security constraints: [SECURITY.md](SECURITY.md)
 
+## Retrieval keywords
+
+`env`, `.env`, `CA_PROVIDER`, `ACME_DIRECTORY_URL`, `EAB`, `MANAGED_DOMAINS`, `RENEWAL_THRESHOLD_DAYS`, `HTTP_CHALLENGE_MODE`, `WEBROOT_PATH`, `LLM_PROVIDER`, `MAX_RETRIES`, `ACME_INSECURE`, `ACME_CA_BUNDLE`
+
 | Variable | Default | Description |
 |---|---|---|
 | `CA_PROVIDER` | `digicert` | CA to use: `digicert` · `letsencrypt` · `letsencrypt_staging` · `zerossl` · `sectigo` · `custom`. For named providers the config is authoritative and X.509 issuer detection is skipped. For `custom`, the scanner detects the issuing CA from existing certs and warns on mismatch (advisory only). |

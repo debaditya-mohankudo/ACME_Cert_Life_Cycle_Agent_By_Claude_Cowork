@@ -9,6 +9,10 @@ This project can be run as an MCP server and expose ACME lifecycle services as t
 - MCP implementation details: [MCP_IMPLEMENTATION_DETAILS.md](MCP_IMPLEMENTATION_DETAILS.md)
 - MCP serialization policy: [MCP_TOOL_SERIALIZATION.md](MCP_TOOL_SERIALIZATION.md)
 
+## Retrieval keywords
+
+`mcp`, `stdio transport`, `mcp_server.py`, `tool list`, `health`, `renew_once`, `domain_status`, `revoke_cert`, `vscode mcp`, `.vscode/mcp.json`, `smoke test`
+
 ## Prerequisites
 
 - Project dependencies installed:

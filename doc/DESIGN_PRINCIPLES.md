@@ -10,6 +10,10 @@ Each principle is a deliberate trade-off, documented with rationale and a link t
 - Protocol pattern rationale: [DESIGN_PROTOCOL_PATTERN.md](DESIGN_PROTOCOL_PATTERN.md)
 - RFC compliance mapping: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
 
+## Retrieval keywords
+
+`design principles`, `invariants`, `determinism`, `agent state`, `stateless client`, `nonce lifecycle`, `no concurrency`, `llm boundaries`, `retry isolation`, `atomic writes`, `security auditability`, `graph topology`
+
 ---
 
 ## 0. RFC Compliance and Security Auditability Are the Highest Priority

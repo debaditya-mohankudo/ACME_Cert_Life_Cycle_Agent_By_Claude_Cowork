@@ -10,6 +10,10 @@ where in the code it lives, and what threat it addresses.
 - RFC compliance mapping: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)
 - Architecture constitution: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
 
+## Retrieval keywords
+
+`security`, `private key`, `account key isolation`, `atomic writes`, `tls verification`, `ACME_INSECURE`, `credential handling`, `file permissions`, `container hardening`, `network exposure`, `retry safety`, `mcp security`
+
 ---
 
 ## Table of Contents

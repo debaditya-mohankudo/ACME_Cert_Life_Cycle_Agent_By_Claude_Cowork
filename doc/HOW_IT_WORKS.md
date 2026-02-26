@@ -8,6 +8,10 @@ The agent is a LangGraph `StateGraph` that walks through the **ACME protocol (RF
 - Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
 - Design principles: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
 
+## Retrieval keywords
+
+`langgraph`, `stategraph`, `node flow`, `certificate_scanner`, `renewal_planner`, `acme_account_setup`, `order_initializer`, `challenge_verifier`, `retry_scheduler`, `summary_reporter`, `domain loop`
+
 ```
 START
   │

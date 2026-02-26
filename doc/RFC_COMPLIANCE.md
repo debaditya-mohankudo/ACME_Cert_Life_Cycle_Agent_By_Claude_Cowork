@@ -7,6 +7,10 @@
 - Design principles: [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)
 - System flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 
+## Retrieval keywords
+
+`RFC 8555`, `RFC 8739`, `RFC 7638`, `RFC 5280`, `nonce`, `badNonce`, `external account binding`, `EAB`, `HTTP-01`, `DNS-01`, `revokeCert`, `POST-as-GET`, `scope`
+
 This document maps every implemented protocol operation to its RFC section, lists explicit constraints and design decisions, and records what is intentionally out of scope.
 
 ---
