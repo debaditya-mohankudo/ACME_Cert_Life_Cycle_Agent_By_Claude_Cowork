@@ -17,7 +17,6 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 | Running with Docker | [DOCKER.md](doc/DOCKER.md) |
 | Usage | [USAGE.md](doc/USAGE.md) |
 | MCP server usage | [MCP_SERVER.md](doc/MCP_SERVER.md) |
-| MCP implementation details | [MCP_IMPLEMENTATION_DETAILS.md](doc/MCP_IMPLEMENTATION_DETAILS.md) |
 | Pebble testing server | [PEBBLE_TESTING_SERVER.md](doc/PEBBLE_TESTING_SERVER.md) |
 | Configuration reference | [CONFIGURATION.md](doc/CONFIGURATION.md) |
 | Certificate revocation | [REVOCATION_IMPLEMENTATION.md](doc/REVOCATION_IMPLEMENTATION.md) |
