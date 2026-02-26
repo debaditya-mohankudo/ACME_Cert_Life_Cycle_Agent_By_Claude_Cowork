@@ -1,8 +1,8 @@
 """
 Node registry for centralized node management.
 
-The registry maps node names to their callable classes or functions.
-The factory function instantiates classes and returns functions as-is.
+The registry maps node names to callable classes.
+The factory function instantiates classes.
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from agent.nodes.scanner import CertificateScannerNode
 from agent.nodes.storage import StorageManagerNode
 
 
-# Registry maps node name → callable class or function
+# Registry maps node name → callable class
 NODE_REGISTRY = {
     # Renewal graph nodes
     "certificate_scanner": CertificateScannerNode,
@@ -51,17 +51,22 @@ def get_node(name: str):
     """
     Factory: instantiate node callable by name.
 
-    Classes are instantiated; functions are returned as-is.
+    Classes are instantiated.
 
     Args:
         name: Node name from NODE_REGISTRY
 
     Returns:
-        Callable node instance or function
+        Callable node instance
 
     Raises:
         KeyError: If node name not in registry
     """
-    node_cls_or_fn = NODE_REGISTRY[name]
-    # Classes need instantiation, functions don't
-    return node_cls_or_fn() if isinstance(node_cls_or_fn, type) else node_cls_or_fn
+    node_cls = NODE_REGISTRY[name]
+
+    if not isinstance(node_cls, type):
+        raise TypeError(
+            f"Registry entry '{name}' must be a class, got {type(node_cls).__name__}"
+        )
+
+    return node_cls()

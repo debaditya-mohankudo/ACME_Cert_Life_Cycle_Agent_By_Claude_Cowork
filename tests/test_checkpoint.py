@@ -142,9 +142,9 @@ def _mock_storage_manager_side_effect(state: dict) -> dict:
 @pytest.fixture()
 def mocked_acme_nodes():
     """
-    Patch NODE_REGISTRY to replace ACME node classes with callable mocks.
+    Patch NODE_REGISTRY to replace ACME node classes with mock-backed classes.
     Each mock returns minimal valid state updates and increments nonce.
-    Since mocks are callable instances (not classes), get_node returns them as-is.
+    Registry entries remain classes so get_node() can instantiate them.
     """
     # Define mock callables for each node
     mock_account = MagicMock(return_value={
@@ -180,26 +180,33 @@ def mocked_acme_nodes():
     })
     mock_storage = MagicMock(side_effect=_mock_storage_manager_side_effect)
 
+    def _node_class_from_mock(mock_callable):
+        class _MockNode:
+            def __call__(self, state):
+                return mock_callable(state)
+
+        return _MockNode
+
     # Patch the registry dict entries for ACME nodes
     # Store originals for restoration
     from agent.nodes.registry import NODE_REGISTRY
     
     originals = {}
     patches = {
-        "acme_account_setup": mock_account,
-        "order_initializer": mock_order,
-        "challenge_setup": mock_challenge_setup,
-        "challenge_verifier": mock_challenge_verify,
-        "csr_generator": mock_csr,
-        "order_finalizer": mock_finalizer,
-        "cert_downloader": mock_downloader,
-        "storage_manager": mock_storage,
+        "acme_account_setup": _node_class_from_mock(mock_account),
+        "order_initializer": _node_class_from_mock(mock_order),
+        "challenge_setup": _node_class_from_mock(mock_challenge_setup),
+        "challenge_verifier": _node_class_from_mock(mock_challenge_verify),
+        "csr_generator": _node_class_from_mock(mock_csr),
+        "order_finalizer": _node_class_from_mock(mock_finalizer),
+        "cert_downloader": _node_class_from_mock(mock_downloader),
+        "storage_manager": _node_class_from_mock(mock_storage),
     }
     
     try:
-        for name, mock_callable in patches.items():
+        for name, mock_node_cls in patches.items():
             originals[name] = NODE_REGISTRY[name]
-            NODE_REGISTRY[name] = mock_callable
+            NODE_REGISTRY[name] = mock_node_cls
         
         yield {
             "account": mock_account,

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import pytest
 from typing import cast
+from unittest.mock import MagicMock
 
 import agent.graph as main_graph
 from agent.nodes.base import NodeCallable
+from agent.nodes.registry import get_node
 from agent.state import AgentState
 
 
@@ -32,8 +34,8 @@ def test_callable_node_propagates_exceptions():
 
 def test_main_graph_uses_callable_registered_nodes(monkeypatch):
     """
-    Verify graph uses node registry and callable instances are invoked.
-    Patches NODE_REGISTRY to inject fake callables.
+    Verify graph uses node registry and callable class instances are invoked.
+    Patches NODE_REGISTRY to inject fake node classes.
     """
     from agent.nodes import registry as node_registry
 
@@ -54,10 +56,10 @@ def test_main_graph_uses_callable_registered_nodes(monkeypatch):
             calls.append("reporter")
             return {}
 
-    # Patch registry entries with fake callables (instances, not classes)
-    monkeypatch.setitem(node_registry.NODE_REGISTRY, "certificate_scanner", _FakeScannerNode())
-    monkeypatch.setitem(node_registry.NODE_REGISTRY, "renewal_planner", _FakePlannerNode())
-    monkeypatch.setitem(node_registry.NODE_REGISTRY, "summary_reporter", _FakeReporterNode())
+    # Patch registry entries with fake node classes
+    monkeypatch.setitem(node_registry.NODE_REGISTRY, "certificate_scanner", _FakeScannerNode)
+    monkeypatch.setitem(node_registry.NODE_REGISTRY, "renewal_planner", _FakePlannerNode)
+    monkeypatch.setitem(node_registry.NODE_REGISTRY, "summary_reporter", _FakeReporterNode)
 
     graph = main_graph.build_graph(use_checkpointing=False)
     state = main_graph.initial_state(managed_domains=["example.com"])
@@ -93,3 +95,27 @@ def test_node_registry_all_entries_are_classes():
             f"Registry entry '{node_name}' class {node_value.__name__} "
             f"has no __init__ method"
         )
+
+
+def test_get_node_rejects_function_registry_entry(monkeypatch):
+    """Negative case: function values in NODE_REGISTRY are rejected."""
+    from agent.nodes import registry as node_registry
+
+    def _function_node(_state):
+        return {}
+
+    monkeypatch.setitem(node_registry.NODE_REGISTRY, "certificate_scanner", _function_node)
+
+    with pytest.raises(TypeError, match="must be a class"):
+        get_node("certificate_scanner")
+
+
+def test_get_node_rejects_mock_callable_registry_entry(monkeypatch):
+    """Negative case: callable objects that are not classes are rejected."""
+    from agent.nodes import registry as node_registry
+
+    mock_callable = MagicMock(return_value={})
+    monkeypatch.setitem(node_registry.NODE_REGISTRY, "certificate_scanner", mock_callable)
+
+    with pytest.raises(TypeError, match="must be a class"):
+        get_node("certificate_scanner")
