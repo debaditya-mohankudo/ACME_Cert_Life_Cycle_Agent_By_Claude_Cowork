@@ -36,6 +36,23 @@ If a change conflicts with a design principle, it must be explicitly justified.
 
 ---
 
+# 🧭 Request Routing (This Page)
+
+When a user asks a question, consult this routing table to find the canonical source:
+
+| User intent | Consult first |
+|---|---|
+| "How does the protocol/graph work?" | [`doc/WIKI_HOME.md`](doc/WIKI_HOME.md) → [WIKI_ARCHITECTURE.md](doc/WIKI_ARCHITECTURE.md) |
+| "How do I run/configure this?" | [`doc/WIKI_HOME.md`](doc/WIKI_HOME.md) → [WIKI_OPERATIONS.md](doc/WIKI_OPERATIONS.md) |
+| "Is this secure/tested?" | [`doc/WIKI_HOME.md`](doc/WIKI_HOME.md) → [WIKI_SECURITY_QUALITY.md](doc/WIKI_SECURITY_QUALITY.md) |
+| "How does MCP work?" | [`doc/WIKI_HOME.md`](doc/WIKI_HOME.md) → [MCP_SERVER.md](doc/MCP_SERVER.md) |
+
+**Never answer from memory.** The wiki is the single source of truth for user-facing questions.
+
+See [`doc/WIKI_HOME.md`](doc/WIKI_HOME.md) for the full routing table.
+
+---
+
 # 🧠 Mental Model (Non-Negotiable)
 
 This project is a **deterministic LangGraph state machine** orchestrating a **stateless ACME client**.
