@@ -16,6 +16,7 @@ import hashlib
 import hmac
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -95,6 +96,14 @@ def compute_key_authorization(token: str, jwk: JWKRSA) -> str:
 # ─── JWS signing ─────────────────────────────────────────────────────────────
 
 
+@dataclass
+class JWSHeader:
+    alg: str
+    nonce: str
+    url: str
+    kid: str | None = None
+    jwk: dict | None = None
+
 def sign_request(
     payload: dict | None,
     account_key: JWKRSA,
@@ -116,23 +125,20 @@ def sign_request(
         raise ValueError("nonce must not be empty — call get_nonce() before signing")
     if not url or not url.strip():
         raise ValueError("url must not be empty")
-    header: dict[str, Any] = {
-        "alg": "RS256",
-        "nonce": nonce,
-        "url": url,
-    }
-    if account_url:
-        header["kid"] = account_url
-    else:
-        # Include the public JWK in the header
-        header["jwk"] = account_key.public_key().fields_to_partial_json()
-        header["jwk"]["kty"] = "RSA"
 
-    protected = _b64url(json.dumps(header).encode())
-    if payload is None:
-        payload_b64 = ""
-    else:
-        payload_b64 = _b64url(json.dumps(payload).encode())
+    header = JWSHeader(
+        alg="RS256",
+        nonce=nonce,
+        url=url,
+        kid=account_url,
+        jwk=account_key.public_key().fields_to_partial_json() if not account_url else None,
+    )
+
+    if header.jwk:
+        header.jwk["kty"] = "RSA"
+
+    protected = _b64url(json.dumps(header.__dict__).encode())
+    payload_b64 = "" if payload is None else _b64url(json.dumps(payload).encode())
 
     signing_input = f"{protected}.{payload_b64}".encode()
     signature = _sign_rsa(account_key, signing_input)
@@ -171,23 +177,7 @@ def create_eab_jws(
         raise ValueError("EAB key ID (eab_kid) cannot be empty")
 
     # Validate eab_hmac_key_b64url format and decode
-    if not eab_hmac_key_b64url or not eab_hmac_key_b64url.strip():
-        raise ValueError("EAB HMAC key (eab_hmac_key_b64url) cannot be empty")
-
-    try:
-        hmac_key = _b64url_decode(eab_hmac_key_b64url)
-    except Exception as exc:
-        raise ValueError(
-            f"EAB HMAC key is not valid base64url: {exc!s}. "
-            f"Must be base64url-encoded bytes."
-        ) from exc
-
-    # Validate HMAC key length (RFC 8739 §2 requires at least 128 bits = 16 bytes)
-    if len(hmac_key) < 16:
-        raise ValueError(
-            f"EAB HMAC key is too short: {len(hmac_key)} bytes. "
-            f"Must be at least 16 bytes (128 bits) per RFC 8739 §2."
-        )
+    validate_eab_hmac_key(eab_hmac_key_b64url)
 
     pub_jwk = account_jwk.public_key().fields_to_partial_json()
     pub_jwk["kty"] = "RSA"
@@ -241,3 +231,25 @@ def _sign_rsa(jwk: JWKRSA, data: bytes) -> bytes:
     from cryptography.hazmat.primitives import hashes
 
     return jwk.key.sign(data, padding.PKCS1v15(), hashes.SHA256())
+
+
+def validate_eab_hmac_key(eab_hmac_key_b64url: str) -> bytes:
+    """Validate and decode the EAB HMAC key."""
+    if not eab_hmac_key_b64url or not eab_hmac_key_b64url.strip():
+        raise ValueError("EAB HMAC key (eab_hmac_key_b64url) cannot be empty")
+
+    try:
+        hmac_key = _b64url_decode(eab_hmac_key_b64url)
+    except Exception as exc:
+        raise ValueError(
+            f"EAB HMAC key is not valid base64url: {exc!s}. "
+            f"Must be base64url-encoded bytes."
+        ) from exc
+
+    if len(hmac_key) < 16:
+        raise ValueError(
+            f"EAB HMAC key is too short: {len(hmac_key)} bytes. "
+            f"Must be at least 16 bytes (128 bits) per RFC 8739 §2."
+        )
+
+    return hmac_key
