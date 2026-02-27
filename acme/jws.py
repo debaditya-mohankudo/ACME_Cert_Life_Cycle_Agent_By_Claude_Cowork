@@ -126,18 +126,20 @@ def sign_request(
     if not url or not url.strip():
         raise ValueError("url must not be empty")
 
-    header = JWSHeader(
-        alg="RS256",
-        nonce=nonce,
-        url=url,
-        kid=account_url,
-        jwk=account_key.public_key().fields_to_partial_json() if not account_url else None,
-    )
+    # Build header dict, omitting jwk if account_url is set
+    header_dict = {
+        "alg": "RS256",
+        "nonce": nonce,
+        "url": url,
+    }
+    if account_url:
+        header_dict["kid"] = account_url
+    else:
+        jwk = account_key.public_key().fields_to_partial_json()
+        jwk["kty"] = "RSA"
+        header_dict["jwk"] = jwk
 
-    if header.jwk:
-        header.jwk["kty"] = "RSA"
-
-    protected = _b64url(json.dumps(header.__dict__).encode())
+    protected = _b64url(json.dumps(header_dict).encode())
     payload_b64 = "" if payload is None else _b64url(json.dumps(payload).encode())
 
     signing_input = f"{protected}.{payload_b64}".encode()
@@ -177,7 +179,7 @@ def create_eab_jws(
         raise ValueError("EAB key ID (eab_kid) cannot be empty")
 
     # Validate eab_hmac_key_b64url format and decode
-    validate_eab_hmac_key(eab_hmac_key_b64url)
+    hmac_key = validate_eab_hmac_key(eab_hmac_key_b64url)
 
     pub_jwk = account_jwk.public_key().fields_to_partial_json()
     pub_jwk["kty"] = "RSA"
