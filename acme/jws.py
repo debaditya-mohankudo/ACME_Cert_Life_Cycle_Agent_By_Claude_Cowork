@@ -16,9 +16,7 @@ import hashlib
 import hmac
 import json
 import os
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from josepy.jwk import JWKRSA
 from cryptography.hazmat.backends import default_backend
@@ -95,14 +93,6 @@ def compute_key_authorization(token: str, jwk: JWKRSA) -> str:
 
 # ─── JWS signing ─────────────────────────────────────────────────────────────
 
-
-@dataclass
-class JWSHeader:
-    alg: str
-    nonce: str
-    url: str
-    kid: str | None = None
-    jwk: dict | None = None
 
 def sign_request(
     payload: dict | None,
