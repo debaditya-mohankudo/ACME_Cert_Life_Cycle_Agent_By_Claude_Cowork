@@ -2,6 +2,7 @@
 
 ## See also
 
+- Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
 - Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
 - RFC compliance: [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)

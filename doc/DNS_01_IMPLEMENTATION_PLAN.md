@@ -2,6 +2,7 @@
 
 ## See also
 
+- Operations hub: [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
 - Architecture hub: [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md)
 - HTTP-01 configuration: [HTTP_CHALLENGE_CONFIGURATION.md](HTTP_CHALLENGE_CONFIGURATION.md)
