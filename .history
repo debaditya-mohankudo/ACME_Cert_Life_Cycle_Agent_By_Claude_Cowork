@@ -41,3 +41,4 @@ fix | acme/jws | Validate nonce and url in sign_request() before JWS signing to 
 feature | agent/nodes/scanner | Implement CA detection logic: X.509 issuer inspection for custom CAs; advisory only, gated on CA_PROVIDER=custom
 fix | acme/jws | capture validate_eab_hmac_key return value in create_eab_jws; revert sign_request to header_dict to eliminate RFC 8555 §6.2-violating null fields produced by JWSHeader.__dict__ serialization
 test | tests/test_jws_validate_eab_hmac_key | add 6 tests: boundary/whitespace gap coverage for validate_eab_hmac_key + Bug 1 (NameError) and Bug 2 (null JWS header fields) regression tests
+refactor | acme/jws | remove unused dataclass/Any imports and dead JWSHeader class left over from JWSHeader refactor; sign_request already uses header_dict
