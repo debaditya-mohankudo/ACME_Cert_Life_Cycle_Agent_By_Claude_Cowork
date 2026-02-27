@@ -22,3 +22,20 @@ docs | doc/logger | Mark logger implementation as production (not plan); documen
 docs | doc/mcp | Document undocumented generate_test_cert tool; add to tool list, retrieval keywords, notes on serialization
 docs | doc/nodes | Add NODE_IMPLEMENTATION_ANALYSIS.md: verify all 17 nodes follow protocol pattern; 100% compliance, no violations
 docs | doc/canonical | Session 3: Add template compliance to final 5 canonical sources (HOW_IT_WORKS, CONFIGURATION, CERTIFICATE_STORAGE, PROJECT_STRUCTURE, LLM_NODES); now 8/8 complete
+feature | agent/state | Add AgentState TypedDict with AcmeOrder and List fields for auth_urls, challenge_urls, tokens, key_auths for multi-SAN support
+feature | acme/client | Implement stateless AcmeClient: directory, nonce, account, order, auth, finalize, download; RFC 8555 compliant
+feature | storage/filesystem | Add filesystem storage backend: read_cert(), write_cert(), list_certs(), write_key() for PEM file I/O
+feature | acme/jws | Add josepy-based JWK generation, JWS signing, nonce validation, and DigiCert EAB credential injection
+feature | main | Add CLI entrypoint supporting --once, --schedule, --domains, and --checkpoint flags for flexible invocation modes
+feature | agent/graph | Implement LangGraph StateGraph with 17 nodes, conditional routing, and MemorySaver checkpointer for interrupt/resume
+feature | acme/client | Add revoke_certificate() method to AcmeClient (RFC 8555 §7.6) for post-issuance revocation
+feature | agent/kb | Implement FAISS-based knowledge base (experimental): semantic search for domain context and renewal history
+architecture | llm/factory | Implement provider-agnostic LLM factory: single make_llm() entry point supporting Anthropic, OpenAI, Ollama
+feature | agent/nodes/retry_scheduler | Implement Phase 3 retry scheduler: exponential backoff with bounded retries, routes to next domain
+feature | docker | Add Docker multi-stage build (unit tests + image), gated CI steps, docker-compose for Pebble integration tests
+config | config | Set Ollama (mistral:7b-instruct) as default LLM provider for local-first development
+feature | storage/atomic | Add atomic file writes with temp file + rename to prevent corrupt PEM files on failure
+refactor | CLAUDE.md | Restructure as architectural memory + guardrail document: constitutional layer, operational layer, cognitive guardrails, maintenance protocols
+ci | .github/workflows | Add GitHub Actions workflow for unit tests: runs on push/PR to main, Python 3.11+, uv-based setup
+fix | acme/jws | Validate nonce and url in sign_request() before JWS signing to prevent protocol violations
+feature | agent/nodes/scanner | Implement CA detection logic: X.509 issuer inspection for custom CAs; advisory only, gated on CA_PROVIDER=custom
