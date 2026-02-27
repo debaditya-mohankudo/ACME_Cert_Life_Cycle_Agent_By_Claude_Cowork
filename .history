@@ -15,3 +15,6 @@ feature | agent/state | Add auth_domains and dns_txt_values List[str] fields to 
 feature | config | Add DNS_CHALLENGE_MODE="dns" validator; add 10 DNS provider config fields; add validate_dns_config model_validator
 test | tests/test_dns_challenge | Add 45 unit tests for DNS-01: value computation, all three providers, factory dispatch
 memory | .history | Add append-only architectural intent log to project root
+docs | doc/wiki | Session 1: WIKI_OPERATIONS domain features; SECURITY/RFC/CI_TEST metadata; improves feature discoverability
+docs | doc/wiki | Session 2: FEATURE_MATRIX.md and CA_PROVIDERS.md; bidirectional links DNS-01/Revocation↔WIKI_OPERATIONS
+docs | doc/wiki | Add analysis documents: WIKI_STRUCTURAL_ANALYSIS, WIKI_NAVIGATION_MAP, WIKI_QUICK_FIXES for future maintainers
