@@ -39,3 +39,5 @@ refactor | CLAUDE.md | Restructure as architectural memory + guardrail document:
 ci | .github/workflows | Add GitHub Actions workflow for unit tests: runs on push/PR to main, Python 3.11+, uv-based setup
 fix | acme/jws | Validate nonce and url in sign_request() before JWS signing to prevent protocol violations
 feature | agent/nodes/scanner | Implement CA detection logic: X.509 issuer inspection for custom CAs; advisory only, gated on CA_PROVIDER=custom
+fix | acme/jws | capture validate_eab_hmac_key return value in create_eab_jws; revert sign_request to header_dict to eliminate RFC 8555 §6.2-violating null fields produced by JWSHeader.__dict__ serialization
+test | tests/test_jws_validate_eab_hmac_key | add 6 tests: boundary/whitespace gap coverage for validate_eab_hmac_key + Bug 1 (NameError) and Bug 2 (null JWS header fields) regression tests
