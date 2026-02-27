@@ -8,12 +8,9 @@ graph.add_conditional_edges().  It decides whether to:
 """
 from __future__ import annotations
 
-import logging
-
 from agent.state import AgentState
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class PickNextDomainNode:

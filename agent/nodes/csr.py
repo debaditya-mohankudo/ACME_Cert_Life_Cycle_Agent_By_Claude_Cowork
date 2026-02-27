@@ -9,7 +9,6 @@ LangGraph checkpoints.  The private key never enters state.
 """
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import config
@@ -18,8 +17,7 @@ from agent.state import AgentState
 from storage.atomic import atomic_write_text
 from storage.filesystem import sanitize_domain_for_path
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class CsrGeneratorNode:

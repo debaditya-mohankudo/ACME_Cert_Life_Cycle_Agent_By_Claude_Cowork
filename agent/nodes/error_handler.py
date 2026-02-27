@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import config
 import json
-import logging
 import time
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -14,8 +13,7 @@ from agent.prompts import ERROR_HANDLER_SYSTEM, ERROR_HANDLER_USER
 from agent.state import AgentState
 from llm.factory import make_llm
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class ErrorHandlerNode:

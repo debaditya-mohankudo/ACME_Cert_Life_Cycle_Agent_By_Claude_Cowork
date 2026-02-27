@@ -19,13 +19,11 @@ See: ASYNC_SCHEDULER_IMPLEMENTATION_PLAN.md
 """
 from __future__ import annotations
 
-import logging
 import time as time_module
 
 from agent.state import AgentState
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class RetrySchedulerNode:

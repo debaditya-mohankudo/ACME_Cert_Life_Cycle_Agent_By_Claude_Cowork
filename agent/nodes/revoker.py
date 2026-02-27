@@ -11,15 +11,12 @@ or returned in the result dict.
 """
 from __future__ import annotations
 
-import logging
-
 from acme import jws as jwslib
 from acme.client import AcmeError, make_client
 from agent.state import AgentState
 from storage import filesystem as fs
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class CertRevokerNode:

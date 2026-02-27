@@ -12,7 +12,7 @@ Tools:
 from __future__ import annotations
 
 import asyncio
-import logging
+from logger import logger
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Any, Literal
@@ -241,7 +241,7 @@ async def health(
                     "warnings": warnings,
                 }
     except Exception as e:
-        logging.exception("health check failed")
+        logger.exception("health check failed")
         return {
             "ok": False,
             "status": "failed",
@@ -285,7 +285,7 @@ async def renew_once(
                     "error_log": final_state.get("error_log", []),
                 }
     except Exception as e:
-        logging.exception("renew_once failed")
+        logger.exception("renew_once failed")
         return {
             "status": "failed",
             "error": str(e),
@@ -333,7 +333,7 @@ async def revoke_cert(
                     "error_log": final_state.get("error_log", []),
                 }
     except Exception as e:
-        logging.exception("revoke_cert failed")
+        logger.exception("revoke_cert failed")
         return {
             "status": "failed",
             "error": str(e),
@@ -354,7 +354,7 @@ async def expiring_in_30_days(domains: list[str] | None = None) -> dict[str, Any
             "expiring_domains": expiring_domains,
         }
     except Exception as e:
-        logging.exception("expiring_in_30_days failed")
+        logger.exception("expiring_in_30_days failed")
         return {
             "status": "failed",
             "error": str(e),
@@ -376,7 +376,7 @@ async def domain_status(domains: list[str]) -> dict[str, Any]:
                 "domain_statuses": _run_domain_status(domains=domains, settings=config.settings),
             }
     except Exception as e:
-        logging.exception("domain_status failed")
+        logger.exception("domain_status failed")
         return {
             "status": "failed",
             "error": str(e),
@@ -441,7 +441,7 @@ async def generate_test_cert(
             ],
         }
     except Exception as e:
-        logging.exception("generate_test_cert failed")
+        logger.exception("generate_test_cert failed")
         return {
             "status": "failed",
             "error": str(e),

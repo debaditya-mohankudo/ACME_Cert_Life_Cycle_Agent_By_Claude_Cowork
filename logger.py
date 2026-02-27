@@ -42,5 +42,17 @@ class LoggerWithRunID:
     def debug(self, msg, *args, **kwargs):
         self.logger.debug(msg, *args, **kwargs)
 
+    def exception(self, msg, *args, **kwargs):
+        self.logger.exception(msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        self.logger.critical(msg, *args, **kwargs)
+
     def get_run_id(self):
         return self.run_id
+
+__all__ = ["LoggerWithRunID", "logger"]
+
+# Module-level singleton instance to avoid callers instantiating during import,
+# which can cause race conditions when many modules create their own instances.
+logger = LoggerWithRunID()

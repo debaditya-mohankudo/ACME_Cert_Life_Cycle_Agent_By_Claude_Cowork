@@ -9,7 +9,7 @@ Both are in one file because they share the standalone server / DNS provider lif
 """
 from __future__ import annotations
 
-import logging
+ 
 import time
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Generator
@@ -28,8 +28,7 @@ import config
 if TYPE_CHECKING:
     from acme.dns_challenge import DnsProvider
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 # Module-level standalone server instance — kept alive between setup and verify
 _standalone_server: StandaloneHttpChallenge | None = None
