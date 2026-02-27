@@ -9,6 +9,7 @@ certs/
 doc/
 kb/
 *.key
-TEST_RESULTS.md
-TEST_SUMMARY.md
+.history
+
+
 
