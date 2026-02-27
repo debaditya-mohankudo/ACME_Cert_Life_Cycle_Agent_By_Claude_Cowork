@@ -1,5 +1,17 @@
 # Certificate Storage Layout
 
+## When to use this page
+
+- "Where are certificates stored?"
+- "What is the directory structure?"
+- "How does atomic write safety work?"
+- "What files are created per domain?"
+
+## Canonicality
+
+- **Canonical for**: Certificate file layout, atomic write pattern, storage safety, resilience properties
+- **Not canonical for**: Filesystem implementation details (→ [storage/filesystem.py](../storage/filesystem.py)), security controls (→ [SECURITY.md](SECURITY.md)), configuration paths (→ [CONFIGURATION.md](CONFIGURATION.md))
+
 ## See also
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
@@ -96,3 +108,12 @@ Negligible impact:
 - Error handling cleans up temp files
 
 **Result:** ✅ All tests pass with zero regressions.
+
+---
+
+## Metadata
+
+- **Owner**: Storage / Infrastructure team
+- **Status**: active (storage safety is a hard requirement)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-05-27 (quarterly)

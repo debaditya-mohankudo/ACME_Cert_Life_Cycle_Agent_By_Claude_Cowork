@@ -21,3 +21,4 @@ docs | doc/wiki | Add analysis documents: WIKI_STRUCTURAL_ANALYSIS, WIKI_NAVIGAT
 docs | doc/logger | Mark logger implementation as production (not plan); document LoggerWithRunID singleton, design rationale, integration
 docs | doc/mcp | Document undocumented generate_test_cert tool; add to tool list, retrieval keywords, notes on serialization
 docs | doc/nodes | Add NODE_IMPLEMENTATION_ANALYSIS.md: verify all 17 nodes follow protocol pattern; 100% compliance, no violations
+docs | doc/canonical | Session 3: Add template compliance to final 5 canonical sources (HOW_IT_WORKS, CONFIGURATION, CERTIFICATE_STORAGE, PROJECT_STRUCTURE, LLM_NODES); now 8/8 complete

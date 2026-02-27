@@ -1,5 +1,17 @@
 # LLM Nodes and Provider Support
 
+## When to use this page
+
+- "Which nodes use LLM?"
+- "How do I switch LLM providers?"
+- "What models are recommended?"
+- "How does the planner validate LLM output?"
+
+## Canonicality
+
+- **Canonical for**: LLM node responsibilities, provider configuration, model recommendations, output validation
+- **Not canonical for**: Configuration details (→ [CONFIGURATION.md](CONFIGURATION.md)), LLM design rationale (→ [DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md](DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md)), factory implementation (→ [llm/factory.py](../llm/factory.py))
+
 ## See also
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
@@ -51,3 +63,13 @@ LLM_MODEL_PLANNER=llama3.2
 LLM_MODEL_REPORTER=llama3.2
 LLM_MODEL_ERROR_HANDLER=llama3.2
 ```
+
+---
+
+## Metadata
+
+- **Owner**: LLM / Integration team
+- **Status**: active (provider configuration reference)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-05-27 (quarterly, or on new LLM providers)
+

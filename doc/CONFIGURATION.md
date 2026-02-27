@@ -2,6 +2,18 @@
 
 All settings are read from environment variables or `.env`. Any variable can be overridden by setting it in the shell before running.
 
+## When to use this page
+
+- "What environment variables are available?"
+- "How do I configure the CA provider?"
+- "What are the default values?"
+- "How do I set up LLM models?"
+
+## Canonicality
+
+- **Canonical for**: Configuration field reference, defaults, valid values, environment variables
+- **Not canonical for**: Setup instructions (→ [SETUP.md](SETUP.md)), operational guidance (→ [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md)), CA-specific setup (→ [CA_PROVIDERS.md](CA_PROVIDERS.md))
+
 ## See also
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
@@ -42,3 +54,12 @@ backoff, retry, exponential, scheduler, error handler, integration, protocol, bo
 | `LANGCHAIN_TRACING_V2` | `false` | Enable LangSmith tracing |
 | `LANGCHAIN_API_KEY` | — | LangSmith API key (required when tracing is enabled) |
 | `LANGCHAIN_PROJECT` | `acme-cert-agent` | LangSmith project name |
+
+---
+
+## Metadata
+
+- **Owner**: DevOps / Operations team
+- **Status**: active (runtime configuration reference)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-05-27 (quarterly, or on new config options)

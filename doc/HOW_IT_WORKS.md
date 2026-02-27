@@ -2,6 +2,18 @@
 
 The agent is a LangGraph `StateGraph` that walks through the **ACME protocol (RFC 8555)** step-by-step, with three LLM decision points. Each named node corresponds to a distinct RFC 8555 operation — see [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md) for the full section-level mapping.
 
+## When to use this page
+
+- "How does the renewal workflow execute?"
+- "What does each node in the graph do?"
+- "What is the control flow of the agent?"
+- "How are domains looped and retried?"
+
+## Canonicality
+
+- **Canonical for**: Current graph flow, node execution order, routing decisions, operator-visible behavior
+- **Not canonical for**: Design principles (→ [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)), RFC protocol details (→ [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)), node implementation details (→ [NODE_IMPLEMENTATION_ANALYSIS.md](NODE_IMPLEMENTATION_ANALYSIS.md))
+
 ## See also
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
@@ -60,3 +72,12 @@ START
   │
   └── all done ──► [summary_reporter] (LLM) ──► END
 ```
+
+---
+
+## Metadata
+
+- **Owner**: Architecture team
+- **Status**: active (current implementation source)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-05-27 (quarterly, or on graph topology changes)

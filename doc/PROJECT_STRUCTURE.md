@@ -1,5 +1,17 @@
 # Project Structure
 
+## When to use this page
+
+- "Where is a particular module or feature located?"
+- "What does this directory contain?"
+- "How is the code organized?"
+- "What file should I look at for X?"
+
+## Canonicality
+
+- **Canonical for**: Directory tree, file locations, module organization, high-level structure
+- **Not canonical for**: Code implementation details (→ specific module files), architectural decisions (→ [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)), node architecture (→ [NODE_IMPLEMENTATION_ANALYSIS.md](NODE_IMPLEMENTATION_ANALYSIS.md))
+
 ## See also
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)
@@ -66,3 +78,13 @@ acme-agent/
         ├── privkey.pem          # chmod 600
         └── metadata.json
 ```
+
+---
+
+## Metadata
+
+- **Owner**: Architecture team
+- **Status**: active (structural reference)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-05-27 (quarterly, or on new modules)
+
