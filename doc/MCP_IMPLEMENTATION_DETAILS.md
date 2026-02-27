@@ -64,6 +64,20 @@ This document captures the implementation details added to expose this project a
      - `failed_revocations`
      - `error_log`
 
+6. `generate_test_cert(domain: string, days: int)`
+   - Generates self-signed test certificate for a domain.
+   - Supports negative `days` to create expired test certs.
+   - Validates domain to prevent path traversal attacks.
+   - Stores in configured `CERT_STORE_PATH` (never arbitrary paths).
+   - Applies process-wide operation lock (serialized mutation).
+   - Returns certificate details:
+     - `domain`
+     - `validity_days`
+     - `cert_status` (EXPIRED | EXPIRING SOON | VALID)
+     - `days_remaining`
+     - `output_directory`
+     - `files` (paths to cert.pem, key.pem, chain.pem)
+
 ## Architectural alignment
 
 The MCP layer reuses existing `main.py` entrypoints and does not alter graph topology.
