@@ -8,6 +8,8 @@ This page is the canonical entry point for project documentation. It is organize
 
 Use this table when answering user questions with minimal hops.
 
+> **Claude Code**: A compact version of this routing table is embedded in [`CLAUDE.md § Request Routing`](../CLAUDE.md#-request-routing-this-page). This page is the authoritative source; CLAUDE.md references it.
+
 | User intent | Open first | Then open | Canonical answer source |
 |---|---|---|---|
 | "How does the protocol/graph work?" | [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md) | [HOW_IT_WORKS.md](HOW_IT_WORKS.md) | [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md), [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md) |
