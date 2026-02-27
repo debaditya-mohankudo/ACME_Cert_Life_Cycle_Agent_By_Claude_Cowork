@@ -30,15 +30,20 @@ Use this hub for system design decisions, invariants, and protocol-level rationa
 - Async scheduler design notes: [DESIGN_ASYNC_SCHEDULER_PLAN.md](DESIGN_ASYNC_SCHEDULER_PLAN.md)
 - Stateful vs stateless client analysis: [DESIGN_STATEFUL_CLIENT_ANALYSIS.md](DESIGN_STATEFUL_CLIENT_ANALYSIS.md)
 - Planner rationale: [DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md](DESIGN_RENEWAL_PLANNER_LLM_RATIONALE.md)
+- Node implementation analysis: [NODE_IMPLEMENTATION_ANALYSIS.md](NODE_IMPLEMENTATION_ANALYSIS.md)
 
 ---
 
-## Domain-specific Features
+## Node Architecture
 
+- Node protocol design: [DESIGN_PROTOCOL_PATTERN.md](DESIGN_PROTOCOL_PATTERN.md)
+- Node implementation verification: [NODE_IMPLEMENTATION_ANALYSIS.md](NODE_IMPLEMENTATION_ANALYSIS.md) (17 nodes, 100% compliance)
+- Node registry and factory: [agent/nodes/registry.py](../agent/nodes/registry.py)
 
+---
 
 ## Retrieval keywords
-architecture, design, invariants, protocol, graph, node, RFC, constraint, rationale, hub, agent, copilot, claude, wiki, navigation, see also
+architecture, design, invariants, protocol, graph, node, node implementation, protocol pattern, structural typing, callable, RFC, constraint, rationale, hub, agent, copilot, claude, wiki, navigation, see also
 [negative keywords / not-this-doc]
 backoff, retry, exponential, scheduler, error handler, integration, bounded, cap, MAX_RETRIES, deterministic, safety, pebble, langgraph, acme, workflow, async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, CI, MCP, revoke, HTTP-01, DNS-01, EAB, CA, configuration, storage, atomic, certificate, account, key, private, TLS, docker, container, test, coverage, audit, compliance, scaling, throughput, performance, optimization, operator
 ## See also
