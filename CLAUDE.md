@@ -91,6 +91,7 @@ HTTP-01 challenge modes:
 
 * Standalone (port 80)
 * Webroot
+* dns
 
 ---
 
@@ -277,8 +278,6 @@ Any change that adds a node, changes routing, modifies retry logic, alters ACME 
 
 * Unit tests (`tests/test_unit_acme.py`)
 * Integration tests if protocol is affected (`tests/test_integration_pebble.py`, `tests/test_lifecycle_pebble.py`)
-* `TEST_RESULTS.md` — paste full `pytest -v` output
-* `TEST_SUMMARY.md` — update counts and prose descriptions
 
 Use `pebble_settings` fixture to mutate the settings singleton in tests (restores via teardown).
 Use `mock_llm_nodes` fixture to patch `llm.factory.init_chat_model` — no API key needed.
