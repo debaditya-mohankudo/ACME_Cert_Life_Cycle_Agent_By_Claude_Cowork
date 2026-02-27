@@ -5,7 +5,6 @@ revocation_reporter (LLM) node — generate a final human-readable revocation su
 from __future__ import annotations
 
 import config
-import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -13,8 +12,7 @@ from agent.prompts import REPORTER_SYSTEM, REPORTER_USER, REVOCATION_REPORTER_US
 from agent.state import AgentState
 from llm.factory import make_llm
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class SummaryReporterNode:

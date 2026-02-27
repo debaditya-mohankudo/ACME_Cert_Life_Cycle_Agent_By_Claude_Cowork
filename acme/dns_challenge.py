@@ -25,11 +25,10 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import logging
+from logger import logger
 from abc import ABC, abstractmethod
 from typing import Optional
 
-logger = logging.getLogger(__name__)
 
 
 # ─── TXT value computation ─────────────────────────────────────────────────────

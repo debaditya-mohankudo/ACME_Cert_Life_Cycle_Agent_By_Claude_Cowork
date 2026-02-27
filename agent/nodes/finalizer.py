@@ -10,13 +10,10 @@ cert_downloader  — POST-as-GET the certificate URL, return full PEM chain.
 """
 from __future__ import annotations
 
-import logging
-
 from acme import jws as jwslib
 from acme.client import AcmeError, make_client
 from agent.state import AgentState
-
-logger = logging.getLogger(__name__)
+from logger import logger
 
 
 class OrderFinalizerNode:

@@ -6,12 +6,9 @@ revocation_loop_router — routes between next domain and completion.
 """
 from __future__ import annotations
 
-import logging
-
 from agent.state import AgentState
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class PickNextRevocationDomainNode:

@@ -41,8 +41,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-from logger import LoggerWithRunID
-log = LoggerWithRunID()
+from logger import logger as log
 
 CA_PROVIDER_CHOICES = [
     "digicert",

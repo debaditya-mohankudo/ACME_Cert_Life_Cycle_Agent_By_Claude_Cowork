@@ -10,14 +10,14 @@ per §8.4).
 from __future__ import annotations
 
 import config
-import logging
+
 
 from acme import jws as jwslib
 from acme.client import make_client
 from acme.dns_challenge import compute_dns_txt_value
 from agent.state import AgentState, AcmeOrder
 
-logger = logging.getLogger(__name__)
+from logger import logger
 
 
 class OrderInitializerNode:

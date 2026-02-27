@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import config
 import json
-import logging
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -17,7 +16,7 @@ from agent.prompts import PLANNER_SYSTEM, PLANNER_USER
 from agent.state import AgentState
 from llm.factory import make_llm
 
-logger = logging.getLogger(__name__)
+from logger import logger
 
 
 class RenewalPlannerNode:

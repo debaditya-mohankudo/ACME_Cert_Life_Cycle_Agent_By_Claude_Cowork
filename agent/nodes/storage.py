@@ -11,14 +11,12 @@ Splits the full PEM chain from DigiCert into:
 from __future__ import annotations
 
 import config
-import logging
 from pathlib import Path
 
 from storage import filesystem as fs
 from agent.state import AgentState
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class StorageManagerNode:

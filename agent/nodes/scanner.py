@@ -10,14 +10,13 @@ detection is skipped — detected_ca_provider is left as None.
 from __future__ import annotations
 
 import config
-import logging
+ 
 from typing import Optional
 
 from agent.state import AgentState, CertRecord
 from storage import filesystem as fs
 
-from logger import LoggerWithRunID
-logger = LoggerWithRunID()
+from logger import logger
 
 
 class CertificateScannerNode:
