@@ -42,3 +42,4 @@ feature | agent/nodes/scanner | Implement CA detection logic: X.509 issuer inspe
 fix | acme/jws | capture validate_eab_hmac_key return value in create_eab_jws; revert sign_request to header_dict to eliminate RFC 8555 §6.2-violating null fields produced by JWSHeader.__dict__ serialization
 test | tests/test_jws_validate_eab_hmac_key | add 6 tests: boundary/whitespace gap coverage for validate_eab_hmac_key + Bug 1 (NameError) and Bug 2 (null JWS header fields) regression tests
 refactor | acme/jws | remove unused dataclass/Any imports and dead JWSHeader class left over from JWSHeader refactor; sign_request already uses header_dict
+ci | .github/workflows/tests.yml | remove python:3.12-slim-bookworm container job; use ubuntu-latest + actions/setup-python@v5 to eliminate Docker pull; update CI_TEST_COVERAGE.md accordingly

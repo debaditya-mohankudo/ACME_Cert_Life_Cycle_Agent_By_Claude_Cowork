@@ -13,7 +13,7 @@ added.
 
 ## Retrieval keywords
 
-`ci`, `github actions`, `pytest`, `unit tests`, `integration tests`, `pebble`, `coverage`, `workflow`, `tests.yml`, `container job`, `uv`, `quality gate`
+`ci`, `github actions`, `pytest`, `unit tests`, `integration tests`, `pebble`, `coverage`, `workflow`, `tests.yml`, `uv`, `quality gate`, `setup-python`, `caching`
 [negative keywords / not-this-doc]
 async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, MCP, revoke, configuration, storage, atomic, filesystem, docker, container, audit, performance, optimization, operator
 
@@ -22,14 +22,13 @@ async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, MCP, re
 ## Workflow: `.github/workflows/tests.yml`
 
 Trigger: every push and PR targeting `main`.
-Runner: `ubuntu-latest`.
-Container: `python:3.12-slim-bookworm` — all steps execute inside this image,
-giving a minimal and reproducible Debian Bookworm environment with Python 3.12
-pre-installed. Git is installed before checkout since the slim image omits it.
-Toolchain: `uv` via `astral-sh/setup-uv` (no `python-version` override —
-container already owns Python 3.12).
+Runner: `ubuntu-latest` (no container — Docker image pull eliminated).
+Python: `actions/setup-python@v5` with `python-version: '3.12'`; resolved from
+the GitHub runner tool cache (near-instant on warm runners).
+Toolchain: `uv` via `astral-sh/setup-uv` with `enable-cache: true` — virtual
+environment and package layers are cached across runs keyed on `uv.lock`.
 
-### Checkout note (container jobs)
+### Checkout note
 
 The workflow uses `actions/checkout@v4` with:
 
@@ -38,15 +37,14 @@ with:
   persist-credentials: false
 ```
 
-Reason: in container-based jobs, checkout post-run credential cleanup can emit
-non-fatal git warnings (for example, exit code 128). Disabling persisted
-credentials avoids that post-run cleanup path.
+Reason: this repo's CI workflow never runs `git push`, so persisted credentials
+are unnecessary. Disabling them avoids any post-run credential cleanup side
+effects.
 
 Impact:
 
 - No meaningful performance impact.
 - No change to `uv` cache behavior or test caching.
-- Safe for this repo's current CI workflow, which does not run `git push`.
 - If future workflows need authenticated `git push`, credentials must be
   provided explicitly for that step.
 
@@ -385,7 +383,7 @@ safe in a CI-only context.
 | Port conflicts | Pebble binds 14000 + 15000; standard GitHub runners have no conflicts |
 | `requires_pebble` decorator | Automatically skips if port 14000 unreachable; safe to leave in place |
 | Flakiness | Pebble with `PEBBLE_VA_ALWAYS_VALID=1` is deterministic; historically stable in CI |
-| No slim container for Pebble job | GitHub `services:` containers require the job to run directly on the runner host (not inside a container job) for Docker networking to resolve correctly. The Pebble job uses `ubuntu-latest` + `python-version: "3.12"` via uv instead of `python:3.12-slim-bookworm`. |
+| Docker networking for Pebble | GitHub `services:` containers require the job to run directly on the runner host (not inside a container job) for networking to resolve correctly. Both jobs use `ubuntu-latest` + `actions/setup-python`, so no container conflicts. |
 
 ### Recommended implementation
 
@@ -414,11 +412,14 @@ pebble-integration:
   steps:
     - uses: actions/checkout@v4
 
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
     - name: Install uv
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
-        python-version: "3.12"   # managed by uv here; no slim container
 
     - name: Install dependencies
       run: uv sync
@@ -456,6 +457,6 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (146 unit + integration tests as of 2026-02-27)
+- **Status**: active (285 unit tests as of 2026-02-27)
 - **Last reviewed**: 2026-02-27
 - **Next review due**: 2026-03-27 (monthly, or on significant test changes)
