@@ -24,47 +24,32 @@ Use this hub for setup, runtime usage, environment configuration, and day-to-day
 - CLI usage and modes: [USAGE.md](USAGE.md)
 - How it works (operator view): [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 - Project structure map: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
-- Logger implementation plan: [LOGGER_IMPLEMENTATION_PLAN.md](LOGGER_IMPLEMENTATION_PLAN.md)
-- Logging: Per-Run Unique ID Pattern
+- Logging and observability: [LOGGER_IMPLEMENTATION_PLAN.md](LOGGER_IMPLEMENTATION_PLAN.md)
 
-### Logging: Per-Run Unique ID Pattern
+### Logging: Per-Run Unique ID (Production)
 
-To improve traceability and auditability, every agent run generates a unique session ID (UUID) at startup. This ID is attached to every log record for the duration of the run.
+Every agent run generates a unique session ID (UUID) at startup and attaches it to every log record. This enables easy tracing and auditing of logs from a single execution.
 
-**Pattern:**
+**Status**: ✅ Production — Singleton logger active across all agent nodes
 
-1. Generate a unique run/session ID at process start (e.g., in main.py).
-2. Initialize a singleton logger instance.
-3. Inject the run ID into every log record using a logging.Filter or custom formatter.
-4. All log statements automatically include the run ID.
+**Key features:**
+- **Run ID injection**: Automatic UUID in every log message via `LoggerWithRunID` singleton
+- **Traceability**: Follow all logs from a single run using the run ID
+- **Audit trails**: Deterministic correlation of operations to specific executions
+- **Output format**: `%(asctime)s [%(run_id)s] %(levelname)s %(name)s — %(message)s`
 
-**Benefits:**
-- Enables easy tracing of logs from a single execution.
-- Supports deterministic audit trails and debugging.
-- Keeps logging configuration consistent across the codebase.
-
-**Implementation Example:**
-```python
-import logging, uuid
-
-RUN_ID = str(uuid.uuid4())
-
-class RunIDFilter(logging.Filter):
-    def filter(self, record):
-        record.run_id = RUN_ID
-        return True
-
-logger = logging.getLogger("agent")
-logger.addFilter(RunIDFilter())
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter("%(asctime)s [%(run_id)s] %(levelname)s %(message)s"))
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-
-logger.info("Agent started.")
+**Example output**:
+```
+2026-02-27 14:23:45 [a1b2c3d4-e5f6-7890-abcd-ef1234567890] INFO agent.nodes.planner — Classifying 3 domains
 ```
 
-Document this pattern in architecture and operations docs if extended or modified.
+**Usage**: Import the singleton logger in any module:
+```python
+from logger import logger
+logger.info("Processing domain: %s", domain)
+```
+
+**See also**: [LOGGER_IMPLEMENTATION_PLAN.md](LOGGER_IMPLEMENTATION_PLAN.md) for architecture, design rationale, and integration points.
 
 ---
 

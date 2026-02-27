@@ -18,3 +18,4 @@ memory | .history | Add append-only architectural intent log to project root
 docs | doc/wiki | Session 1: WIKI_OPERATIONS domain features; SECURITY/RFC/CI_TEST metadata; improves feature discoverability
 docs | doc/wiki | Session 2: FEATURE_MATRIX.md and CA_PROVIDERS.md; bidirectional links DNS-01/Revocation↔WIKI_OPERATIONS
 docs | doc/wiki | Add analysis documents: WIKI_STRUCTURAL_ANALYSIS, WIKI_NAVIGATION_MAP, WIKI_QUICK_FIXES for future maintainers
+docs | doc/logger | Mark logger implementation as production (not plan); document LoggerWithRunID singleton, design rationale, integration
