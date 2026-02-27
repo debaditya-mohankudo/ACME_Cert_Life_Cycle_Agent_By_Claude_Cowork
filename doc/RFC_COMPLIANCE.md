@@ -228,3 +228,12 @@ This guarantees no partial writes are ever visible, even on power loss mid-write
 | `agent/nodes/challenge.py` | Challenge setup/teardown; reusable auth check |
 | `agent/nodes/revoker.py` | `POST /revokeCert` node |
 | `storage/atomic.py` | Atomic file writes |
+
+---
+
+## Metadata
+
+- **Owner**: Architecture team (compliance + security)
+- **Status**: active (RFC compliance is non-negotiable per Principle 0)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-05-27 (quarterly, or on any RFC clarification/update)

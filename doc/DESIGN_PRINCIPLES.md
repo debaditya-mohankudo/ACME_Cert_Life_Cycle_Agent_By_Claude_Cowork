@@ -268,3 +268,12 @@ Certificate revocation uses a dedicated LangGraph state machine (`agent/revocati
 | Network calls named | All side effects in graph | `agent/graph.py` |
 | CA detection gated | Advisory only; skipped for named providers | `acme/ca_detection.py` |
 | Node architecture | Callable classes with Protocol | `agent/nodes/base.py` |
+
+---
+
+## Metadata
+
+- **Owner**: Architecture team
+- **Status**: active (constitutional layer — no breaking changes without explicit justification)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-05-27 (quarterly)

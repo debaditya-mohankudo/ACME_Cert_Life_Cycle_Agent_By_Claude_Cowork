@@ -3,6 +3,19 @@
 This document details every security decision baked into the agent — why it was made,
 where in the code it lives, and what threat it addresses.
 
+## When to use this page
+
+- "Is this system secure?"
+- "How are private keys protected?"
+- "What are the security controls?"
+- "Is checkpoint/trace data safe?"
+- "How does LLM output validation work?"
+
+## Canonicality
+
+- **Canonical for**: Security design, key isolation, atomic writes, LLM validation, audit trails, container hardening
+- **Not canonical for**: RFC compliance details (→ [RFC_COMPLIANCE.md](RFC_COMPLIANCE.md)), test coverage (→ [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md)), configuration (→ [CONFIGURATION.md](CONFIGURATION.md))
+
 ## See also
 
 - Wiki home: [WIKI_HOME.md](WIKI_HOME.md)

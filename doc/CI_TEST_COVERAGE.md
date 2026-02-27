@@ -450,3 +450,12 @@ pebble-integration:
 
 This adds **9 real end-to-end tests** to CI with no changes to the existing
 unit-test job.
+
+---
+
+## Metadata
+
+- **Owner**: QA / CI team
+- **Status**: active (146 unit + integration tests as of 2026-02-27)
+- **Last reviewed**: 2026-02-27
+- **Next review due**: 2026-03-27 (monthly, or on significant test changes)

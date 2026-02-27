@@ -86,6 +86,40 @@ Document this pattern in architecture and operations docs if extended or modifie
 
 ---
 
+## Domain-Specific Features
+
+### Challenge Modes
+
+- **HTTP-01 (Standalone)** — Built-in HTTP server on port 80
+  - Setup: [HTTP_CHALLENGE_CONFIGURATION.md](HTTP_CHALLENGE_CONFIGURATION.md)
+  - Config: `HTTP_CHALLENGE_MODE=standalone`
+  - Quick intro: [HTTP_CHALLENGE_MODES.md](HTTP_CHALLENGE_MODES.md)
+
+- **HTTP-01 (Webroot)** — Serve tokens from existing web server
+  - Setup: [HTTP_CHALLENGE_CONFIGURATION.md](HTTP_CHALLENGE_CONFIGURATION.md)
+  - Config: `HTTP_CHALLENGE_MODE=webroot` + `WEBROOT_PATH=/path/to/webroot`
+  - Internals: [HTTP_01_VALIDATION_EXPLAINED.md](HTTP_01_VALIDATION_EXPLAINED.md)
+
+- **DNS-01 (DNS CNAME)** — Cloudflare, Route53, Google Cloud DNS
+  - Setup: [DNS_01_IMPLEMENTATION_PLAN.md](DNS_01_IMPLEMENTATION_PLAN.md)
+  - Supported providers: Cloudflare, Route53, Google Cloud DNS
+  - Config: `HTTP_CHALLENGE_MODE=dns` + provider-specific env vars
+
+### Revocation
+
+- **Certificate Revocation** — On-demand revocation via CLI
+  - Implementation: [REVOCATION_IMPLEMENTATION.md](REVOCATION_IMPLEMENTATION.md)
+  - Usage: `python main.py --revoke-cert domain1.com domain2.com --reason 4`
+  - Reason codes: 0=unspecified, 1=keyCompromise, 4=superseded, 5=cessation
+
+### CA Providers
+
+- Let's Encrypt: [LETS_ENCRYPT.md](LETS_ENCRYPT.md)
+- DigiCert, ZeroSSL, Sectigo: See [acme/client.py](../acme/client.py) class hierarchy
+- Feature matrix: [FEATURE_MATRIX.md](FEATURE_MATRIX.md) (quick reference table)
+
+---
+
 ## MCP Operations
 
 - MCP server usage: [MCP_SERVER.md](MCP_SERVER.md)
