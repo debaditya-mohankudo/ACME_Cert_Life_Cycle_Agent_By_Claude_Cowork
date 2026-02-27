@@ -7,62 +7,44 @@ All prompts are plain Python strings using .format() placeholders.
 # ── renewal_planner ───────────────────────────────────────────────────────────
 
 PLANNER_SYSTEM = """\
-You are a TLS Certificate Lifecycle Manager assistant.
-Your job is to analyze certificate expiry data and produce a JSON renewal plan.
-You must ONLY include domains from the provided domain list — never hallucinate or add extra domains.
-Respond with valid JSON only, no markdown fences, no prose."""
+You are a TLS Certificate Lifecycle Manager assistant. Produce a JSON renewal
+plan for the supplied managed domains only. Output valid JSON only — no
+prose, no markdown fences, no extra domains."""
 
 PLANNER_USER = """\
-I have scanned the following domains and their certificate status:
-
+Cert summary:
 {cert_summary}
 
-Managed domains (authoritative list — only include these):
+Managed domains (authoritative):
 {managed_domains}
 
-Classify each managed domain into exactly one category:
+For each managed domain assign exactly one label:
 - "urgent": expires in < 7 days or already expired
 - "routine": expires in 7–{threshold} days
-- "skip": healthy (> {threshold} days remaining) or no renewal needed
+- "skip": >= {threshold} days
 
-Return a JSON object with this exact schema:
-{{
-  "urgent": ["domain1.com"],
-  "routine": ["domain2.com"],
-  "skip": ["domain3.com"],
-  "notes": "Human-readable summary of your reasoning"
-}}
-
-Rules:
-1. Every managed domain must appear in exactly one list.
-2. Order each list most-urgent first.
-3. "skip" any domain that is not in the managed_domains list.
-"""
+Return one JSON object with keys: "urgent", "routine", "skip", "notes".
+Requirements: every managed domain appears exactly once; lists ordered by
+urgency (most urgent first); emit no extra keys or prose."""
 
 # ── error_handler ─────────────────────────────────────────────────────────────
 
 ERROR_HANDLER_SYSTEM = """\
-You are diagnosing a TLS certificate renewal failure.
-You have deep knowledge of the ACME RFC 8555 protocol and common failure modes.
-Respond with valid JSON only, no markdown fences, no prose."""
+You diagnose TLS renewal failures. Use ACME RFC 8555 knowledge and common
+failure modes. Output valid JSON only — no prose or markdown."""
 
 ERROR_HANDLER_USER = """\
-A certificate renewal attempt has failed.
+Renewal failed.
+Domain: {domain}
+Error: {error}
+Retry: {retry_count}/{max_retries}
+Order status: {order_status}
 
-Domain:         {domain}
-Error:          {error}
-Retry attempt:  {retry_count} of {max_retries}
-ACME order status: {order_status}
-
-Decide the best course of action:
-- "retry"  — transient issue (DNS propagation, temporary network failure, rate limit — back off and try again)
-- "skip"   — this domain cannot be renewed right now but others should continue
-- "abort"  — credential failure, CA policy violation, or systemic issue affecting all domains
-
-Respond with exactly:
+Choose one action: "retry", "skip", or "abort".
+Return exactly:
 {{
   "action": "retry|skip|abort",
-  "reason": "One sentence explaining your decision",
+  "reason": "One-sentence rationale",
   "suggested_delay_seconds": <integer, 0 if skip/abort>
 }}
 """
@@ -70,22 +52,20 @@ Respond with exactly:
 # ── summary_reporter ──────────────────────────────────────────────────────────
 
 REPORTER_SYSTEM = """\
-You are generating a concise TLS certificate renewal run summary for an operations team.
-Be factual and brief. Respond with plain text (no JSON, no markdown headers)."""
+Generate a concise operations summary of a TLS renewal run. Be factual,
+brief, and use plain text only (no JSON, no markdown)."""
 
 REPORTER_USER = """\
 Certificate renewal run completed.
 
-Completed renewals:  {completed}
-Failed renewals:     {failed}
-Skipped (healthy):   {skipped}
-Errors logged:
+Completed: {completed}
+Failed:    {failed}
+Skipped:   {skipped}
+Errors:
 {error_log}
 
-Write a 3–5 sentence summary covering:
-1. Overall result (success / partial / failure)
-2. Any domains that need immediate operator attention
-3. A recommendation for the next check (e.g., "check again tomorrow" or "lower renewal threshold")
+Write 3–5 sentences covering: overall result (success/partial/failure), any
+domains needing immediate attention, and a recommended next check or action.
 """
 
 # ── revocation_reporter ────────────────────────────────────────────────────
@@ -93,12 +73,12 @@ Write a 3–5 sentence summary covering:
 REVOCATION_REPORTER_USER = """\
 Certificate revocation run completed.
 
-Revoked certificates:   {revoked}
-Failed revocations:     {failed}
-Revocation reason code: {reason}
-Errors logged:
+Revoked: {revoked}
+Failed:  {failed}
+Reason:  {reason}
+Errors:
 {error_log}
 
-Write a 2–4 sentence summary covering overall result, any failures needing
-operator attention, and whether a renewal cycle should follow.
+Write 2–4 sentences: overall result, failures needing operator attention, and
+whether a renewal cycle should follow.
 """
