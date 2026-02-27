@@ -332,10 +332,35 @@ After modifying architecture or node behavior:
 * Update [`doc/ACME_AGENT_PLAN.md`](doc/ACME_AGENT_PLAN.md) if topology changes
 * Update `README.md` if CLI or configuration changes
 * Update `CLAUDE.md` if project structure or invariants change
+* Append one line to [`.history`](.history) — see format below
 
 After running tests:
 
 * Update [`doc/CI_TEST_COVERAGE.md`](doc/CI_TEST_COVERAGE.md) — test groups, counts, and CI workflow description
+
+---
+
+# 📝 `.history` — Architectural Intent Log
+
+`.history` is an append-only, human- and machine-readable log of architectural intent.
+
+**Append one line after every session that includes a meaningful change.**
+
+Format:
+
+```
+<action_type> | <module_or_scope> | <concise summary (≤200 chars)>
+```
+
+Action types: `debug` | `refactor` | `feature` | `architecture` | `test` | `security` | `performance` | `prompt` | `memory`
+
+`module_or_scope`: primary file path without `.py` extension (e.g. `acme/client`, `agent/nodes/challenge`, `config`)
+
+Rules:
+* Extract intent only — no raw prompts, no conversational language
+* No timestamps, no sensitive data
+* One line per logical change; batch related changes into one line if they form a single intent
+* Do NOT edit or delete existing lines — append only
 
 ---
 
