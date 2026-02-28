@@ -8,7 +8,7 @@ Use this hub for system design decisions, invariants, and protocol-level rationa
 
 - Start here for "why" and "design constraint" questions.
 - Prefer [HOW_IT_WORKS.md](HOW_IT_WORKS.md) for current flow descriptions, then validate constraints in [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
-- Project Strcuture [PROJECT_STRUCTURE.md]
+- Project structure: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
 - Treat [ACME_AGENT_PLAN.md](ACME_AGENT_PLAN.md) as historical design context, not current implementation truth.
 
 ---
