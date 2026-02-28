@@ -14,7 +14,7 @@ import pytest
 import responses as resp_lib
 
 from acme import jws as jwslib
-from acme.crypto import create_csr, generate_rsa_key, private_key_to_pem
+from acme.crypto import create_csr, generate_rsa_key, private_key_to_pem, generate_ec_key
 from acme.client import (
     AcmeError,
     AcmeClient,
@@ -25,6 +25,8 @@ from acme.client import (
     LetsEncryptAcmeClient,
     make_client,
 )
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography import x509
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -294,6 +296,41 @@ def test_create_csr_multi_san(domain_key):
     assert "example.com" in names
     assert "www.example.com" in names
     assert "api.example.com" in names
+
+
+def test_create_csr_duplicate_sans():
+    key = generate_ec_key()
+    csr_der = create_csr(key, "example.com", san_domains=["example.com", "www.example.com", "example.com"])
+    csr = x509.load_der_x509_csr(csr_der)
+    sans = csr.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+    dns_names = [name.value for name in sans]
+    assert dns_names.count("example.com") == 1
+    assert "www.example.com" in dns_names
+
+
+def test_create_csr_empty_san():
+    key = generate_ec_key()
+    csr_der = create_csr(key, "example.com", san_domains=[])
+    csr = x509.load_der_x509_csr(csr_der)
+    sans = csr.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+    dns_names = [name.value for name in sans]
+    assert dns_names == ["example.com"]
+
+
+def test_generate_ec_key_supported_curves():
+    for curve in ["secp256r1", "secp384r1", "secp521r1"]:
+        key = generate_ec_key(curve)
+        assert isinstance(key, ec.EllipticCurvePrivateKey)
+
+def test_generate_ec_key_invalid_curve():
+    with pytest.raises(ValueError) as exc:
+        generate_ec_key("invalidcurve")
+    assert "Unsupported ECC curve" in str(exc.value)
+
+def test_private_key_to_pem_ec():
+    key = generate_ec_key("secp256r1")
+    pem = private_key_to_pem(key)
+    assert pem.startswith("-----BEGIN EC PRIVATE KEY-----")
 
 
 # ─── acme/client.py ───────────────────────────────────────────────────────────
