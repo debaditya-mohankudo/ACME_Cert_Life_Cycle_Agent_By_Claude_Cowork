@@ -10,6 +10,8 @@ from tests.conftest import requires_pebble
 
 from agent.revocation_graph import build_revocation_graph, revocation_initial_state
 
+pytestmark = pytest.mark.integration
+
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
 

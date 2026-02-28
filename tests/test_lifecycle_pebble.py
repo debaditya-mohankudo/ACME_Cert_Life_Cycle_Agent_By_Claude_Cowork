@@ -32,6 +32,8 @@ from cryptography.hazmat.primitives.serialization import Encoding
 
 from tests.conftest import requires_pebble
 
+pytestmark = pytest.mark.integration
+
 
 def _run_agent(pebble_settings, renewal_threshold_days: int) -> dict:
     from agent.graph import build_graph, initial_state

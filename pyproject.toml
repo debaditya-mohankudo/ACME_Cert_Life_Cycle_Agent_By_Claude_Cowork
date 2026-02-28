@@ -29,7 +29,15 @@ dev = [
     "pydantic-settings>=2.8",
     "pytest>=8.3",
     "pytest-asyncio>=0.25",
+    "pytest-xdist>=3.8.0",
     "responses>=0.25",
     "schedule>=1.2",
     "structlog>=25.1",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that require Pebble ACME server (run sequentially only)",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

@@ -22,6 +22,8 @@ import pytest
 
 from tests.conftest import requires_pebble
 
+pytestmark = pytest.mark.integration
+
 
 @requires_pebble
 def test_full_renewal_flow(pebble_settings, mock_llm_nodes):

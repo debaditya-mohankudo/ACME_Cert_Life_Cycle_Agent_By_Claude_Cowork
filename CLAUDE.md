@@ -135,23 +135,29 @@ Never use `pip` directly.
 
 ### Run tests
 
-Unit tests:
+Unit tests (in parallel with xdist):
 
 ```bash
-pytest tests/test_unit_acme.py -v
+pytest tests/test_unit_acme.py -v -n auto
 ```
 
-Integration tests (requires Pebble):
+Integration tests (requires Pebble, sequential only):
 
 ```bash
 docker compose -f docker-compose.pebble.yml up -d
 pytest tests/test_integration_pebble.py tests/test_lifecycle_pebble.py -v
 ```
 
-All tests:
+All unit tests in parallel, skip integration tests:
 
 ```bash
-pytest -v
+pytest -v -n auto -m "not integration"
+```
+
+All tests (unit in parallel, integration sequential):
+
+```bash
+pytest -v -n auto -m "not integration" && pytest -v -m "integration"
 ```
 
 ---
