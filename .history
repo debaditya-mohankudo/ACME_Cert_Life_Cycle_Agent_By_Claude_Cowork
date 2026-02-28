@@ -45,3 +45,4 @@ refactor | acme/jws | remove unused dataclass/Any imports and dead JWSHeader cla
 ci | .github/workflows/tests.yml | remove python:3.12-slim-bookworm container job; use ubuntu-latest + actions/setup-python@v5 to eliminate Docker pull; update CI_TEST_COVERAGE.md accordingly
 refactor | acme/http_challenge | remove dead ContextDecorator base; replace Optional[X] with X|None; replace os.remove+try/except with Path.unlink(missing_ok=True); drop 3 imports
 test | tests/test_http_challenge | add 11 unit tests for http_challenge.py (webroot write/remove, standalone 200/404/double-start/idempotent-stop/context-manager)
+test | tests/test_dns_challenge | add 10 targeted tests: DnsProvider._acme_record_name direct; _dns_provider_registry error message; Cloudflare/Route53 zone discovery failure; Route53 _txt_value/trailing-dot/explicit-creds; Google _get_client credentials path

@@ -4,9 +4,14 @@ Unit tests for DNS-01 challenge support.
 Tests cover:
   - compute_dns_txt_value() — SHA-256 correctness, determinism, known vector
   - make_dns_provider() — dispatch for all 3 providers, ImportError hints
-  - CloudflareDnsProvider — create (explicit zone, auto-discover, idempotent), delete, error swallowed
-  - Route53DnsProvider — UPSERT with "" wrapping, zone discovery, DELETE, error swallowed
-  - GoogleCloudDnsProvider — create (idempotent: same value, replace diff value, new record), delete, error swallowed
+  - DnsProvider base — _acme_record_name() format (direct)
+  - _dns_provider_registry() — error message lists valid choices (direct)
+  - CloudflareDnsProvider — create (explicit zone, auto-discover, idempotent), delete,
+    error swallowed, zone discovery failure
+  - Route53DnsProvider — UPSERT with "" wrapping, zone discovery, DELETE, error swallowed,
+    _txt_value() direct, trailing-dot DNS name, explicit credentials, zone discovery failure
+  - GoogleCloudDnsProvider — create (idempotent: same value, replace diff value, new record),
+    delete, error swallowed, _get_client() with credentials path
   - order_initializer with dns-01 — correct challenge selected, fields populated
   - challenge_setup DNS branch — create_txt_record called, propagation sleep behavior
   - _cleanup_challenge DNS branch — delete called, partial failure, safe when no provider
@@ -963,3 +968,184 @@ class TestConfigValidation:
                 CA_PROVIDER="letsencrypt",
                 MANAGED_DOMAINS="example.com",
             )
+
+
+# ─── DnsProvider base ─────────────────────────────────────────────────────────
+
+
+class TestDnsProviderBase:
+    """Direct tests for DnsProvider._acme_record_name() static method.
+
+    This is the sole formatter for the DNS challenge record name.  Any
+    regression here silently breaks all three providers simultaneously.
+    """
+
+    def test_acme_record_name_apex_domain(self):
+        """Apex domain is prefixed with _acme-challenge."""
+        from acme.dns_challenge import DnsProvider
+
+        assert DnsProvider._acme_record_name("example.com") == "_acme-challenge.example.com"
+
+    def test_acme_record_name_subdomain(self):
+        """Subdomain is prefixed correctly without double-label insertion."""
+        from acme.dns_challenge import DnsProvider
+
+        assert DnsProvider._acme_record_name("api.sub.example.com") == "_acme-challenge.api.sub.example.com"
+
+
+# ─── _dns_provider_registry (direct) ──────────────────────────────────────────
+
+
+class TestDnsProviderRegistry:
+    """Direct tests for _dns_provider_registry().
+
+    make_dns_provider() is the public entry point, but testing the registry
+    directly pins the error message contract independently of the settings layer.
+    """
+
+    def test_unknown_provider_error_lists_valid_choices(self):
+        """ValueError message enumerates all valid provider names."""
+        from acme.dns_challenge import _dns_provider_registry
+
+        with pytest.raises(ValueError) as exc_info:
+            _dns_provider_registry("typo", MagicMock())
+
+        msg = str(exc_info.value)
+        assert "cloudflare" in msg
+        assert "route53" in msg
+        assert "google" in msg
+
+    def test_empty_string_provider_raises(self):
+        """Empty string is not a valid provider and raises ValueError."""
+        from acme.dns_challenge import _dns_provider_registry
+
+        with pytest.raises(ValueError, match="Unknown DNS_PROVIDER"):
+            _dns_provider_registry("", MagicMock())
+
+
+# ─── CloudflareDnsProvider — zone discovery failure ───────────────────────────
+
+
+class TestCloudflareZoneDiscovery:
+    """Tests for CloudflareDnsProvider._resolve_zone_id() error path."""
+
+    def test_resolve_zone_id_raises_when_no_zone_found(self):
+        """ValueError is raised when zone auto-discovery finds no matching zone."""
+        from acme.dns_challenge import CloudflareDnsProvider
+
+        mock_cf_module = MagicMock()
+        mock_client = MagicMock()
+        mock_cf_module.Cloudflare.return_value = mock_client
+        mock_client.zones.list.return_value = []  # no zones found for any label
+
+        provider = CloudflareDnsProvider.__new__(CloudflareDnsProvider)
+        provider._cf_mod = mock_cf_module
+        provider._api_token = "tok"
+        provider._explicit_zone_id = ""
+
+        with pytest.raises(ValueError, match="Could not discover Cloudflare zone"):
+            provider._resolve_zone_id("notfound.example.com")
+
+
+# ─── Route53DnsProvider — extras ──────────────────────────────────────────────
+
+
+class TestRoute53Extras:
+    """Additional tests for Route53DnsProvider internal methods.
+
+    The existing TestRoute53DnsProvider covers the happy-path API calls.
+    These tests pin behaviours that are Route53-specific and regression-prone:
+    quote-wrapping, trailing dot, explicit credential injection, discovery failure.
+    """
+
+    @pytest.fixture
+    def boto3_mock(self):
+        mock_boto3 = MagicMock()
+        mock_client = MagicMock()
+        mock_boto3.client.return_value = mock_client
+        return mock_boto3, mock_client
+
+    def _make_provider(self, boto3_mock, hosted_zone_id="Z123", region="us-east-1"):
+        from acme.dns_challenge import Route53DnsProvider
+
+        mock_boto3, _ = boto3_mock
+        provider = Route53DnsProvider.__new__(Route53DnsProvider)
+        provider._boto3 = mock_boto3
+        provider._explicit_zone_id = hosted_zone_id
+        provider._region = region
+        provider._access_key_id = ""
+        provider._secret_access_key = ""
+        return provider
+
+    def test_txt_value_wraps_in_double_quotes(self, boto3_mock):
+        """_txt_value() wraps the raw TXT value in double-quotes (Route53 requirement)."""
+        provider = self._make_provider(boto3_mock)
+        assert provider._txt_value("myvalue") == '"myvalue"'
+
+    def test_dns_name_has_trailing_dot(self, boto3_mock):
+        """Route53 requires a trailing dot on the DNS name; Cloudflare must not have it."""
+        _, mock_client = boto3_mock
+        provider = self._make_provider(boto3_mock, hosted_zone_id="Z123")
+        provider.create_txt_record("example.com", "val")
+
+        changes = mock_client.change_resource_record_sets.call_args.kwargs["ChangeBatch"]["Changes"]
+        name = changes[0]["ResourceRecordSet"]["Name"]
+        assert name == "_acme-challenge.example.com."
+
+    def test_get_client_passes_explicit_credentials(self, boto3_mock):
+        """_get_client() passes aws_access_key_id / secret when non-empty."""
+        mock_boto3, _ = boto3_mock
+        provider = self._make_provider(boto3_mock)
+        provider._access_key_id = "AKID"
+        provider._secret_access_key = "SECRET"
+
+        provider._get_client()
+
+        mock_boto3.client.assert_called_once_with(
+            "route53",
+            region_name="us-east-1",
+            aws_access_key_id="AKID",
+            aws_secret_access_key="SECRET",
+        )
+
+    def test_resolve_zone_id_raises_when_no_zone_found(self, boto3_mock):
+        """ValueError is raised when Route53 zone auto-discovery finds no match."""
+        _, mock_client = boto3_mock
+        mock_client.list_hosted_zones_by_name.return_value = {"HostedZones": []}
+
+        provider = self._make_provider(boto3_mock, hosted_zone_id="")
+
+        with pytest.raises(ValueError, match="Could not discover Route53"):
+            provider._resolve_zone_id("notfound.example.com")
+
+
+# ─── GoogleCloudDnsProvider — credentials path ────────────────────────────────
+
+
+class TestGoogleCloudExtras:
+    """Tests for GoogleCloudDnsProvider._get_client() with a credentials_path set."""
+
+    def test_get_client_with_credentials_path(self):
+        """_get_client() loads service account credentials and passes them to Client()."""
+        from acme.dns_challenge import GoogleCloudDnsProvider
+
+        mock_dns_module = MagicMock()
+        mock_oauth2 = MagicMock()
+
+        provider = GoogleCloudDnsProvider.__new__(GoogleCloudDnsProvider)
+        provider._gcp_dns = mock_dns_module
+        provider._project_id = "my-project"
+        provider._zone_name = "my-zone"
+        provider._credentials_path = "/path/to/creds.json"
+
+        # `from google.oauth2 import service_account` resolves via sys.modules
+        with patch.dict("sys.modules", {"google.oauth2": mock_oauth2}):
+            provider._get_client()
+
+        mock_oauth2.service_account.Credentials.from_service_account_file.assert_called_once_with(
+            "/path/to/creds.json"
+        )
+        loaded_creds = mock_oauth2.service_account.Credentials.from_service_account_file.return_value
+        mock_dns_module.Client.assert_called_once_with(
+            project="my-project", credentials=loaded_creds
+        )
