@@ -51,17 +51,18 @@ Impact:
 ### Command
 
 ```bash
-uv run pytest -v \
-  --ignore=tests/test_revocation_pebble.py \
-  --ignore=tests/test_integration_pebble.py \
-  --ignore=tests/test_lifecycle_pebble.py
+uv run pytest -v -n auto -m "not integration"
 ```
 
-**337 tests, 0 skips, no external services required.**
+**344 tests, 0 skips, no external services required.**
+
+Parallel execution via xdist (8 concurrent workers on typical GitHub runners).
+Unit tests are isolated and mocked — safe to parallelize.
+Integration tests (Pebble) excluded from CI by marker.
 
 ---
 
-## Tests Currently in CI (337 total)
+## Tests Currently in CI (344 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -467,7 +468,7 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (337 unit tests as of 2026-02-28)
+- **Status**: active (344 unit tests with xdist parallelization as of 2026-02-28)
 - **Last reviewed**: 2026-02-28
-- **Last change**: Added 18 observability tests for revocation graph (nonce flow, reason codes, state integrity, checkpointing, edge cases)
+- **Last change**: Added pytest-xdist parallel execution (unit tests run on 8 workers; integration tests excluded by marker)
 - **Next review due**: 2026-03-28 (monthly, or on significant test changes)

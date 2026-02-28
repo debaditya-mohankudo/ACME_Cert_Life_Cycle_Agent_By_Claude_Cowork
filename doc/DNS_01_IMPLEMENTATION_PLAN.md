@@ -333,10 +333,8 @@ Add `dns_settings` fixture to `conftest.py` (extends `pebble_settings` with DNS-
 # 1. Unit tests only (no DNS credentials, no Pebble)
 pytest tests/test_dns_challenge.py -v
 
-# 2. Full suite — confirm zero regressions
-pytest --ignore=tests/test_revocation_pebble.py \
-       --ignore=tests/test_integration_pebble.py \
-       --ignore=tests/test_lifecycle_pebble.py -v
+# 2. Full suite — confirm zero regressions (runs in parallel with xdist)
+pytest -v -n auto -m "not integration"
 
 # 3. Pebble integration (Pebble running, DNS provider mocked)
 docker compose -f docker-compose.pebble.yml up -d
