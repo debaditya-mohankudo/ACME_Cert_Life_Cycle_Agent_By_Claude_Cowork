@@ -42,6 +42,13 @@ Use this hub for system design decisions, invariants, and protocol-level rationa
 
 ---
 
+## Code Patterns & Implementation
+
+- Python idioms and design patterns: [PYTHONIC_IDIOMS.md](PYTHONIC_IDIOMS.md) (19 patterns: TypedDict, ABC, Protocols, context managers, factories, etc.)
+- Project file structure: [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)
+
+---
+
 ## Retrieval keywords
 architecture, design, invariants, protocol, graph, node, node implementation, protocol pattern, structural typing, callable, RFC, constraint, rationale, hub, agent, copilot, claude, wiki, navigation, see also
 [negative keywords / not-this-doc]

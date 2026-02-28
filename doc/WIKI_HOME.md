@@ -16,6 +16,7 @@ Use this table when answering user questions with minimal hops.
 | "How do I run/configure this?" | [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md) | [SETUP.md](SETUP.md), [USAGE.md](USAGE.md) | [CONFIGURATION.md](CONFIGURATION.md) |
 | "Is this secure/tested/observable?" | [WIKI_SECURITY_QUALITY.md](WIKI_SECURITY_QUALITY.md) | [SECURITY.md](SECURITY.md), [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md) | [SECURITY.md](SECURITY.md) |
 | "How does MCP mode work?" | [WIKI_OPERATIONS.md](WIKI_OPERATIONS.md) | [MCP_SERVER.md](MCP_SERVER.md), [MCP_IMPLEMENTATION_DETAILS.md](MCP_IMPLEMENTATION_DETAILS.md) | [MCP_SERVER.md](MCP_SERVER.md) |
+| "What Python patterns are used?" | [WIKI_ARCHITECTURE.md](WIKI_ARCHITECTURE.md) | [PYTHONIC_IDIOMS.md](PYTHONIC_IDIOMS.md) | [PYTHONIC_IDIOMS.md](PYTHONIC_IDIOMS.md) |
 
 ---
 
@@ -27,6 +28,7 @@ Use this table when answering user questions with minimal hops.
 - Operator execution flow: [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 - Security controls and policy: [SECURITY.md](SECURITY.md)
 - Test policy and CI status model: [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md)
+- Code patterns and idioms: [PYTHONIC_IDIOMS.md](PYTHONIC_IDIOMS.md)
 
 ---
 
