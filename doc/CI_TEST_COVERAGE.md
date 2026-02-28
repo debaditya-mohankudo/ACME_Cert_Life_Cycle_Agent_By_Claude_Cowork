@@ -57,11 +57,11 @@ uv run pytest -v \
   --ignore=tests/test_lifecycle_pebble.py
 ```
 
-**319 tests, 0 skips, no external services required.**
+**337 tests, 0 skips, no external services required.**
 
 ---
 
-## Tests Currently in CI (319 total)
+## Tests Currently in CI (337 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -149,17 +149,25 @@ LLM output validation; no LLM calls made (direct function tests + mocked LLM).
 
 ---
 
-### `tests/test_revocation.py` — 15 tests
-Revocation subgraph; no ACME server required (mocked).
+### `tests/test_revocation.py` — 33 tests
+Revocation subgraph; no ACME server required (all mocked). Comprehensive observability coverage.
 
 | Group | Tests | What is verified |
 |---|---|---|
+| **Core nodes** | 8 tests | |
 | Router | 3 tests | picks next domain, handles last domain, handles empty target list |
 | Loop router | 2 tests | routes to revoker when targets remain, to reporter when done |
 | Revoker node | 3 tests | successful revocation, missing cert file, `AcmeError` handling |
-| Reporter | 3 tests | LLM summary on success, summary with failures, LLM call failure graceful |
-| Graph topology | 1 test | graph compiles with expected node set |
-| Full graph flow | 3 tests | single-domain flow, multi-domain flow, partial failure tracking |
+| **Reporter** | 3 tests | LLM summary on success, summary with failures, LLM call failure graceful |
+| **Graph topology** | 4 tests | graph compiles; single/multi-domain flows; partial failure tracking |
+| **Nonce management** | 3 tests | nonce cleared between domains, multi-domain sequence, None handling |
+| **RFC 5280 reason codes** | 2 tests | all valid codes (0–5) passed to ACME; invalid code error handling |
+| **State integrity** | 4 tests | message accumulation across flow, no domain duplicates, field cleanup, error log preservation |
+| **Checkpointing** | 2 tests | graph compiles with checkpointing, state resumption readiness |
+| **Account setup** | 1 test | account creation failure handling |
+| **Edge cases** | 3 tests | very long domain names, internationalized domains (IDN), duplicate domains in targets |
+| **Reporter content** | 1 test | message structure includes revocation context |
+| **Error handling** | 3 tests | consecutive failures tracked, error log format validation, multi-failure accumulation |
 
 ---
 
@@ -459,6 +467,7 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (319 unit tests as of 2026-02-27)
-- **Last reviewed**: 2026-02-27
-- **Next review due**: 2026-03-27 (monthly, or on significant test changes)
+- **Status**: active (337 unit tests as of 2026-02-28)
+- **Last reviewed**: 2026-02-28
+- **Last change**: Added 18 observability tests for revocation graph (nonce flow, reason codes, state integrity, checkpointing, edge cases)
+- **Next review due**: 2026-03-28 (monthly, or on significant test changes)
