@@ -57,11 +57,11 @@ uv run pytest -v \
   --ignore=tests/test_lifecycle_pebble.py
 ```
 
-**285 tests, 0 skips, no external services required.**
+**319 tests, 0 skips, no external services required.**
 
 ---
 
-## Tests Currently in CI (285 total)
+## Tests Currently in CI (319 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -92,6 +92,8 @@ library; no network access needed.
 | EAB account | `test_eab_create_account_injects_eab`, `_omits_eab_when_credentials_empty` | EAB injection logic |
 | EAB JWS guards | `test_eab_jws_rejects_*`, `_succeeds_*`, `_minimum_*` | input validation, minimum 16-byte HMAC |
 | Config EAB | `test_config_rejects_partial_*`, `_accepts_*` | Pydantic validator for partial EAB config |
+| validate_eab_hmac_key | `test_jws_validate_eab_hmac_key.py` | positive and negative cases for EAB HMAC key validation |
+| StandaloneHttpChallenge refactor | covered by integration and lifecycle tests | stateless handler, context manager idiom |
 
 ---
 
@@ -457,6 +459,6 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (285 unit tests as of 2026-02-27)
+- **Status**: active (319 unit tests as of 2026-02-27)
 - **Last reviewed**: 2026-02-27
 - **Next review due**: 2026-03-27 (monthly, or on significant test changes)

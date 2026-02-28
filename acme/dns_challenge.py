@@ -25,10 +25,11 @@ from __future__ import annotations
 
 import base64
 import hashlib
-from logger import logger
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import Optional
 
+from logger import logger
 
 
 # ─── TXT value computation ─────────────────────────────────────────────────────
@@ -342,6 +343,40 @@ class GoogleCloudDnsProvider(DnsProvider):
             )
 
 
+# ─── Provider Registry ────────────────────────────────────────────────────────
+
+
+def _dns_provider_registry(provider_name: str, settings) -> DnsProvider:
+    """Return the DNS provider instance for the given name and settings."""
+    registry = {
+        "cloudflare": partial(
+            CloudflareDnsProvider,
+            api_token=settings.CLOUDFLARE_API_TOKEN,
+            zone_id=settings.CLOUDFLARE_ZONE_ID,
+        ),
+        "route53": partial(
+            Route53DnsProvider,
+            hosted_zone_id=settings.AWS_ROUTE53_HOSTED_ZONE_ID,
+            region=settings.AWS_REGION,
+            access_key_id=settings.AWS_ACCESS_KEY_ID,
+            secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        ),
+        "google": partial(
+            GoogleCloudDnsProvider,
+            project_id=settings.GOOGLE_PROJECT_ID,
+            zone_name=settings.GOOGLE_CLOUD_DNS_ZONE_NAME,
+            credentials_path=settings.GOOGLE_APPLICATION_CREDENTIALS,
+        ),
+    }
+    try:
+        return registry[provider_name]()
+    except KeyError:
+        raise ValueError(
+            f"Unknown DNS_PROVIDER: {provider_name!r}. "
+            f"Must be one of: {', '.join(registry.keys())}"
+        )
+
+
 # ─── Factory ──────────────────────────────────────────────────────────────────
 
 
@@ -355,26 +390,4 @@ def make_dns_provider() -> DnsProvider:
 
     provider = settings.DNS_PROVIDER
 
-    if provider == "cloudflare":
-        return CloudflareDnsProvider(
-            api_token=settings.CLOUDFLARE_API_TOKEN,
-            zone_id=settings.CLOUDFLARE_ZONE_ID,
-        )
-    elif provider == "route53":
-        return Route53DnsProvider(
-            hosted_zone_id=settings.AWS_ROUTE53_HOSTED_ZONE_ID,
-            region=settings.AWS_REGION,
-            access_key_id=settings.AWS_ACCESS_KEY_ID,
-            secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        )
-    elif provider == "google":
-        return GoogleCloudDnsProvider(
-            project_id=settings.GOOGLE_PROJECT_ID,
-            zone_name=settings.GOOGLE_CLOUD_DNS_ZONE_NAME,
-            credentials_path=settings.GOOGLE_APPLICATION_CREDENTIALS,
-        )
-    else:
-        raise ValueError(
-            f"Unknown DNS_PROVIDER: {provider!r}. "
-            "Must be one of: cloudflare, route53, google"
-        )
+    return _dns_provider_registry(provider, settings)

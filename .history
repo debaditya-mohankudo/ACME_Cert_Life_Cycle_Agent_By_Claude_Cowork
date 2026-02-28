@@ -47,3 +47,4 @@ refactor | acme/http_challenge | remove dead ContextDecorator base; replace Opti
 test | tests/test_http_challenge | add 11 unit tests for http_challenge.py (webroot write/remove, standalone 200/404/double-start/idempotent-stop/context-manager)
 test | tests/test_dns_challenge | add 10 targeted tests: DnsProvider._acme_record_name direct; _dns_provider_registry error message; Cloudflare/Route53 zone discovery failure; Route53 _txt_value/trailing-dot/explicit-creds; Google _get_client credentials path
 test | tests/test_dns_provider_registry | add pytest.importorskip guards to 3 provider instantiation tests that require optional SDK extras (cloudflare, boto3, google-cloud-dns)
+refactor | acme/dns_challenge | restructure file: move _dns_provider_registry after class definitions, restore module docstring to top, add partial to imports; fixes ImportError in CI from ca116db
