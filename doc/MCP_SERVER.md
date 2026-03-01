@@ -11,7 +11,7 @@ This project can be run as an MCP server and expose ACME lifecycle services as t
 
 ## Retrieval keywords
 
-`mcp`, `stdio transport`, `mcp_server.py`, `tool list`, `health`, `renew_once`, `domain_status`, `revoke_cert`, `generate_test_cert`, `self-signed`, `vscode mcp`, `.vscode/mcp.json`, `smoke test`
+`mcp`, `stdio transport`, `mcp_server.py`, `tool list`, `health`, `renew_once`, `domain_status`, `revoke_cert`, `generate_test_cert`, `expiring_within`, `list_managed_domains`, `read_cert_details`, `SANs`, `serial`, `self-signed`, `vscode mcp`, `.vscode/mcp.json`, `smoke test`
 [negative keywords / not-this-doc]
 async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, CI, revoke, configuration, storage, atomic, filesystem, docker, container, test, coverage, audit, performance, optimization, operator
 
@@ -72,14 +72,29 @@ uv run python scripts/mcp_smoke_test.py --run-revoke --revoke-domains example.co
 
 ## Exposed tools
 
-- `health(ca_input_mode: "config"|"custom", ca_provider?: string, acme_directory_url?: string)`
-  - Returns non-secret configuration/provider readiness checks.
+### Read-only tools (not serialized — concurrent-safe)
+
+- `list_managed_domains()`
+  - Returns the full list of domains currently configured in `MANAGED_DOMAINS`.
+  - Returns: `managed_domains`, `count`.
 - `expiring_in_30_days(domains?: string[])`
   - Returns managed domains with existing certificates expiring in 30 days or less.
   - If `domains` is omitted, uses `MANAGED_DOMAINS` from `.env`.
+- `expiring_within(days: int, domains?: string[])`
+  - Configurable version of `expiring_in_30_days` — accepts any look-ahead window (1–3650 days).
+  - Returns: `window_days`, `expiring_domains`.
 - `domain_status(domains: string[])`
   - Returns certificate status details for specific domains.
   - Status values: `missing`, `expired`, `expiring_soon`, `valid`, `parse_error`.
+- `read_cert_details(domains: string[])`
+  - Returns rich certificate inspection for one or more domains.
+  - Fields: `subject_cn`, `sans`, `issuer_org`, `detected_ca`, `serial` (colon-hex), `not_before`, `not_after`, `days_until_expiry`, `status`, `expired`.
+  - CA detection uses `metadata.json` first, then X.509 issuer field inspection.
+
+### Mutating tools (serialized via process-wide lock)
+
+- `health(ca_input_mode: "config"|"custom", ca_provider?: string, acme_directory_url?: string)`
+  - Returns non-secret configuration/provider readiness checks.
 - `renew_once(ca_input_mode: "config"|"custom", domains?: string[], checkpoint?: bool, ca_provider?: string, acme_directory_url?: string)`
   - Runs one renewal cycle.
   - If `domains` is omitted, uses `MANAGED_DOMAINS` from `.env`.
@@ -91,8 +106,7 @@ uv run python scripts/mcp_smoke_test.py --run-revoke --revoke-domains example.co
   - Generates a self-signed test certificate for local testing.
   - Useful for creating certificates with specific expiry states (use negative `days` for expired certs).
   - Always stored in configured `CERT_STORE_PATH` (path traversal protected).
-  - Returns certificate details: domain, validity_days, status (EXPIRED | EXPIRING SOON | VALID), output_directory, file paths.
-  - Mutating operation (serialized via process-wide lock).
+  - Returns: `domain`, `validity_days`, `cert_status` (EXPIRED | EXPIRING SOON | VALID), `output_directory`, `files`.
 
 Example with explicit CA inputs:
 
@@ -124,6 +138,6 @@ Example request for domain status:
 ## Notes
 
 - The MCP tools reuse the existing graph entrypoints in `main.py` to preserve deterministic ACME flow and retry behavior.
-- A process-wide operation lock serializes mutating MCP tool calls (`health`, `renew_once`, `revoke_cert`, `generate_test_cert`). Read-only tools (`expiring_in_30_days`, `domain_status`) do not require this lock and are not serialized.
+- A process-wide operation lock serializes mutating MCP tool calls (`health`, `renew_once`, `revoke_cert`, `generate_test_cert`). Read-only tools (`list_managed_domains`, `expiring_in_30_days`, `expiring_within`, `domain_status`, `read_cert_details`) do not require this lock and can execute concurrently.
 - Long-running schedule mode is intentionally not exposed as an MCP tool.
 - `generate_test_cert` is intended for local testing and development; generated test certificates are not trusted by browsers.

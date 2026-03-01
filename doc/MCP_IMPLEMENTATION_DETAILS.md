@@ -78,6 +78,32 @@ This document captures the implementation details added to expose this project a
      - `output_directory`
      - `files` (paths to cert.pem, key.pem, chain.pem)
 
+7. `list_managed_domains()`
+   - No side effects.
+   - Returns the full `MANAGED_DOMAINS` list from active config.
+   - Returns: `managed_domains`, `count`.
+
+8. `expiring_within(days: int, domains?: string[])`
+   - No side effects.
+   - Generalises `expiring_in_30_days` with a configurable look-ahead window (1–3650 days).
+   - Reuses `main.list_domains_expiring_within(days=N, ...)`.
+   - Returns: `window_days`, `expiring_domains`.
+
+9. `read_cert_details(domains: string[])`
+   - No side effects.
+   - Parses each domain's `cert.pem` using `cryptography.x509` and returns rich fields.
+   - CA detection: checks `metadata.json` first (written by `storage_manager`), falls back to X.509 issuer inspection via `acme.ca_detection.detect_ca_from_cert()`.
+   - Returns per domain:
+     - `subject_cn`
+     - `sans`
+     - `issuer_org`
+     - `detected_ca`
+     - `serial` (colon-separated hex)
+     - `not_before`, `not_after`
+     - `days_until_expiry`
+     - `status` (`valid` | `expiring_soon` | `expired`)
+     - `expired`
+
 ## Architectural alignment
 
 The MCP layer reuses existing `main.py` entrypoints and does not alter graph topology.
@@ -116,7 +142,7 @@ This allows MCP-enabled VS Code chat/agent tooling to launch the project server 
 - File: `scripts/mcp_smoke_test.py`
 - Uses MCP Python client (`stdio_client` + `ClientSession`) to validate:
   1. Server initializes
-  2. Expected tools are registered (`health`, `expiring_in_30_days`, `domain_status`, `renew_once`, `revoke_cert`)
+  2. Expected tools are registered (`health`, `renew_once`, `revoke_cert`, `generate_test_cert`, `list_managed_domains`, `expiring_in_30_days`, `expiring_within`, `domain_status`, `read_cert_details`)
   3. `health` tool executes successfully
 
 ### Safe default command

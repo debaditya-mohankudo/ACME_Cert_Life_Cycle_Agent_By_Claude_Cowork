@@ -15,7 +15,7 @@ The MCP server exposes tools that run in a single Python process and can:
 
 - mutate process-level configuration (`config.settings`)
 - execute ACME protocol operations (`renew_once`, `revoke_cert`)
-- read certificate state (`expiring_in_30_days`, `domain_status`)
+- read certificate state (`list_managed_domains`, `expiring_in_30_days`, `expiring_within`, `domain_status`, `read_cert_details`)
 
 Because some tools share global process state, concurrent execution can create race conditions unless coordinated.
 
@@ -77,9 +77,13 @@ The main trade-off is reduced throughput for concurrent requests. In this projec
 
 ## Current Policy
 
-- All MCP tools are serialized with a process-wide lock.
+Mutating tools are serialized with a process-wide `asyncio.Lock`:
+- `health`, `renew_once`, `revoke_cert`, `generate_test_cert`
 
-This enforces deterministic request handling and avoids cross-request configuration bleed in the shared process.
+Read-only tools skip the lock and execute concurrently:
+- `list_managed_domains`, `expiring_in_30_days`, `expiring_within`, `domain_status`, `read_cert_details`
+
+Read-only tools are safe to run concurrently because they only read `config.settings` and `CERT_STORE_PATH` without mutating shared state or ACME protocol resources.
 
 ## Why asyncio-lock instead of threading-lock
 
