@@ -77,15 +77,25 @@ def test_read_only_tools_are_not_serialized(monkeypatch):
 
     monkeypatch.setattr(mcp_server, "_operation_lock", fake_operation_lock)
     monkeypatch.setattr(mcp_server, "_run_expiring_in_30_days", lambda domains, settings=None: ["a.example.com"])
+    monkeypatch.setattr(mcp_server, "_run_expiring_within", lambda days, domains, settings=None: ["a.example.com"])
     monkeypatch.setattr(
         mcp_server,
         "_run_domain_status",
         lambda domains, settings=None: [{"domain": domains[0], "status": "valid"}],
     )
 
-    asyncio.run(mcp_server.expiring_in_30_days(domains=["a.example.com"]))
-    asyncio.run(mcp_server.domain_status(domains=["a.example.com"]))
+    import config
 
-    assert calls == [False, False]
+    original_settings = config.settings
+    try:
+        config.settings = SimpleNamespace(MANAGED_DOMAINS=["a.example.com"])
+        asyncio.run(mcp_server.expiring_in_30_days(domains=["a.example.com"]))
+        asyncio.run(mcp_server.expiring_within(days=60, domains=["a.example.com"]))
+        asyncio.run(mcp_server.domain_status(domains=["a.example.com"]))
+        asyncio.run(mcp_server.list_managed_domains())
+    finally:
+        config.settings = original_settings
+
+    assert calls == [False, False, False, False]
 
 

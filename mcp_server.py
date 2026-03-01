@@ -6,7 +6,9 @@ Tools:
   - renew_once: run one renewal cycle
   - revoke_cert: revoke one or more certificates
   - expiring_in_30_days: list domains with certs expiring in <= 30 days
+  - expiring_within: list domains with certs expiring within N days (configurable)
   - domain_status: get cert status for one or more domains
+  - list_managed_domains: return the configured managed domain list
   - generate_test_cert: generate self-signed test certificate with configurable validity
 """
 from __future__ import annotations
@@ -176,6 +178,17 @@ def _run_expiring_in_30_days(domains: list[str] | None, settings: Any | None = N
     except SystemExit as exc:
         raise RuntimeError(
             f"expiring_in_30_days failed with exit code {exc.code}"
+        ) from exc
+
+
+def _run_expiring_within(days: int, domains: list[str] | None, settings: Any | None = None) -> list[str]:
+    from main import list_domains_expiring_within
+
+    try:
+        return list_domains_expiring_within(days=days, domains=domains, settings=settings)
+    except SystemExit as exc:
+        raise RuntimeError(
+            f"expiring_within failed with exit code {exc.code}"
         ) from exc
 
 
@@ -355,6 +368,56 @@ async def expiring_in_30_days(domains: list[str] | None = None) -> dict[str, Any
         }
     except Exception as e:
         logger.exception("expiring_in_30_days failed")
+        return {
+            "status": "failed",
+            "error": str(e),
+        }
+
+
+@mcp.tool()
+async def expiring_within(days: int, domains: list[str] | None = None) -> dict[str, Any]:
+    """List domains whose current cert expires within N days (read-only, not serialized).
+
+    Args:
+        days: Look-ahead window in days (1–3650).
+        domains: Domains to check. Defaults to all managed domains.
+    """
+    try:
+        if days < 1 or days > 3650:
+            raise ValueError("days must be between 1 and 3650")
+
+        import config
+
+        async with _operation_lock(required=False):
+            expiring_domains = _run_expiring_within(days=days, domains=domains, settings=config.settings)
+        return {
+            "status": "success",
+            "window_days": days,
+            "expiring_domains": expiring_domains,
+        }
+    except Exception as e:
+        logger.exception("expiring_within failed")
+        return {
+            "status": "failed",
+            "error": str(e),
+        }
+
+
+@mcp.tool()
+async def list_managed_domains() -> dict[str, Any]:
+    """Return the list of domains currently configured in MANAGED_DOMAINS (read-only, not serialized)."""
+    try:
+        import config
+
+        async with _operation_lock(required=False):
+            domains = list(config.settings.MANAGED_DOMAINS)
+        return {
+            "status": "success",
+            "managed_domains": domains,
+            "count": len(domains),
+        }
+    except Exception as e:
+        logger.exception("list_managed_domains failed")
         return {
             "status": "failed",
             "error": str(e),
