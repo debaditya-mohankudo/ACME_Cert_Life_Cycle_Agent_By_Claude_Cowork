@@ -21,7 +21,12 @@ async, concurrency, parallel, checkpoint, nonce, stateful, planner, LLM, MCP, re
 
 ## Workflow: `.github/workflows/tests.yml`
 
-Trigger: every push and PR targeting `main`.
+Trigger: every push and PR targeting `main`, **except when only documentation files change**.
+Paths ignored (workflow skipped entirely if all changed files match):
+- `**/*.md` — any Markdown file
+- `doc/**` — everything under `doc/`
+- `.history` — architectural intent log
+
 Runner: `ubuntu-latest` (no container — Docker image pull eliminated).
 Python: `actions/setup-python@v5` with `python-version: '3.12'`; resolved from
 the GitHub runner tool cache (near-instant on warm runners).
@@ -468,7 +473,7 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (344 unit tests with xdist parallelization as of 2026-02-28)
-- **Last reviewed**: 2026-02-28
-- **Last change**: Added pytest-xdist parallel execution (unit tests run on 8 workers; integration tests excluded by marker)
-- **Next review due**: 2026-03-28 (monthly, or on significant test changes)
+- **Status**: active (369 unit tests with xdist parallelization as of 2026-03-01)
+- **Last reviewed**: 2026-03-01
+- **Last change**: Added `paths-ignore` to skip CI on markdown-only changes (`**/*.md`, `doc/**`, `.history`)
+- **Next review due**: 2026-04-01 (monthly, or on significant test changes)
