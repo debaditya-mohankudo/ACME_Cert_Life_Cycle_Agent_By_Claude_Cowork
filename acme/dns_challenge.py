@@ -29,6 +29,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Optional
 
+from config import Settings
 from logger import logger
 
 
@@ -346,7 +347,7 @@ class GoogleCloudDnsProvider(DnsProvider):
 # ─── Provider Registry ────────────────────────────────────────────────────────
 
 
-def _dns_provider_registry(provider_name: str, settings) -> DnsProvider:
+def _dns_provider_registry(provider_name: str, settings: Settings) -> DnsProvider:
     """Return the DNS provider instance for the given name and settings."""
     registry = {
         "cloudflare": partial(
