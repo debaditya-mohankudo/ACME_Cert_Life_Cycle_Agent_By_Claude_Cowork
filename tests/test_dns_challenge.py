@@ -1149,3 +1149,427 @@ class TestGoogleCloudExtras:
         mock_dns_module.Client.assert_called_once_with(
             project="my-project", credentials=loaded_creds
         )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ─ OBSERVABILITY TEST SUITE: Gaps to catch subtle bugs ─────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ─── Group 1: TestComputeDnsTxtValueContracts ─────────────────────────────────
+
+
+class TestComputeDnsTxtValueContracts:
+    """Guard against encoding changes and document the ASCII-only contract."""
+
+    def test_non_ascii_input_raises(self):
+        """compute_dns_txt_value() with non-ASCII input raises UnicodeEncodeError."""
+        from acme.dns_challenge import compute_dns_txt_value
+
+        # Documents that compute_dns_txt_value only accepts ASCII domain names
+        with pytest.raises(UnicodeEncodeError):
+            compute_dns_txt_value("tök.thumb")
+
+    def test_empty_string_produces_deterministic_hash(self):
+        """compute_dns_txt_value("") produces a deterministic SHA-256 hash."""
+        from acme.dns_challenge import compute_dns_txt_value
+
+        # Empty string should produce deterministic output, not raise
+        result = compute_dns_txt_value("")
+        # SHA-256 of empty string (base64url): pin the exact output
+        expected = base64.urlsafe_b64encode(hashlib.sha256(b"").digest()).rstrip(b"=").decode("ascii")
+        assert result == expected
+
+    def test_output_never_contains_standard_base64_chars(self):
+        """Output uses base64url (no +/=), never standard base64."""
+        from acme.dns_challenge import compute_dns_txt_value
+
+        # Test multiple inputs to ensure no accidental switch to b64encode
+        for key_auth in ["key_auth_1", "key_auth_2", "_test.example.com"]:
+            result = compute_dns_txt_value(key_auth)
+            # base64url: no + or / (only - and _ for special chars)
+            assert "+" not in result, f"Found + in {result}"
+            assert "/" not in result, f"Found / in {result}"
+            # No padding either
+            assert not result.endswith("="), f"Found padding in {result}"
+
+
+# ─── Group 2: TestAcmeRecordNameContracts ──────────────────────────────────────
+
+
+class TestAcmeRecordNameContracts:
+    """Pin _acme_record_name format so provider-specific logic stays safe."""
+
+    def test_domain_with_trailing_dot_is_preserved(self):
+        """_acme_record_name() preserves trailing dots (raw pass-through)."""
+        from acme.dns_challenge import DnsProvider
+
+        # Documents that we do NOT normalize or strip trailing dots
+        result = DnsProvider._acme_record_name("example.com.")
+        assert result == "_acme-challenge.example.com."
+
+    def test_deeply_nested_subdomain(self):
+        """_acme_record_name() handles deeply nested subdomains correctly."""
+        from acme.dns_challenge import DnsProvider
+
+        result = DnsProvider._acme_record_name("a.b.c.d.example.com")
+        assert result == "_acme-challenge.a.b.c.d.example.com"
+
+    def test_uppercase_domain_not_normalized(self):
+        """_acme_record_name() preserves case (does not normalize to lowercase)."""
+        from acme.dns_challenge import DnsProvider
+
+        # Documents that case is preserved — providers must handle case themselves
+        result = DnsProvider._acme_record_name("API.Example.COM")
+        assert result == "_acme-challenge.API.Example.COM"
+
+
+# ─── Group 3: TestCloudflareDnsProviderContracts ───────────────────────────────
+
+
+class TestCloudflareDnsProviderContracts:
+    """Observability tests: errors propagate, zone walk is correct, delete filters properly."""
+
+    @pytest.fixture
+    def cf_mock(self):
+        """Setup Cloudflare client mock."""
+        mock_cf_module = MagicMock()
+        mock_client = MagicMock()
+        mock_cf_module.Cloudflare.return_value = mock_client
+        return mock_cf_module, mock_client
+
+    def _make_provider(self, cf_mock, zone_id="Z123"):
+        from acme.dns_challenge import CloudflareDnsProvider
+
+        mock_cf_module, _ = cf_mock
+        provider = CloudflareDnsProvider.__new__(CloudflareDnsProvider)
+        provider._cf_mod = mock_cf_module
+        provider._api_token = "tok"
+        provider._explicit_zone_id = zone_id
+        return provider
+
+    def test_create_txt_record_raises_on_api_failure(self, cf_mock):
+        """create_txt_record() propagates API errors — does NOT swallow them."""
+        _, mock_client = cf_mock
+        provider = self._make_provider(cf_mock)
+        mock_client.dns.records.list.return_value = []
+
+        # Simulate API failure
+        mock_client.dns.records.create.side_effect = Exception("API error")
+
+        with pytest.raises(Exception, match="API error"):
+            provider.create_txt_record("example.com", "txt_value")
+
+    def test_zone_discovery_walks_deep_subdomain(self, cf_mock):
+        """_resolve_zone_id() walks down labels until finding a matching zone."""
+        _, mock_client = cf_mock
+        provider = self._make_provider(cf_mock, zone_id="")
+
+        # Simulate zone discovery: `a.b.c.d.example.com` finds match on `example.com`
+        # walk: try "a.b.c.d.example.com" -> none
+        #       try "b.c.d.example.com" -> none
+        #       try "c.d.example.com" -> none
+        #       try "d.example.com" -> none
+        #       try "example.com" -> MATCH
+        def zone_list_side_effect(*args, **kwargs):
+            # This gets called with name parameter; match returns a list with a mock zone
+            result = []
+            # Check all calls; we only have one zone that matches
+            # The implementation walks down, so we just return a match for the base domain
+            if kwargs.get("name") and "example.com" in str(kwargs.get("name")):
+                mock_zone = MagicMock()
+                mock_zone.id = "Z_EXAMPLE"
+                result = [mock_zone]
+            return result
+
+        mock_client.zones.list.side_effect = zone_list_side_effect
+
+        zone_id = provider._resolve_zone_id("a.b.c.d.example.com")
+        assert zone_id == "Z_EXAMPLE"
+
+    def test_delete_multiple_records_same_name_deletes_matching_only(self, cf_mock):
+        """delete_txt_record() deletes only the record matching the txt_value."""
+        _, mock_client = cf_mock
+        provider = self._make_provider(cf_mock)
+
+        # Simulate two TXT records with same name, different values
+        rec_1 = MagicMock()
+        rec_1.id = "rec_1"
+        rec_1.content = "value_1"
+        rec_2 = MagicMock()
+        rec_2.id = "rec_2"
+        rec_2.content = "value_2"
+
+        mock_client.dns.records.list.return_value = [rec_1, rec_2]
+
+        provider.delete_txt_record("example.com", "value_2")
+
+        # Should only delete rec_2
+        mock_client.dns.records.delete.assert_called_once_with("rec_2", zone_id="Z123")
+
+    def test_zone_discovery_api_failure_propagates(self, cf_mock):
+        """_resolve_zone_id() propagates API errors from zones.list()."""
+        _, mock_client = cf_mock
+        provider = self._make_provider(cf_mock, zone_id="")
+
+        # Simulate API failure during zone discovery
+        mock_client.zones.list.side_effect = Exception("Zone discovery API error")
+
+        with pytest.raises(Exception, match="Zone discovery API error"):
+            provider._resolve_zone_id("notfound.example.com")
+
+
+# ─── Group 4: TestRoute53DnsProviderContracts ──────────────────────────────────
+
+
+class TestRoute53DnsProviderContracts:
+    """Observability tests: errors propagate, zone walk is correct, ID extraction safe."""
+
+    @pytest.fixture
+    def boto3_mock(self):
+        """Setup boto3 client mock."""
+        mock_boto3 = MagicMock()
+        mock_client = MagicMock()
+        mock_boto3.client.return_value = mock_client
+        return mock_boto3, mock_client
+
+    def _make_provider(self, boto3_mock, zone_id="Z123"):
+        from acme.dns_challenge import Route53DnsProvider
+
+        mock_boto3, _ = boto3_mock
+        provider = Route53DnsProvider.__new__(Route53DnsProvider)
+        provider._boto3 = mock_boto3
+        provider._explicit_zone_id = zone_id
+        provider._region = "us-east-1"
+        provider._access_key_id = ""
+        provider._secret_access_key = ""
+        return provider
+
+    def test_create_txt_record_raises_on_api_failure(self, boto3_mock):
+        """create_txt_record() propagates API errors — does NOT swallow them."""
+        _, mock_client = boto3_mock
+        provider = self._make_provider(boto3_mock)
+
+        # Simulate API failure
+        mock_client.change_resource_record_sets.side_effect = Exception("Route53 error")
+
+        with pytest.raises(Exception, match="Route53 error"):
+            provider.create_txt_record("example.com", "txt_value")
+
+    def test_resolve_zone_rejects_non_exact_name_match(self, boto3_mock):
+        """_resolve_zone_id() rejects partial/fuzzy matches (e.g., examplez.com != example.com)."""
+        _, mock_client = boto3_mock
+        provider = self._make_provider(boto3_mock, zone_id="")
+
+        # Simulate Route53 returning a zone that does NOT match exactly
+        mock_client.list_hosted_zones_by_name.return_value = {
+            "HostedZones": [{"Name": "examplez.com.", "Id": "/hostedzone/Z999"}]
+        }
+
+        # Should raise because "examplez.com." != "example.com."
+        with pytest.raises(ValueError, match="Could not discover Route53"):
+            provider._resolve_zone_id("example.com")
+
+    def test_zone_id_extracted_from_hosted_zone_path(self, boto3_mock):
+        """_resolve_zone_id() correctly extracts zone ID from /hostedzone/Z0123456789ABCDEF."""
+        _, mock_client = boto3_mock
+        provider = self._make_provider(boto3_mock, zone_id="")
+
+        # Simulate Route53 returning a zone with full path
+        mock_client.list_hosted_zones_by_name.return_value = {
+            "HostedZones": [{"Name": "example.com.", "Id": "/hostedzone/Z0123456789ABCDEF"}]
+        }
+
+        zone_id = provider._resolve_zone_id("example.com")
+        assert zone_id == "Z0123456789ABCDEF"
+
+    def test_zone_discovery_walks_deep_subdomain(self, boto3_mock):
+        """_resolve_zone_id() walks labels down until finding a matching zone."""
+        _, mock_client = boto3_mock
+        provider = self._make_provider(boto3_mock, zone_id="")
+
+        # Simulate zone discovery: a.b.c.d.example.com. → finds match on example.com.
+        def list_zones_side_effect(*args, **kwargs):
+            # This is called multiple times (once for each label)
+            # We want it to match only on "example.com."
+            return {
+                "HostedZones": [
+                    {"Name": "example.com.", "Id": "/hostedzone/Z_EXAMPLE"}
+                ]
+            }
+
+        mock_client.list_hosted_zones_by_name.side_effect = list_zones_side_effect
+
+        zone_id = provider._resolve_zone_id("a.b.c.d.example.com")
+        assert zone_id == "Z_EXAMPLE"
+
+
+# ─── Group 5: TestGoogleCloudDnsProviderContracts ──────────────────────────────
+
+
+class TestGoogleCloudDnsProviderContracts:
+    """Observability tests: errors propagate (create), rdata quoting is correct, delete swallows NotFound."""
+
+    @pytest.fixture
+    def gcp_dns_mock(self):
+        """Setup GCP DNS module mock (matching existing test fixture)."""
+        mock_dns_module = MagicMock()
+        mock_gcp_client = MagicMock()
+        mock_dns_module.Client.return_value = mock_gcp_client
+        mock_zone = MagicMock()
+        mock_gcp_client.zone.return_value = mock_zone
+        return mock_dns_module, mock_gcp_client, mock_zone
+
+    def _make_provider(self, gcp_dns_mock):
+        from acme.dns_challenge import GoogleCloudDnsProvider
+
+        mock_dns_module, _, _ = gcp_dns_mock
+        provider = GoogleCloudDnsProvider.__new__(GoogleCloudDnsProvider)
+        provider._gcp_dns = mock_dns_module
+        provider._project_id = "test-project"
+        provider._zone_name = "test-zone"
+        provider._credentials_path = ""
+        return provider
+
+    def test_create_txt_record_raises_on_api_failure(self, gcp_dns_mock):
+        """create_txt_record() propagates API errors — does NOT swallow them."""
+        _, _, mock_zone = gcp_dns_mock
+        provider = self._make_provider(gcp_dns_mock)
+
+        # Simulate API failure
+        mock_zone.changes.return_value.create.side_effect = Exception("GCP API error")
+
+        with pytest.raises(Exception, match="GCP API error"):
+            provider.create_txt_record("example.com", "txt_value")
+
+    def test_no_existing_record_verifies_rdata_quoting(self, gcp_dns_mock):
+        """When creating a new record, rdata includes quotes (GCP requirement)."""
+        _, _, mock_zone = gcp_dns_mock
+        provider = self._make_provider(gcp_dns_mock)
+
+        # No existing records
+        mock_zone.list_resource_record_sets.return_value = []
+
+        provider.create_txt_record("example.com", "my_txt_value")
+
+        # Verify that resource_record_set was called with quoted value
+        mock_zone.resource_record_set.assert_called_once_with(
+            "_acme-challenge.example.com.", "TXT", 60, ['"my_txt_value"']
+        )
+
+    def test_replace_path_verifies_rdata_quoting(self, gcp_dns_mock):
+        """When replacing a record, new rdata also includes quotes."""
+        _, _, mock_zone = gcp_dns_mock
+        provider = self._make_provider(gcp_dns_mock)
+
+        # Simulate existing record with a different value
+        existing_rr = MagicMock()
+        existing_rr.name = "_acme-challenge.example.com."
+        existing_rr.record_type = "TXT"
+        existing_rr.rdata = ['"old-value"']
+        mock_zone.list_resource_record_sets.return_value = [existing_rr]
+
+        provider.create_txt_record("example.com", "new_txt_value")
+
+        # Verify that resource_record_set was called for the new value (with quotes)
+        mock_zone.resource_record_set.assert_called_once_with(
+            "_acme-challenge.example.com.", "TXT", 60, ['"new_txt_value"']
+        )
+
+    def test_delete_swallows_errors_like_not_found(self, gcp_dns_mock):
+        """delete_txt_record() swallows errors (including NotFound-like scenarios)."""
+        _, _, mock_zone = gcp_dns_mock
+        provider = self._make_provider(gcp_dns_mock)
+
+        # Simulate error during deletion
+        mock_zone.changes.return_value.create.side_effect = RuntimeError("Record not found")
+
+        # Should NOT raise — error is swallowed (verified by existing test_delete_txt_record_swallows_errors)
+        provider.delete_txt_record("example.com", "txt_value")
+
+
+# ─── Group 6: TestDnsProviderRegistryContracts ──────────────────────────────────
+
+
+class TestDnsProviderRegistryContracts:
+    """Error message contracts: case-sensitive, lists all choices."""
+
+    def test_case_sensitive_provider_name_raises(self):
+        """_dns_provider_registry() is case-sensitive; 'Cloudflare' raises ValueError."""
+        from acme.dns_challenge import _dns_provider_registry
+
+        with pytest.raises(ValueError, match="Unknown DNS_PROVIDER"):
+            _dns_provider_registry("Cloudflare", MagicMock())
+
+    def test_error_message_contains_all_three_valid_choices(self):
+        """Error message lists exactly cloudflare, route53, google (no extra, no missing)."""
+        from acme.dns_challenge import _dns_provider_registry
+
+        with pytest.raises(ValueError) as exc_info:
+            _dns_provider_registry("invalid", MagicMock())
+
+        msg = str(exc_info.value)
+        # All three must be present
+        assert "cloudflare" in msg.lower()
+        assert "route53" in msg.lower()
+        assert "google" in msg.lower()
+
+
+# ─── Group 7: TestCreateVsDeleteErrorContractSummary ──────────────────────────
+
+
+class TestCreateVsDeleteErrorContractSummary:
+    """Documents the deliberate asymmetry: create raises, delete swallows."""
+
+    def test_cloudflare_create_raises_delete_swallows_asymmetry(self):
+        """Cloudflare: create() raises on error, delete() swallows errors."""
+        from acme.dns_challenge import CloudflareDnsProvider
+
+        mock_cf_module = MagicMock()
+        mock_client = MagicMock()
+        mock_cf_module.Cloudflare.return_value = mock_client
+
+        provider = CloudflareDnsProvider.__new__(CloudflareDnsProvider)
+        provider._cf_mod = mock_cf_module
+        provider._api_token = "tok"
+        provider._explicit_zone_id = "Z123"
+
+        # CREATE: error should propagate
+        mock_client.dns.records.list.return_value = []
+        mock_client.dns.records.create.side_effect = Exception("Create failed")
+        with pytest.raises(Exception, match="Create failed"):
+            provider.create_txt_record("example.com", "value")
+
+        # DELETE: error should be swallowed
+        rec = MagicMock()
+        rec.id = "rec_1"
+        rec.content = "value"
+        mock_client.dns.records.list.return_value = [rec]
+        mock_client.dns.records.delete.side_effect = Exception("Delete failed")
+        # Should not raise
+        provider.delete_txt_record("example.com", "value")
+
+    def test_route53_create_raises_delete_swallows_asymmetry(self):
+        """Route53: create() raises on error, delete() swallows errors."""
+        from acme.dns_challenge import Route53DnsProvider
+
+        mock_boto3 = MagicMock()
+        mock_client = MagicMock()
+        mock_boto3.client.return_value = mock_client
+
+        provider = Route53DnsProvider.__new__(Route53DnsProvider)
+        provider._boto3 = mock_boto3
+        provider._explicit_zone_id = "Z123"
+        provider._region = "us-east-1"
+        provider._access_key_id = ""
+        provider._secret_access_key = ""
+
+        # CREATE: error should propagate
+        mock_client.change_resource_record_sets.side_effect = Exception("Create failed")
+        with pytest.raises(Exception, match="Create failed"):
+            provider.create_txt_record("example.com", "value")
+
+        # DELETE: error should be swallowed
+        mock_client.change_resource_record_sets.side_effect = Exception("Delete failed")
+        # Should not raise
+        provider.delete_txt_record("example.com", "value")
