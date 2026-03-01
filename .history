@@ -50,3 +50,4 @@ test | tests/test_dns_provider_registry | add pytest.importorskip guards to 3 pr
 refactor | acme/dns_challenge | restructure file: move _dns_provider_registry after class definitions, restore module docstring to top, add partial to imports; fixes ImportError in CI from ca116db
 test | pytest | add pytest-xdist>=3.8.0 for parallel test execution; mark 9 Pebble integration tests with @pytest.mark.integration; unit tests now run on 8 workers (~50% speedup)
 ci | .github/workflows/tests.yml | update CI workflow to use xdist: pytest -v -n auto -m "not integration"; replace --ignore flags with cleaner marker-based exclusion
+test | tests/test_dns_challenge | add 22 observability tests: encoding contracts, DNS name format, Cloudflare/Route53/GCP error propagation, zone discovery walk, create-raises/delete-swallows asymmetry

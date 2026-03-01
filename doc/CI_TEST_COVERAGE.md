@@ -54,7 +54,7 @@ Impact:
 uv run pytest -v -n auto -m "not integration"
 ```
 
-**344 tests, 0 skips, no external services required.**
+**369 tests, 0 skips, no external services required.**
 
 Parallel execution via xdist (8 concurrent workers on typical GitHub runners).
 Unit tests are isolated and mocked — safe to parallelize.
@@ -62,7 +62,7 @@ Integration tests (Pebble) excluded from CI by marker.
 
 ---
 
-## Tests Currently in CI (344 total)
+## Tests Currently in CI (369 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`

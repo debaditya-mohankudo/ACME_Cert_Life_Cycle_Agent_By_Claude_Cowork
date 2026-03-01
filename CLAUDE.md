@@ -104,11 +104,11 @@ Supports:
 * Let's Encrypt Staging
 * Custom ACME CAs
 
-HTTP-01 challenge modes:
+Challenge modes (`HTTP_CHALLENGE_MODE`):
 
-* Standalone (port 80)
-* Webroot
-* dns
+* `standalone` — HTTP-01, built-in server on port 80
+* `webroot` — HTTP-01, writes token to existing web root
+* `dns` — DNS-01 via Cloudflare, Route53, or Google Cloud DNS
 
 ---
 
@@ -135,7 +135,13 @@ Never use `pip` directly.
 
 ### Run tests
 
-Unit tests (in parallel with xdist):
+All unit tests in parallel (canonical — use this):
+
+```bash
+pytest -v -n auto -m "not integration"
+```
+
+Single test file example:
 
 ```bash
 pytest tests/test_unit_acme.py -v -n auto
@@ -146,12 +152,6 @@ Integration tests (requires Pebble, sequential only):
 ```bash
 docker compose -f docker-compose.pebble.yml up -d
 pytest tests/test_integration_pebble.py tests/test_lifecycle_pebble.py -v
-```
-
-All unit tests in parallel, skip integration tests:
-
-```bash
-pytest -v -n auto -m "not integration"
 ```
 
 All tests (unit in parallel, integration sequential):
@@ -175,8 +175,10 @@ agent/state.py  agent/graph.py  agent/revocation_graph.py  agent/prompts.py
 agent/nodes/    planner  scanner  account  order  challenge
                 csr  finalizer  storage  reporter  error_handler
                 retry_scheduler  router  revoker  revocation_router
+                base (NodeCallable protocol)  registry (node factory)
 
 acme/client.py  acme/jws.py  acme/crypto.py  acme/http_challenge.py
+acme/dns_challenge.py  acme/ca_detection.py
 storage/atomic.py  storage/filesystem.py
 
 tests/  doc/
@@ -261,7 +263,7 @@ CA_PROVIDER                   # digicert | letsencrypt | letsencrypt_staging | z
 ACME_EAB_KEY_ID / HMAC_KEY    # required for DigiCert, ZeroSSL, Sectigo
 MANAGED_DOMAINS               # comma-separated
 CERT_STORE_PATH / ACCOUNT_KEY_PATH
-HTTP_CHALLENGE_MODE           # standalone | webroot
+HTTP_CHALLENGE_MODE           # standalone | webroot | dns
 LLM_PROVIDER                  # anthropic | openai | ollama
 LLM_MODEL_PLANNER / REPORTER / ERROR_HANDLER
 MAX_RETRIES / RENEWAL_THRESHOLD_DAYS
@@ -299,7 +301,7 @@ If any answer is yes → pause and consult [doc/DESIGN_PRINCIPLES.md](doc/DESIGN
 
 Any change that adds a node, changes routing, modifies retry logic, alters ACME protocol behavior, or changes `AgentState` shape must update:
 
-* Unit tests (`tests/test_unit_acme.py`)
+* Unit tests (run `pytest -v -n auto -m "not integration"` — 25 test files)
 * Integration tests if protocol is affected (`tests/test_integration_pebble.py`, `tests/test_lifecycle_pebble.py`)
 
 Use `pebble_settings` fixture to mutate the settings singleton in tests (restores via teardown).
