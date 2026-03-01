@@ -84,18 +84,27 @@ def test_read_only_tools_are_not_serialized(monkeypatch):
         lambda domains, settings=None: [{"domain": domains[0], "status": "valid"}],
     )
 
+    monkeypatch.setattr(
+        mcp_server,
+        "_extract_cert_details",
+        lambda pem, domain, cert_store_path: {"domain": domain, "cert_found": True, "status": "valid"},
+    )
+
     import config
+    import storage.filesystem as _fs
 
     original_settings = config.settings
     try:
-        config.settings = SimpleNamespace(MANAGED_DOMAINS=["a.example.com"])
+        config.settings = SimpleNamespace(MANAGED_DOMAINS=["a.example.com"], CERT_STORE_PATH="./certs")
+        monkeypatch.setattr(_fs, "read_cert_pem", lambda cert_store_path, domain: "FAKEPEM")
         asyncio.run(mcp_server.expiring_in_30_days(domains=["a.example.com"]))
         asyncio.run(mcp_server.expiring_within(days=60, domains=["a.example.com"]))
         asyncio.run(mcp_server.domain_status(domains=["a.example.com"]))
         asyncio.run(mcp_server.list_managed_domains())
+        asyncio.run(mcp_server.read_cert_details(domains=["a.example.com"]))
     finally:
         config.settings = original_settings
 
-    assert calls == [False, False, False, False]
+    assert calls == [False, False, False, False, False]
 
 

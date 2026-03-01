@@ -9,6 +9,7 @@ Tools:
   - expiring_within: list domains with certs expiring within N days (configurable)
   - domain_status: get cert status for one or more domains
   - list_managed_domains: return the configured managed domain list
+  - read_cert_details: rich cert inspection — SANs, issuer, serial, CA, validity dates
   - generate_test_cert: generate self-signed test certificate with configurable validity
 """
 from __future__ import annotations
@@ -422,6 +423,108 @@ async def list_managed_domains() -> dict[str, Any]:
             "status": "failed",
             "error": str(e),
         }
+
+
+def _extract_cert_details(pem_text: str, domain: str, cert_store_path: str) -> dict[str, Any]:
+    """Parse a PEM certificate and return rich detail fields."""
+    from cryptography import x509 as _x509
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.x509.oid import ExtensionOID, NameOID
+    from storage.filesystem import parse_expiry, days_until_expiry, detect_ca_for_domain
+
+    cert = _x509.load_pem_x509_certificate(pem_text.encode(), default_backend())
+
+    # Subject CN
+    try:
+        cn_attrs = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+        subject_cn = cn_attrs[0].value if cn_attrs else None
+    except Exception:
+        subject_cn = None
+
+    # Issuer O
+    try:
+        o_attrs = cert.issuer.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)
+        issuer_org = o_attrs[0].value if o_attrs else None
+    except Exception:
+        issuer_org = None
+
+    # SANs
+    try:
+        san_ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        sans = [str(name.value) for name in san_ext.value]
+    except _x509.ExtensionNotFound:
+        sans = []
+
+    # Serial number (colon-separated hex, standard display format)
+    serial_hex = format(cert.serial_number, "x")
+    serial_display = ":".join(serial_hex[i:i+2] for i in range(0, len(serial_hex), 2))
+
+    # Validity window
+    try:
+        not_before = cert.not_valid_before_utc.isoformat()
+    except AttributeError:
+        from datetime import timezone as _tz
+        not_before = cert.not_valid_before.replace(tzinfo=_tz.utc).isoformat()
+
+    expiry = parse_expiry(pem_text)
+    days_left = days_until_expiry(expiry)
+
+    if days_left < 0:
+        status = "expired"
+    elif days_left <= 30:
+        status = "expiring_soon"
+    else:
+        status = "valid"
+
+    # CA detection (metadata.json first, then issuer inspection)
+    detected_ca = detect_ca_for_domain(cert_store_path, domain, pem_text)
+
+    return {
+        "domain": domain,
+        "cert_found": True,
+        "status": status,
+        "subject_cn": subject_cn,
+        "sans": sans,
+        "issuer_org": issuer_org,
+        "detected_ca": detected_ca,
+        "serial": serial_display,
+        "not_before": not_before,
+        "not_after": expiry.isoformat(),
+        "days_until_expiry": days_left,
+        "expired": days_left < 0,
+    }
+
+
+@mcp.tool()
+async def read_cert_details(domains: list[str]) -> dict[str, Any]:
+    """Return rich certificate details for one or more domains (read-only, not serialized).
+
+    Includes subject CN, SANs, issuer org, detected CA, serial number, and validity dates.
+    """
+    try:
+        import config
+        from storage.filesystem import read_cert_pem
+
+        if not domains:
+            raise ValueError("domains must contain at least one domain")
+
+        results: list[dict[str, Any]] = []
+        async with _operation_lock(required=False):
+            cert_store_path = config.settings.CERT_STORE_PATH
+            for domain in domains:
+                pem = read_cert_pem(cert_store_path, domain)
+                if pem is None:
+                    results.append({"domain": domain, "cert_found": False})
+                    continue
+                try:
+                    results.append(_extract_cert_details(pem, domain, cert_store_path))
+                except Exception as exc:
+                    results.append({"domain": domain, "cert_found": True, "status": "parse_error", "error": str(exc)})
+
+        return {"status": "success", "cert_details": results}
+    except Exception as e:
+        logger.exception("read_cert_details failed")
+        return {"status": "failed", "error": str(e)}
 
 
 @mcp.tool()
