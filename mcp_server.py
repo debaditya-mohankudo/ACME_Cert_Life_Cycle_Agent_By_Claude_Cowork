@@ -18,7 +18,10 @@ import asyncio
 from logger import logger
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from config import Settings
 
 try:
     from mcp.server.fastmcp import FastMCP
@@ -79,7 +82,7 @@ def _resolve_ca_inputs(
 
 @contextmanager
 def _temporary_settings_override(
-    settings_override: Any | None = None,
+    settings_override: Settings | None = None,
 ):
     """Temporarily replace config settings for a single tool execution."""
     import config
@@ -97,7 +100,7 @@ def _temporary_settings_override(
 def _build_effective_settings(
     ca_provider: str | None,
     acme_directory_url: str | None,
-) -> Any:
+) -> Settings:
     from main import build_settings_from_override
     import config
 
@@ -143,7 +146,7 @@ async def _operation_lock(*, required: bool):
         yield
 
 
-def _run_renew_once(domains: list[str] | None, checkpoint: bool, settings: Any | None = None) -> dict[str, Any]:
+def _run_renew_once(domains: list[str] | None, checkpoint: bool, settings: Settings | None = None) -> dict[str, Any]:
     from main import run_once
 
     try:
@@ -156,7 +159,7 @@ def _run_revoke(
     domains: list[str],
     reason: int,
     checkpoint: bool,
-    settings: Any | None = None,
+    settings: Settings | None = None,
 ) -> dict[str, Any]:
     from main import run_revocation
 
@@ -171,7 +174,7 @@ def _run_revoke(
         raise RuntimeError(f"revoke_cert failed with exit code {exc.code}") from exc
 
 
-def _run_expiring_in_30_days(domains: list[str] | None, settings: Any | None = None) -> list[str]:
+def _run_expiring_in_30_days(domains: list[str] | None, settings: Settings | None = None) -> list[str]:
     from main import list_domains_expiring_within
 
     try:
@@ -182,7 +185,7 @@ def _run_expiring_in_30_days(domains: list[str] | None, settings: Any | None = N
         ) from exc
 
 
-def _run_expiring_within(days: int, domains: list[str] | None, settings: Any | None = None) -> list[str]:
+def _run_expiring_within(days: int, domains: list[str] | None, settings: Settings | None = None) -> list[str]:
     from main import list_domains_expiring_within
 
     try:
@@ -193,7 +196,7 @@ def _run_expiring_within(days: int, domains: list[str] | None, settings: Any | N
         ) from exc
 
 
-def _run_domain_status(domains: list[str], settings: Any | None = None) -> list[dict[str, Any]]:
+def _run_domain_status(domains: list[str], settings: Settings | None = None) -> list[dict[str, Any]]:
     from main import get_domain_statuses
 
     try:
