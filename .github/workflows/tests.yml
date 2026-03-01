@@ -3,8 +3,16 @@ name: Unit Tests
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'doc/**'
+      - '.history'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'doc/**'
+      - '.history'
 
 jobs:
   test:
