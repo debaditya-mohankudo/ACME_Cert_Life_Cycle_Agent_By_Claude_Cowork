@@ -53,3 +53,4 @@ ci | .github/workflows/tests.yml | update CI workflow to use xdist: pytest -v -n
 test | tests/test_dns_challenge | add 22 observability tests: encoding contracts, DNS name format, Cloudflare/Route53/GCP error propagation, zone discovery walk, create-raises/delete-swallows asymmetry
 ci | .github/workflows/tests.yml | add paths-ignore to skip CI on markdown-only changes (**/*.md, doc/**, .history); update CI_TEST_COVERAGE.md with trigger behaviour and metadata
 memory | doc/wiki | verify Wiki Session 3 complete: all 8/8 canonical sources confirmed to have metadata sections (owner, status, review dates); remove stale pending entry from MEMORY.md
+feature | mcp_server | add list_managed_domains (returns MANAGED_DOMAINS list+count) and expiring_within (configurable N-day window, 1-3650) MCP tools; both read-only, lock required=False; locking test updated to cover 4 read-only tools
