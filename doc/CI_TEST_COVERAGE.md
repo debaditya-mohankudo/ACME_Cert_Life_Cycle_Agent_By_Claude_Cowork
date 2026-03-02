@@ -59,7 +59,7 @@ Impact:
 uv run pytest -v -n auto -m "not integration"
 ```
 
-**369 tests, 0 skips, no external services required.**
+**392 tests, 0 skips, no external services required.**
 
 Parallel execution via xdist (8 concurrent workers on typical GitHub runners).
 Unit tests are isolated and mocked — safe to parallelize.
@@ -67,7 +67,7 @@ Integration tests (Pebble) excluded from CI by marker.
 
 ---
 
-## Tests Currently in CI (369 total)
+## Tests Currently in CI (392 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -291,6 +291,23 @@ MCP server input validation and exception handling.
 
 ---
 
+### `tests/test_llm_factory.py` — 9 tests
+LLM factory provider registry and kwargs building.
+
+| Test | What is verified |
+|---|---|
+| `test_anthropic_kwargs` | Anthropic provider returns `api_key` and `max_tokens` |
+| `test_openai_kwargs` | OpenAI provider returns `api_key` and `max_tokens` |
+| `test_ollama_kwargs` | Ollama provider returns `base_url` and `num_predict` (not `max_tokens`) |
+| `test_ollama_ignores_api_key` | Ollama provider does not include API key even if provided |
+| `test_unknown_provider_raises_error` | Unknown provider raises `ValueError` with available options listed |
+| `test_case_sensitive_provider_names` | Provider names are case-sensitive (must be lowercase) |
+| `test_max_tokens_respected` | Different max_tokens values pass through unchanged |
+| `test_api_key_preserved_exactly` | API key strings preserved without modification |
+| `test_base_url_preserved_exactly` | Base URL strings preserved without modification |
+
+---
+
 ## Tests Excluded from CI
 
 | File | Count | Reason excluded |
@@ -298,7 +315,9 @@ MCP server input validation and exception handling.
 | `tests/test_integration_pebble.py` | 4 | Requires Pebble ACME stub server |
 | `tests/test_lifecycle_pebble.py` | 2 | Requires Pebble ACME stub server |
 | `tests/test_revocation_pebble.py` | 3 | Requires Pebble ACME stub server |
-**Pebble total: 9 tests.**
+**Pebble total: 9 integration tests.**
+
+**Total test count: 401 tests (392 unit tests in CI + 9 Pebble integration tests excluded)**
 
 ---
 
@@ -473,7 +492,7 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (369 unit tests with xdist parallelization as of 2026-03-01)
-- **Last reviewed**: 2026-03-01
-- **Last change**: Added `paths-ignore` to skip CI on markdown-only changes (`**/*.md`, `doc/**`, `.history`)
+- **Status**: active (392 unit tests with xdist parallelization as of 2026-03-02)
+- **Last reviewed**: 2026-03-02
+- **Last change**: Added `test_llm_factory.py` (9 tests); refactored `make_client()` and `make_llm()` to registry pattern
 - **Next review due**: 2026-04-01 (monthly, or on significant test changes)
