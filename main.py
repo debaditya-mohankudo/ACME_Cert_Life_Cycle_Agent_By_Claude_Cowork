@@ -511,7 +511,7 @@ Examples:
     }
     
     # ── Execute first matching command ────────────────────────────────────────
-    for command_name, (is_selected, handler) in command_registry.items():
+    for _, (is_selected, handler) in command_registry.items():
         if is_selected:
             handler()
             break
