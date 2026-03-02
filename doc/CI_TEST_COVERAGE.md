@@ -1,9 +1,9 @@
 # CI Test Coverage
 
 [![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#code-coverage)
-[![Unit Tests](https://img.shields.io/badge/unit_tests-442_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-442-total)
+[![Unit Tests](https://img.shields.io/badge/unit_tests-448_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-448-total)
 [![Integration Tests](https://img.shields.io/badge/integration_tests-9_pebble-blue?style=for-the-badge&logo=docker&logoColor=white)](#can-we-add-pebble-tests-to-ci)
-[![CI Runtime](https://img.shields.io/badge/CI_runtime-~200ms-blue?style=for-the-badge&logo=githubactions&logoColor=white)](#workflow-githubworkflowstestsyml)
+[![CI Runtime](https://img.shields.io/badge/CI_runtime-~8s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](#workflow-githubworkflowstestsyml)
 
 This document describes what the GitHub Actions workflow runs on every push and
 pull request to `main`, and analyses whether Pebble integration tests can be
@@ -64,7 +64,7 @@ Impact:
 uv run pytest -v -n auto -m "not integration"
 ```
 
-**442 tests, 0 skips, no external services required.**
+**448 tests, 3 skips, no external services required.**
 
 Parallel execution via xdist (8 concurrent workers on typical GitHub runners).
 Unit tests are isolated and mocked — safe to parallelize.
@@ -72,7 +72,7 @@ Integration tests (Pebble) excluded from CI by marker.
 
 ---
 
-## Tests Currently in CI (442 total)
+## Tests Currently in CI (448 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -363,9 +363,19 @@ Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`
 
 ---
 
-## Code Coverage
+### `tests/test_logger_singleton.py` — 8 tests
+Decorator pattern implementation for logger with run_id tracking; all tests run without external dependencies.
 
-**Overall line coverage: 91%** (5,651 / 6,220 statements)
+| Group | Tests | What is verified |
+|---|---|---|
+| Singleton behavior | 2 tests | LoggerWithRunID singleton identity, underlying logger shared across instances |
+| RunIDFilter | 1 test | RunIDFilter adds run_id attribute to LogRecord objects |
+| LoggerDecorator | 3 tests | Wraps base logger, returns correct run_id, delegates all logging methods (info/warning/error/critical) |
+| Integration | 2 tests | LoggerWithRunID delegates to LoggerDecorator, run_id appears in log output captured by caplog |
+
+---
+
+## Code Coverage
 
 ### 100% Coverage
 - `agent/nodes/router.py` — 100% ↑ (was 60%)
@@ -389,6 +399,7 @@ Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`
 - `agent/nodes/error_handler.py` — 98% ↑ (was 26%)
 - `agent/nodes/storage.py` — 96% ↑ (was 23%)
 - `agent/nodes/csr.py` — 95%
+- `logger.py` — 98% ↑ (new: decorator pattern refactor with 6 new unit tests)
 - `scripts/generate_test_cert.py` — 92%
 
 ### Medium Coverage (70–95%)
@@ -400,12 +411,13 @@ Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`
 - `agent/nodes/scanner.py` — 93%
 - `agent/nodes/finalizer.py` — 88% ↑ (was 22%)
 - `agent/nodes/revoker.py` — 94%
-- `logger.py` — 95%
 
 ### Low Coverage (< 70%, by design)
 - `main.py` — 60% (CLI argument parsing mostly tested indirectly)
 - `mcp_server.py` — 59% (MCP tools use partial coverage in unit tests; E2E coverage via integration)
 - `agent/nodes/challenge.py` — 54% (standalone/webroot verifier loop covered by integration tests)
+- `tests/conftest.py` — 39% (test fixtures and configuration helpers; not source code)
+- `tests/test_dns_provider_registry.py` — 61% (optional SDK imports have conditional coverage)
 
 ---
 
@@ -416,7 +428,9 @@ Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`
 | `tests/test_revocation_pebble.py` | 3 | Requires Pebble ACME stub server |
 **Pebble total: 9 integration tests.**
 
-**Total test count: 451 tests (442 unit tests in CI + 9 Pebble integration tests excluded)**
+**Total test count: 457 tests (448 unit tests in CI + 9 Pebble integration tests excluded; 3 skipped)**
+
+**Overall line coverage: 91%** (5,720 / 6,288 statements)
 
 ---
 

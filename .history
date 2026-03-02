@@ -62,3 +62,5 @@ refactor | llm/factory | replace if-elif-else chain in make_llm() with _llm_kwar
 refactor | acme/client,llm/factory | apply registry pattern to make_client() and make_llm(); use functools.partial for provider dispatch; add _llm_kwargs_registry tests; update PYTHONIC_IDIOMS docs
 debug | pyproject | add coverage>=7.0 and pytest-cov>=5.0 to [dependency-groups] dev; enables reproducible CI coverage runs via uv sync instead of manual pip install
 test | agent/nodes/router,storage,finalizer,error_handler | added 50 unit tests for low-coverage routing, storage guard paths, finalizer guards, and error_handler action paths; 442 unit tests total
+refactor | logger | implement decorator pattern: extract RunIDFilter and LoggerDecorator classes; composition over inheritance; LoggerWithRunID now delegates to LoggerDecorator; backward compatible
+test | tests/test_logger_singleton | add 6 new tests for decorator pattern: RunIDFilter, LoggerDecorator wrapping/delegation, integration with LoggerWithRunID; 8 logger tests total (448 unit tests)

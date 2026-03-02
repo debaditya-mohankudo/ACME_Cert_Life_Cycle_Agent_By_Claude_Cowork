@@ -25,6 +25,7 @@ This document catalogs Python idioms, design patterns, and advanced language fea
 17. [Caching Pattern](#17-caching-pattern)
 18. [Atomic File Operations](#18-atomic-file-operations)
 19. [LangGraph Message Reducer](#19-langgraph-message-reducer)
+20. [Decorator Pattern (Composition Over Inheritance)](#20-decorator-pattern-composition-over-inheritance)
 
 ---
 
@@ -1527,6 +1528,112 @@ def save_certificate(domain: str, cert_pem: str, key_pem: str) -> None:
 - Call `fsync()` to ensure data reaches disk before rename
 - Clean up temp file on error
 - Use on any critical writes (certificates, config, state)
+
+---
+
+## 20. Decorator Pattern (Composition Over Inheritance)
+
+**File**: `logger.py` (lines 6-68)
+
+**What it is**: The decorator pattern allows behavior to be added to objects dynamically by wrapping them in decorator objects. It's a structural pattern that uses composition instead of inheritance to extend functionality.
+
+**Usage in this project**:
+
+```python
+class RunIDFilter(logging.Filter):
+    """Filter that injects run_id into log records."""
+    
+    def __init__(self, run_id: str):
+        super().__init__()
+        self.run_id = run_id
+    
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.run_id = self.run_id
+        return True
+
+
+class LoggerDecorator:
+    """
+    Decorator that wraps a standard logger with run_id tracking.
+    
+    Uses the decorator pattern to extend logging.Logger behavior
+    without inheritance, maintaining loose coupling.
+    """
+    
+    def __init__(self, logger: logging.Logger, run_id: str):
+        self._logger = logger  # Wrapped object
+        self.run_id = run_id
+        self._configure()
+    
+    def _configure(self) -> None:
+        """Configure the wrapped logger with run_id filter and formatter."""
+        self._logger.setLevel(logging.INFO)
+        run_id_filter = RunIDFilter(self.run_id)
+        self._logger.addFilter(run_id_filter)
+        # ... add handler with custom format
+    
+    # Delegate logging methods to wrapped logger
+    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        self._logger.info(msg, *args, **kwargs)
+    
+    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        self._logger.error(msg, *args, **kwargs)
+    # ... other methods
+
+
+class LoggerWithRunID:
+    """Singleton facade for LoggerDecorator."""
+    
+    def __init__(self, name: str = "agent"):
+        if not hasattr(self, "initialized"):
+            run_id = str(uuid.uuid4())
+            self.logger = logging.getLogger(name)
+            self._decorator = LoggerDecorator(self.logger, run_id)  # Composition
+            self.initialized = True
+    
+    # Delegate to decorator
+    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        self._decorator.info(msg, *args, **kwargs)
+```
+
+**Why used here**:
+- **Loose coupling**: LoggerDecorator wraps logging.Logger without inheriting from it
+- **Single responsibility**: RunIDFilter handles run_id injection; LoggerDecorator handles configuration and delegation
+- **Extensible**: Easy to add more decorators (e.g., MetricsDecorator, FileLoggerDecorator) by stacking them
+- **Testable**: Each layer can be tested independently
+- **No inheritance complexity**: Avoids diamond problem and method resolution order issues
+
+**Pattern structure**:
+1. **Component** (`logging.Logger`) — the object being wrapped
+2. **Decorator** (`LoggerDecorator`) — wraps the component and adds behavior
+3. **Concrete decorator** (`RunIDFilter`) — specific enhancement (run_id injection)
+4. **Client** (`LoggerWithRunID`) — uses the decorator
+
+**Best practices**:
+- Store wrapped object in private attribute (`self._logger`)
+- Delegate all interface methods to wrapped object
+- Add new behavior in decorator without modifying wrapped object
+- Can stack multiple decorators: `MetricsDecorator(LoggerDecorator(base_logger))`
+- Prefer composition over inheritance when extending third-party classes
+
+**Contrast with inheritance**:
+```python
+# ❌ Inheritance approach (tight coupling)
+class LoggerWithRunID(logging.Logger):
+    def __init__(self, name, run_id):
+        super().__init__(name)
+        # Tightly coupled to logging.Logger internals
+
+# ✅ Decorator pattern (loose coupling)
+class LoggerDecorator:
+    def __init__(self, logger: logging.Logger, run_id: str):
+        self._logger = logger  # Composition, not inheritance
+```
+
+**Related patterns**:
+- Used with [Module-Level Singletons](#14-module-level-singletons) for global logger instance
+- Combines [Protocol Classes](#6-protocol-classesstructural-contracts) for type safety
+- Complements [Abstract Base Classes](#4-abstract-base-classes-abc--inheritance) when interface inheritance is needed
 
 ---
 
