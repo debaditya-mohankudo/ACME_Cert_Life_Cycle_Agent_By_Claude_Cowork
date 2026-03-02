@@ -59,7 +59,7 @@ Impact:
 uv run pytest -v -n auto -m "not integration"
 ```
 
-**392 tests, 0 skips, no external services required.**
+**442 tests, 0 skips, no external services required.**
 
 Parallel execution via xdist (8 concurrent workers on typical GitHub runners).
 Unit tests are isolated and mocked — safe to parallelize.
@@ -67,7 +67,7 @@ Integration tests (Pebble) excluded from CI by marker.
 
 ---
 
-## Tests Currently in CI (392 total)
+## Tests Currently in CI (442 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -308,6 +308,56 @@ LLM factory provider registry and kwargs building.
 
 ---
 
+### `tests/test_router.py` — 25 tests
+Pure routing functions in `agent/nodes/router.py`; no mocking needed.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| `pick_next_domain` / `PickNextDomainNode` | 5 tests | Pops first domain, resets per-domain state (order/nonce/retry), empty → `{}`, callable == run |
+| `domain_loop_router` | 3 tests | Pending → "next_domain"; empty/missing → "all_done" |
+| `challenge_router` | 4 tests | `invalid` status → "challenge_failed"; any other status/absent order → "challenge_ok" |
+| `renewal_router` | 3 tests | Non-empty pending → "renewals_needed"; empty/missing → "no_renewals" |
+| `error_action_router` | 10 tests | retry under limit, retry at/over limit → skip, abort, skip, unknown action, bad JSON, empty string, missing key, default max_retries |
+
+---
+
+### `tests/test_storage_manager.py` — 10 tests
+`_split_pem_chain` (pure function) and `StorageManagerNode` guard + success paths.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| `_split_pem_chain` | 5 tests | Single cert, two certs, three certs (leaf/chain split), no PEM blocks, empty string |
+| Guard paths | 3 tests | Missing `full_chain_pem` → failed_renewals; `None` order → failed_renewals; missing `privkey.pem` → failed_renewals |
+| Success / error | 2 tests | Successful write adds to completed_renewals + cert_metadata; `OSError` from `write_cert_files` adds to failed_renewals |
+
+---
+
+### `tests/test_finalizer_guards.py` — 7 tests
+Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| `OrderFinalizerNode` | 3 tests | Missing CSR → error_log, no ACME call made; `AcmeError` on finalize → order status "invalid" |
+| `CertDownloaderNode` | 4 tests | Missing cert_url → error_log, no ACME call made; `AcmeError` → error_log; success → `full_chain_pem` in order |
+
+---
+
+### `tests/test_error_handler.py` — 8 tests
+`ErrorHandlerNode` action paths with mocked LLM (no API key needed).
+
+| Test | What is verified |
+|---|---|
+| `test_error_handler_retry_increments_retry_count` | retry action increments retry_count, sets retry_not_before |
+| `test_error_handler_retry_uses_doubled_delay_when_suggested_zero` | Fallback delay = min(delay×2, 300) when suggested_delay is 0 |
+| `test_error_handler_skip_adds_domain_to_failed_renewals` | skip action adds current domain to failed_renewals |
+| `test_error_handler_skip_preserves_existing_failed_renewals` | Existing failed_renewals not overwritten on skip |
+| `test_error_handler_abort_clears_pending_renewals` | abort drains pending_renewals into failed_renewals |
+| `test_error_handler_malformed_json_falls_back_to_skip` | Non-JSON LLM response defaults to skip |
+| `test_error_handler_stores_raw_llm_response_in_error_analysis` | Raw LLM content stored in error_analysis |
+| `test_error_handler_appends_messages` | System + Human + AI messages accumulated in state |
+
+---
+
 ## Code Coverage
 
 **Overall line coverage: 88%** (5,223 / 5,933 statements)
@@ -332,14 +382,16 @@ LLM factory provider registry and kwargs building.
 - `agent/nodes/csr.py` — 95%
 - `agent/nodes/revoker.py` — 94%
 
-### Low Coverage (< 70%, by design)
+### Improved by new unit tests
+- `agent/nodes/router.py` — was 60%; now higher (all routing functions have dedicated unit tests in `test_router.py`)
+- `agent/nodes/storage.py` — was 23%; now higher (`_split_pem_chain` + guard paths covered in `test_storage_manager.py`)
+- `agent/nodes/finalizer.py` — was 22%; now higher (guard paths + AcmeError paths in `test_finalizer_guards.py`)
+- `agent/nodes/error_handler.py` — was 26%; now higher (all action paths mocked in `test_error_handler.py`)
+
+### Remaining Low Coverage (< 70%, by design)
 - `main.py` — 60% (CLI argument parsing mostly tested indirectly)
 - `mcp_server.py` — 59% (MCP tools use partial coverage in unit tests; E2E coverage via integration)
-- `agent/nodes/storage.py` — 23% (async patterns; covered by integration tests)
-- `agent/nodes/finalizer.py` — 22% (complex error paths; covered by integration tests)
-- `agent/nodes/error_handler.py` — 26% (LLM edge cases; covered by integration tests)
-- `agent/nodes/challenge.py` — 54% (mostly covered by DNS/HTTP integration tests)
-- `agent/nodes/router.py` — 60% (state machine routing; covered by integration tests)
+- `agent/nodes/challenge.py` — 54% (standalone/webroot verifier loop covered by integration tests)
 
 ---
 
@@ -350,7 +402,7 @@ LLM factory provider registry and kwargs building.
 | `tests/test_revocation_pebble.py` | 3 | Requires Pebble ACME stub server |
 **Pebble total: 9 integration tests.**
 
-**Total test count: 401 tests (392 unit tests in CI + 9 Pebble integration tests excluded)**
+**Total test count: 451 tests (442 unit tests in CI + 9 Pebble integration tests excluded)**
 
 ---
 
@@ -525,8 +577,8 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (392 unit tests with xdist parallelization as of 2026-03-02)
-- **Coverage**: 88% line coverage (5,223 / 5,933 statements)
+- **Status**: active (442 unit tests with xdist parallelization as of 2026-03-02)
+- **Coverage**: 88% line coverage (5,223 / 5,933 statements); router/storage/finalizer/error_handler coverage improved by new unit tests
 - **Last reviewed**: 2026-03-02
-- **Last change**: Added `test_llm_factory.py` (9 tests); measured line coverage at 88%
+- **Last change**: Added `test_router.py` (25), `test_storage_manager.py` (10), `test_finalizer_guards.py` (7), `test_error_handler.py` (8) — 50 new tests targeting previously low-coverage files
 - **Next review due**: 2026-04-01 (monthly, or on significant test changes)

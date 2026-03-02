@@ -61,3 +61,4 @@ test | acme/client | add 16 _client_registry tests (3 groups: type dispatch per 
 refactor | llm/factory | replace if-elif-else chain in make_llm() with _llm_kwargs_registry(provider, api_key, base_url, max_tokens); consistent with registry pattern in acme/dns_challenge and acme/client
 refactor | acme/client,llm/factory | apply registry pattern to make_client() and make_llm(); use functools.partial for provider dispatch; add _llm_kwargs_registry tests; update PYTHONIC_IDIOMS docs
 debug | pyproject | add coverage>=7.0 and pytest-cov>=5.0 to [dependency-groups] dev; enables reproducible CI coverage runs via uv sync instead of manual pip install
+test | agent/nodes/router,storage,finalizer,error_handler | added 50 unit tests for low-coverage routing, storage guard paths, finalizer guards, and error_handler action paths; 442 unit tests total

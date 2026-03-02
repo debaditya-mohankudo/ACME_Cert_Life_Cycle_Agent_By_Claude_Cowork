@@ -8,10 +8,11 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 
 ## Quality & Testing
 
-**Code Coverage:** 401 total tests (392 unit tests in CI + 9 Pebble integration tests)
-- **Unit tests (CI):** 392 tests, ~200ms runtime via `xdist` parallel execution
+**Code Coverage:** 451 total tests (442 unit tests in CI + 9 Pebble integration tests)
+- **Unit tests (CI):** 442 tests, ~200ms runtime via `xdist` parallel execution
 - **Line coverage:** **88%** (5,223 / 5,933 statements covered)
 - **Integration tests:** 9 tests against Pebble ACME mock server (excluded from CI)
+- **New in this session:** 50 targeted tests added for `router`, `storage`, `finalizer`, and `error_handler` nodes (previously < 30% coverage each)
 - **Coverage:** `acme/`, `agent/`, `storage/`, `llm/`, `config.py`, `mcp_server.py` fully tested
 - See [CI_TEST_COVERAGE.md](doc/CI_TEST_COVERAGE.md) for complete breakdown and coverage details
 
