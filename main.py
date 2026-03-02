@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any
+from typing import Any, Callable
 
 from logger import logger as log
 
@@ -501,7 +501,7 @@ Examples:
         run_scheduled(domains=args.domains, use_checkpoint=args.checkpoint)
     
     # ── Registry: maps CLI action to handler function ────────────────────────
-    command_registry: dict[str, tuple[bool, callable]] = {
+    command_registry: dict[str, tuple[bool, Callable[[], None]]] = {
         "domain_status": (bool(args.domain_status), cmd_domain_status),
         "expiring_in_30_days": (args.expiring_in_30_days, cmd_expiring_in_30_days),
         "generate_test_cert": (bool(args.generate_test_cert), cmd_generate_test_cert),
