@@ -16,6 +16,7 @@ RFC 8555 compliance notes
 from __future__ import annotations
 
 import time
+from functools import partial
 from typing import Any, Optional
 
 from josepy.jwk import JWKRSA
@@ -564,6 +565,59 @@ class LetsEncryptAcmeClient(AcmeClient):
     # create_account inherited from AcmeClient (plain, no EAB)
 
 
+def _client_registry(ca_provider: str, settings: Any) -> AcmeClient:
+    """Return the AcmeClient instance for the given CA provider and settings."""
+    ca_bundle: str = settings.ACME_CA_BUNDLE
+    insecure: bool = settings.ACME_INSECURE
+    registry: dict[str, Any] = {
+        "digicert": partial(
+            DigiCertAcmeClient,
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "letsencrypt": partial(
+            LetsEncryptAcmeClient,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "letsencrypt_staging": partial(
+            LetsEncryptAcmeClient,
+            staging=True,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "zerossl": partial(
+            ZeroSSLAcmeClient,
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "sectigo": partial(
+            SectigoAcmeClient,
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "custom": partial(
+            AcmeClient,
+            directory_url=settings.ACME_DIRECTORY_URL,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+    }
+    try:
+        return registry[ca_provider]()
+    except KeyError:
+        raise ValueError(
+            f"Unknown CA_PROVIDER: {ca_provider!r}. "
+            f"Must be one of: {', '.join(registry.keys())}"
+        )
+
+
 def make_client() -> AcmeClient:
     """
     Instantiate the right AcmeClient subclass based on CA_PROVIDER setting.
@@ -571,32 +625,4 @@ def make_client() -> AcmeClient:
     """
     from config import settings  # noqa: PLC0415
 
-    ca_bundle: str = settings.ACME_CA_BUNDLE
-    insecure: bool = settings.ACME_INSECURE
-    if settings.CA_PROVIDER == "digicert":
-        return DigiCertAcmeClient(
-            eab_key_id=settings.ACME_EAB_KEY_ID,
-            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
-            ca_bundle=ca_bundle,
-            insecure=insecure,
-        )
-    if settings.CA_PROVIDER == "letsencrypt":
-        return LetsEncryptAcmeClient(ca_bundle=ca_bundle, insecure=insecure)
-    if settings.CA_PROVIDER == "letsencrypt_staging":
-        return LetsEncryptAcmeClient(staging=True, ca_bundle=ca_bundle, insecure=insecure)
-    if settings.CA_PROVIDER == "zerossl":
-        return ZeroSSLAcmeClient(
-            eab_key_id=settings.ACME_EAB_KEY_ID,
-            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
-            ca_bundle=ca_bundle,
-            insecure=insecure,
-        )
-    if settings.CA_PROVIDER == "sectigo":
-        return SectigoAcmeClient(
-            eab_key_id=settings.ACME_EAB_KEY_ID,
-            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
-            ca_bundle=ca_bundle,
-            insecure=insecure,
-        )
-    # CA_PROVIDER == "custom"
-    return AcmeClient(directory_url=settings.ACME_DIRECTORY_URL, ca_bundle=ca_bundle, insecure=insecure)
+    return _client_registry(settings.CA_PROVIDER, settings)
