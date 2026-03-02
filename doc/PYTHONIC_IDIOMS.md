@@ -1263,95 +1263,141 @@ def some_function():
 
 ## 16. Factory Pattern with Late Binding
 
-**File**: `llm/factory.py` (lines 15-49)
+**File**: `llm/factory.py` (lines 15-65), `acme/client.py` (lines 568-627), `acme/dns_challenge.py` (lines 350-394)
 
 **What it is**: A factory function that selects and instantiates objects based on runtime configuration. "Late binding" means the selection happens at call time, not definition time.
 
-**Usage in this project**:
+### Strategy 1: Registry Pattern with functools.partial
+
+**Modern approach** (recommended): Use a registry dict mapping provider names to `functools.partial` constructors. Cleanly separates instantiation logic from dispatch.
 
 ```python
-# llm/factory.py
+# llm/factory.py (refactored)
+from functools import partial
 
-from anthropic import Anthropic
-from openai import OpenAI
-# Note: Ollama and specific model classes NOT imported here
+def _llm_kwargs_registry(provider: str, api_key: str, base_url: str, max_tokens: int) -> dict[str, Any]:
+    """Return provider-specific kwargs dict."""
+    registry: dict[str, Any] = {
+        "anthropic": {
+            "api_key": api_key,
+            "max_tokens": max_tokens,
+        },
+        "openai": {
+            "api_key": api_key,
+            "max_tokens": max_tokens,
+        },
+        "ollama": {
+            "base_url": base_url,
+            "num_predict": max_tokens,
+        },
+    }
+    if provider not in registry:
+        raise ValueError(f"Unsupported LLM_PROVIDER: {provider!r}. Must be one of: {', '.join(registry.keys())}")
+    return registry[provider]
 
 def make_llm(model: str, max_tokens: int) -> BaseChatModel:
-    """Factory: Create LLM instance based on LLM_PROVIDER setting.
-
-    Late binding: No provider classes imported at module level.
-    Selection deferred until function call.
-
-    Args:
-        model: Model name (e.g., "claude-opus-4-6", "gpt-4o")
-        max_tokens: Token limit for generation
-
-    Returns:
-        LangChain BaseChatModel instance
-
-    Raises:
-        ValueError: If LLM_PROVIDER not configured or invalid
-    """
-
+    """Factory: Create LLM instance based on LLM_PROVIDER setting."""
     provider = settings.LLM_PROVIDER
-    kwargs = {
-        "model": model,
-    }
-
+    
+    # Validate required API keys
     if provider == "anthropic":
-        # Anthropic-specific options
-        kwargs["api_key"] = settings.ANTHROPIC_API_KEY
-        kwargs["max_tokens"] = max_tokens
-        kwargs["temperature"] = 0.5
-
+        if not settings.ANTHROPIC_API_KEY:
+            raise ValueError("ANTHROPIC_API_KEY must be set when LLM_PROVIDER='anthropic'")
     elif provider == "openai":
-        # OpenAI-specific options
-        kwargs["api_key"] = settings.OPENAI_API_KEY
-        kwargs["max_tokens"] = max_tokens
-
-    elif provider == "ollama":
-        # Ollama-specific options (local model, different param name)
-        kwargs["base_url"] = settings.OLLAMA_BASE_URL
-        kwargs["num_predict"] = max_tokens  # Different param than OpenAI
-
-    else:
-        raise ValueError(f"Unsupported LLM_PROVIDER: {provider}")
-
-    # Late binding: LangChain's init_chat_model() selects provider
-    # based on kwargs["model"] and environment variables
-    return init_chat_model(
-        model_provider=provider,
-        **kwargs,
+        if not settings.OPENAI_API_KEY:
+            raise ValueError("OPENAI_API_KEY must be set when LLM_PROVIDER='openai'")
+    
+    # Get provider-specific kwargs from registry
+    kwargs = _llm_kwargs_registry(
+        provider=provider,
+        api_key=settings.ANTHROPIC_API_KEY or settings.OPENAI_API_KEY,
+        base_url=settings.OLLAMA_BASE_URL,
+        max_tokens=max_tokens,
     )
+    return init_chat_model(model, model_provider=provider, **kwargs)
+```
 
-# Usage in nodes
-class PlannerNode:
-    """Plan domains to renew."""
+### Parallel implementations in this project:
 
-    def __call__(self, state: AgentState) -> dict:
-        # Create LLM dynamically based on LLM_PROVIDER config
-        llm = make_llm(
-            model=settings.LLM_MODEL_PLANNER,
-            max_tokens=512,
-        )
+**ACME Client Registry** (`acme/client.py`):
+```python
+def _client_registry(ca_provider: str, settings: Any) -> AcmeClient:
+    """Return the AcmeClient instance for the given CA provider."""
+    ca_bundle = settings.ACME_CA_BUNDLE
+    insecure = settings.ACME_INSECURE
+    registry = {
+        "digicert": partial(
+            DigiCertAcmeClient,
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "letsencrypt": partial(
+            LetsEncryptAcmeClient,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        # ... more providers
+    }
+    try:
+        return registry[ca_provider]()
+    except KeyError:
+        raise ValueError(f"Unknown CA_PROVIDER: {ca_provider!r}. Must be one of: {', '.join(registry.keys())}")
 
-        # LLM is automatically Anthropic, OpenAI, or Ollama
-        # based on config; node code doesn't know/care which
-        response = llm.invoke(planning_prompt)
-        # ...
+def make_client() -> AcmeClient:
+    """Instantiate the right AcmeClient subclass based on CA_PROVIDER setting."""
+    from config import settings
+    return _client_registry(settings.CA_PROVIDER, settings)
+```
+
+**DNS Provider Registry** (`acme/dns_challenge.py`):
+```python
+def _dns_provider_registry(provider_name: str, settings: Settings) -> DnsProvider:
+    """Return the DNS provider instance for the given name and settings."""
+    registry = {
+        "cloudflare": partial(
+            CloudflareDnsProvider,
+            api_token=settings.CLOUDFLARE_API_TOKEN,
+            zone_id=settings.CLOUDFLARE_ZONE_ID,
+        ),
+        "route53": partial(
+            Route53DnsProvider,
+            hosted_zone_id=settings.AWS_ROUTE53_HOSTED_ZONE_ID,
+            region=settings.AWS_REGION,
+            access_key_id=settings.AWS_ACCESS_KEY_ID,
+            secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        ),
+        # ... more providers
+    }
+    try:
+        return registry[provider_name]()
+    except KeyError:
+        raise ValueError(f"Unknown DNS_PROVIDER: {provider_name!r}. Must be one of: {', '.join(registry.keys())}")
+
+def make_dns_provider() -> DnsProvider:
+    """Instantiate and return the configured DNS provider."""
+    from config import settings
+    return _dns_provider_registry(settings.DNS_PROVIDER, settings)
 ```
 
 **Why used here**:
-- **Configuration-driven**: Provider selected via `LLM_PROVIDER` environment variable
-- **No hardcoded dependencies**: Nodes don't import specific LLM classes
-- **Easy testing**: Mock `make_llm()` once; all nodes use the mock
-- **Flexible**: Swap providers (Anthropic ↔ OpenAI ↔ Ollama) with one config change
+- **Configuration-driven**: Provider selected via environment variables
+- **No hardcoded dependencies**: Nodes don't import specific provider classes
+- **Easy testing**: Mock factories once; all nodes use the mock
+- **Flexible**: Swap providers with one config change
+- **Registry-based approach**:
+  - Uses `functools.partial` to pre-fill constructor arguments
+  - Dictionary dispatch is faster and clearer than if-elif chains
+  - Extends naturally: adding a provider = adding one registry entry
+  - Error messages list all available options automatically
 
 **Best practices**:
-- Use factory functions for pluggable components (LLM, database, storage)
-- Hide implementation details; caller shouldn't know which class was instantiated
-- Document supported options and defaults clearly
-- Consider using abstract base classes or protocols to define the contract
+- Use registry pattern for multiple pluggable implementations
+- Separate validation (API keys) from instantiation (registry)
+- Use `functools.partial` to bind constructor args at registry-definition time
+- Raise `ValueError` with available options for unknown providers
+- Keep the public factory function thin; do the heavy lifting in `_registry` helper
 
 ---
 
@@ -1549,7 +1595,8 @@ class PlannerNode:
 | **Pydantic Settings** | Config management, env var binding | `config.py` | Complexity with validators |
 | **Mixin** | Reusable behavior, DRY | `config.py` | MRO complexity if abused |
 | **ABC** | Contract enforcement, extensibility | `acme/dns_challenge.py`, `acme/client.py` | Must implement all methods |
-| **functools.partial** | Pre-fill callback args, registries | `acme/client.py` (`_client_registry`), `acme/dns_challenge.py`, `acme/http_challenge.py` | Less readable than `lambda` to some |
+| **functools.partial** | Pre-fill callback args, registries | `acme/client.py` (`_client_registry`), `acme/dns_challenge.py` (`_dns_provider_registry`), `llm/factory.py` | Less readable than `lambda` to some |
+| **Registry Pattern** | Provider selection via dict dispatch | `acme/client.py`, `acme/dns_challenge.py`, `llm/factory.py` | One more level of indirection |
 | **Protocol** | Structural contracts, duck typing | `agent/nodes/base.py` | No runtime enforcement |
 | **Context Manager** | Resource safety, cleanup guarantee | `mcp_server.py`, `acme/http_challenge.py` | More complex than simple functions |
 | **StateGraph** | Deterministic workflows, observability | `agent/graph.py`, `agent/revocation_graph.py` | Requires graph topology planning |
@@ -1560,7 +1607,7 @@ class PlannerNode:
 | **Generators + @contextmanager** | Concise context managers | `mcp_server.py` | Less flexible than class-based |
 | **Module Singletons** | Lifespan management | `agent/nodes/challenge.py` | Reduces testability, not thread-safe |
 | **Late Imports** | Break circular deps, defer loading | `acme/dns_challenge.py`, `mcp_server.py` | Hurts readability if overused |
-| **Factory Pattern** | Configuration-driven instantiation | `llm/factory.py` | Indirection; harder to trace |
+| **Factory Pattern** | Configuration-driven instantiation with registry | `llm/factory.py`, `acme/client.py`, `acme/dns_challenge.py` | Indirection; harder to trace |
 | **Caching** | Performance, reduced I/O | `acme/client.py` | Must handle invalidation |
 | **Atomic I/O** | Data integrity, crash-safety | `storage/atomic.py` | More code; slightly slower |
 | **Message Reducer** | Automatic list merging, LangGraph integration | `agent/state.py` | LangGraph-specific |
@@ -1575,9 +1622,12 @@ class PlannerNode:
 - **@classmethod** for alternative constructors
 
 ### ACME Protocol & Extensibility
-- **ABC** for provider abstraction (DNS, ACME CAs)
-- **functools.partial** for provider registries
-- **Factory Pattern** for LLM provider selection
+- **ABC** for provider abstraction (DNS, ACME CAs, LLM)
+- **functools.partial** + **Registry Pattern** for provider instantiation
+  - `_client_registry(ca_provider, settings)` → appropriate ACME client
+  - `_dns_provider_registry(dns_provider, settings)` → appropriate DNS provider
+  - `_llm_kwargs_registry(llm_provider, api_key, base_url, max_tokens)` → LLM kwargs dict
+- **Factory Pattern** combines registry dispatch with validation for pluggable components
 
 ### State & Workflows
 - **TypedDict** for state schemas
