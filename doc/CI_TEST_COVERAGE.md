@@ -1,5 +1,10 @@
 # CI Test Coverage
 
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#code-coverage)
+[![Unit Tests](https://img.shields.io/badge/unit_tests-442_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-442-total)
+[![Integration Tests](https://img.shields.io/badge/integration_tests-9_pebble-blue?style=for-the-badge&logo=docker&logoColor=white)](#can-we-add-pebble-tests-to-ci)
+[![CI Runtime](https://img.shields.io/badge/CI_runtime-~200ms-blue?style=for-the-badge&logo=githubactions&logoColor=white)](#workflow-githubworkflowstestsyml)
+
 This document describes what the GitHub Actions workflow runs on every push and
 pull request to `main`, and analyses whether Pebble integration tests can be
 added.
