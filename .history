@@ -59,3 +59,4 @@ memory | doc/MCP_SERVER,MCP_IMPLEMENTATION_DETAILS,MCP_TOOL_SERIALIZATION | upda
 refactor | acme/client | replace if-chain in make_client() with _client_registry(ca_provider, settings) using functools.partial; mirrors _dns_provider_registry pattern from acme/dns_challenge; unknown CA_PROVIDER now raises ValueError
 test | acme/client | add 16 _client_registry tests (3 groups: type dispatch per provider, settings binding, unknown-provider ValueError)
 refactor | llm/factory | replace if-elif-else chain in make_llm() with _llm_kwargs_registry(provider, api_key, base_url, max_tokens); consistent with registry pattern in acme/dns_challenge and acme/client
+refactor | acme/client,llm/factory | apply registry pattern to make_client() and make_llm(); use functools.partial for provider dispatch; add _llm_kwargs_registry tests; update PYTHONIC_IDIOMS docs
