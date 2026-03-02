@@ -75,7 +75,7 @@ def run_once(
         webroot_path=effective_settings.WEBROOT_PATH,
     )
 
-    config = {"configurable": {"thread_id": "main"}} if use_checkpoint else {}
+    config = {"configurable": {"thread_id": "main"}} if use_checkpoint else None
 
     final_state = graph.invoke(state, config=config)
 
@@ -133,7 +133,7 @@ def run_revocation(
         account_key_path=effective_settings.ACCOUNT_KEY_PATH,
     )
 
-    config = {"configurable": {"thread_id": "revocation"}} if use_checkpoint else {}
+    config = {"configurable": {"thread_id": "revocation"}} if use_checkpoint else None
 
     final_state = graph.invoke(state, config=config)
 
