@@ -273,6 +273,34 @@ def test_cli_domain_status_requires_domains(monkeypatch, capsys):
     assert "expected at least one argument" in stderr
 
 
+def test_cli_help_contains_all_supported_flags(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["main.py", "--help"])
+
+    with pytest.raises(SystemExit) as exc:
+        main.main()
+
+    assert exc.value.code == 0
+    help_text = capsys.readouterr().out
+
+    expected_flags = [
+        "--once",
+        "--schedule",
+        "--revoke-cert",
+        "--reason",
+        "--domains",
+        "--checkpoint",
+        "--expiring-in-30-days",
+        "--domain-status",
+        "--ca-provider",
+        "--acme-directory-url",
+        "--generate-test-cert",
+        "--days",
+    ]
+
+    for flag in expected_flags:
+        assert flag in help_text
+
+
 def test_generate_test_cert_with_custom_days(monkeypatch, tmp_path):
     """Test generate_test_cert with explicit validity period."""
     original_settings = config.settings
