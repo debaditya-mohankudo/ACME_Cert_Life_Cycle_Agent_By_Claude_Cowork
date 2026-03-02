@@ -468,24 +468,53 @@ Examples:
         acme_directory_url=args.acme_directory_url,
     )
 
-    if args.domain_status:
+    # ── Command registry for CLI dispatch ────────────────────────────────────
+    
+    def cmd_domain_status() -> None:
+        """Handler: print certificate status for specified domains."""
         statuses = get_domain_statuses(args.domain_status)
         for item in statuses:
             print(item)
-    elif args.expiring_in_30_days:
+    
+    def cmd_expiring_in_30_days() -> None:
+        """Handler: list domains expiring within 30 days."""
         expiring_domains = list_domains_expiring_within(days=30, domains=args.domains)
         if expiring_domains:
             print("\n".join(expiring_domains))
         else:
             print("No domains expiring within 30 days.")
-    elif args.generate_test_cert:
+    
+    def cmd_generate_test_cert() -> None:
+        """Handler: generate a self-signed test certificate."""
         generate_test_cert(domain=args.generate_test_cert, days=args.days)
-    elif args.revoke_cert:
+    
+    def cmd_revoke_cert() -> None:
+        """Handler: revoke one or more certificates."""
         run_revocation(domains=args.revoke_cert, reason=args.reason, use_checkpoint=args.checkpoint)
-    elif args.once:
+    
+    def cmd_once() -> None:
+        """Handler: run one renewal cycle immediately."""
         run_once(domains=args.domains, use_checkpoint=args.checkpoint)
-    elif args.schedule:
+    
+    def cmd_schedule() -> None:
+        """Handler: run on a recurring daily schedule."""
         run_scheduled(domains=args.domains, use_checkpoint=args.checkpoint)
+    
+    # ── Registry: maps CLI action to handler function ────────────────────────
+    command_registry: dict[str, tuple[bool, callable]] = {
+        "domain_status": (bool(args.domain_status), cmd_domain_status),
+        "expiring_in_30_days": (args.expiring_in_30_days, cmd_expiring_in_30_days),
+        "generate_test_cert": (bool(args.generate_test_cert), cmd_generate_test_cert),
+        "revoke_cert": (bool(args.revoke_cert), cmd_revoke_cert),
+        "once": (args.once, cmd_once),
+        "schedule": (args.schedule, cmd_schedule),
+    }
+    
+    # ── Execute first matching command ────────────────────────────────────────
+    for command_name, (is_selected, handler) in command_registry.items():
+        if is_selected:
+            handler()
+            break
 
 
 if __name__ == "__main__":
