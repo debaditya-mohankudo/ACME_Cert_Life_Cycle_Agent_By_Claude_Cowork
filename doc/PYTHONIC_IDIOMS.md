@@ -301,19 +301,96 @@ class LetsEncryptAcmeClient(AcmeClient):
 
 ## 5. functools.partial (Partial Function Application)
 
-**File**: `acme/dns_challenge.py` (lines 352-369), `acme/http_challenge.py` (line 73)
+**File**: `acme/client.py` (lines 568-618), `acme/dns_challenge.py` (lines 352-369), `acme/http_challenge.py` (line 73)
 
 **What it is**: `functools.partial` creates a new function by pre-filling some arguments of an existing function. Useful for registries and callbacks.
 
 **Usage in this project**:
 
-### DNS Provider Registry
+### ACME Client Registry
+
+The canonical example of this pattern in the codebase is `_client_registry()` in `acme/client.py`. Settings attributes are captured into each `partial` at registry construction time — the caller just picks a key and calls `()`.
 
 ```python
 from functools import partial
 
+def _client_registry(ca_provider: str, settings: Any) -> AcmeClient:
+    """Return the AcmeClient instance for the given CA provider and settings."""
+
+    # Extract shared settings once; each partial captures them by value.
+    ca_bundle: str = settings.ACME_CA_BUNDLE
+    insecure: bool = settings.ACME_INSECURE
+
+    registry: dict[str, Any] = {
+        "digicert": partial(
+            DigiCertAcmeClient,
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "letsencrypt": partial(
+            LetsEncryptAcmeClient,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "letsencrypt_staging": partial(
+            LetsEncryptAcmeClient,
+            staging=True,          # pre-fill variant flag
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "zerossl": partial(
+            ZeroSSLAcmeClient,
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "sectigo": partial(
+            SectigoAcmeClient,
+            eab_key_id=settings.ACME_EAB_KEY_ID,
+            eab_hmac_key=settings.ACME_EAB_HMAC_KEY,
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+        "custom": partial(
+            AcmeClient,
+            directory_url=settings.ACME_DIRECTORY_URL,  # user-supplied URL
+            ca_bundle=ca_bundle,
+            insecure=insecure,
+        ),
+    }
+
+    try:
+        return registry[ca_provider]()   # call with no args — all pre-filled
+    except KeyError:
+        raise ValueError(
+            f"Unknown CA_PROVIDER: {ca_provider!r}. "
+            f"Must be one of: {', '.join(registry.keys())}"
+        )
+
+
+def make_client() -> AcmeClient:
+    """Public entry point — reads CA_PROVIDER from settings singleton."""
+    from config import settings  # late import: avoids circular dependency
+    return _client_registry(settings.CA_PROVIDER, settings)
+```
+
+Key properties of this pattern:
+
+| Property | Benefit |
+|---|---|
+| Settings captured at registry construction | Caller passes no credentials; dispatch is a dict lookup + `()` |
+| `partial` over `lambda` | Introspectable (`repr` shows class + bound args); easier to test |
+| `ValueError` on unknown key | Caller gets actionable message listing valid options |
+| Private `_client_registry` + public `make_client` | Separation of dispatch logic from settings singleton access |
+
+### DNS Provider Registry
+
+```python
 def make_dns_provider(mode: str) -> DnsProvider:
-    """Factory function using partial for provider instantiation."""
+    """Factory function using partial for DNS provider instantiation."""
 
     registry = {
         "cloudflare": partial(
@@ -336,7 +413,7 @@ def make_dns_provider(mode: str) -> DnsProvider:
     }
 
     partial_fn = registry[mode]  # Get partial function
-    return partial_fn()  # Call with no args (all pre-filled)
+    return partial_fn()           # Call with no args (all pre-filled)
 ```
 
 ### HTTP Challenge Handler
@@ -352,13 +429,16 @@ server = HTTPServer(("0.0.0.0", 80), handler)
 ```
 
 **Why used here**:
-- **Configuration baked into callbacks**: Credentials passed to factories at registry creation time, not invocation time
-- **Clean registries**: No lambda boilerplate; `partial` is more readable
+- **Configuration baked into callbacks**: Credentials passed to factories at registry construction time, not invocation time
+- **Clean registries**: No lambda boilerplate; `partial` is more readable and introspectable
 - **Deferred instantiation**: Providers created lazily; credentials injected upfront
+- **Testability**: `_client_registry` accepts a settings stub — no singleton needed in unit tests
 
 **Best practices**:
 - Use `partial` when you have a factory/registry pattern with configuration
 - Prefer `partial` over `lambda` for cleaner code (more readable, introspectable)
+- Separate the registry function (`_client_registry`) from the singleton accessor (`make_client`) so tests can inject fake settings
+- Raise `ValueError` (not `KeyError`) for unknown keys — include the valid options in the message
 - Avoid over-nesting `partial` calls; keep registry setup clear
 
 ---
@@ -1469,7 +1549,7 @@ class PlannerNode:
 | **Pydantic Settings** | Config management, env var binding | `config.py` | Complexity with validators |
 | **Mixin** | Reusable behavior, DRY | `config.py` | MRO complexity if abused |
 | **ABC** | Contract enforcement, extensibility | `acme/dns_challenge.py`, `acme/client.py` | Must implement all methods |
-| **functools.partial** | Pre-fill callback args, registries | `acme/dns_challenge.py`, `acme/http_challenge.py` | Less readable than `lambda` to some |
+| **functools.partial** | Pre-fill callback args, registries | `acme/client.py` (`_client_registry`), `acme/dns_challenge.py`, `acme/http_challenge.py` | Less readable than `lambda` to some |
 | **Protocol** | Structural contracts, duck typing | `agent/nodes/base.py` | No runtime enforcement |
 | **Context Manager** | Resource safety, cleanup guarantee | `mcp_server.py`, `acme/http_challenge.py` | More complex than simple functions |
 | **StateGraph** | Deterministic workflows, observability | `agent/graph.py`, `agent/revocation_graph.py` | Requires graph topology planning |
