@@ -360,7 +360,17 @@ Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`
 
 ## Code Coverage
 
-**Overall line coverage: 88%** (5,223 / 5,933 statements)
+**Overall line coverage: 91%** (5,651 / 6,220 statements)
+
+### 100% Coverage
+- `agent/nodes/router.py` — 100% ↑ (was 60%)
+- `agent/nodes/planner.py` — 100%
+- `agent/nodes/registry.py` — 100%
+- `agent/nodes/revocation_router.py` — 100%
+- `agent/state.py` — 100%
+- `agent/graph.py` — 100%
+- `agent/revocation_graph.py` — 100%
+- `acme/crypto.py` — 100%
 
 ### High Coverage (95%+)
 - `acme/http_challenge.py` — 98%
@@ -371,6 +381,10 @@ Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`
 - `agent/nodes/account.py` — 97%
 - `agent/nodes/order.py` — 96%
 - `agent/nodes/retry_scheduler.py` — 97%
+- `agent/nodes/error_handler.py` — 98% ↑ (was 26%)
+- `agent/nodes/storage.py` — 96% ↑ (was 23%)
+- `agent/nodes/csr.py` — 95%
+- `scripts/generate_test_cert.py` — 92%
 
 ### Medium Coverage (70–95%)
 - `acme/client.py` — 78%
@@ -379,16 +393,11 @@ Guard paths and error handling for `OrderFinalizerNode` and `CertDownloaderNode`
 - `storage/atomic.py` — 76%
 - `agent/nodes/reporter.py` — 86%
 - `agent/nodes/scanner.py` — 93%
-- `agent/nodes/csr.py` — 95%
+- `agent/nodes/finalizer.py` — 88% ↑ (was 22%)
 - `agent/nodes/revoker.py` — 94%
+- `logger.py` — 95%
 
-### Improved by new unit tests
-- `agent/nodes/router.py` — was 60%; now higher (all routing functions have dedicated unit tests in `test_router.py`)
-- `agent/nodes/storage.py` — was 23%; now higher (`_split_pem_chain` + guard paths covered in `test_storage_manager.py`)
-- `agent/nodes/finalizer.py` — was 22%; now higher (guard paths + AcmeError paths in `test_finalizer_guards.py`)
-- `agent/nodes/error_handler.py` — was 26%; now higher (all action paths mocked in `test_error_handler.py`)
-
-### Remaining Low Coverage (< 70%, by design)
+### Low Coverage (< 70%, by design)
 - `main.py` — 60% (CLI argument parsing mostly tested indirectly)
 - `mcp_server.py` — 59% (MCP tools use partial coverage in unit tests; E2E coverage via integration)
 - `agent/nodes/challenge.py` — 54% (standalone/webroot verifier loop covered by integration tests)
@@ -578,7 +587,7 @@ unit-test job.
 
 - **Owner**: QA / CI team
 - **Status**: active (442 unit tests with xdist parallelization as of 2026-03-02)
-- **Coverage**: 88% line coverage (5,223 / 5,933 statements); router/storage/finalizer/error_handler coverage improved by new unit tests
+- **Coverage**: 91% line coverage (5,651 / 6,220 statements); router 60%→100%, storage 23%→96%, finalizer 22%→88%, error_handler 26%→98%
 - **Last reviewed**: 2026-03-02
 - **Last change**: Added `test_router.py` (25), `test_storage_manager.py` (10), `test_finalizer_guards.py` (7), `test_error_handler.py` (8) — 50 new tests targeting previously low-coverage files
 - **Next review due**: 2026-04-01 (monthly, or on significant test changes)
