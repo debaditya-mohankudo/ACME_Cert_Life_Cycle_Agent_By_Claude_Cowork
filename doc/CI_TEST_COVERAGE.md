@@ -308,7 +308,40 @@ LLM factory provider registry and kwargs building.
 
 ---
 
-## Tests Excluded from CI
+## Code Coverage
+
+**Overall line coverage: 88%** (5,223 / 5,933 statements)
+
+### High Coverage (95%+)
+- `acme/http_challenge.py` — 98%
+- `acme/jws.py` — 97%
+- `acme/ca_detection.py` — 96%
+- `config.py` — 97%
+- `storage/filesystem.py` — 96%
+- `agent/nodes/account.py` — 97%
+- `agent/nodes/order.py` — 96%
+- `agent/nodes/retry_scheduler.py` — 97%
+
+### Medium Coverage (70–95%)
+- `acme/client.py` — 78%
+- `acme/dns_challenge.py` — 93%
+- `llm/factory.py` — 80%
+- `storage/atomic.py` — 76%
+- `agent/nodes/reporter.py` — 86%
+- `agent/nodes/scanner.py` — 93%
+- `agent/nodes/csr.py` — 95%
+- `agent/nodes/revoker.py` — 94%
+
+### Low Coverage (< 70%, by design)
+- `main.py` — 60% (CLI argument parsing mostly tested indirectly)
+- `mcp_server.py` — 59% (MCP tools use partial coverage in unit tests; E2E coverage via integration)
+- `agent/nodes/storage.py` — 23% (async patterns; covered by integration tests)
+- `agent/nodes/finalizer.py` — 22% (complex error paths; covered by integration tests)
+- `agent/nodes/error_handler.py` — 26% (LLM edge cases; covered by integration tests)
+- `agent/nodes/challenge.py` — 54% (mostly covered by DNS/HTTP integration tests)
+- `agent/nodes/router.py` — 60% (state machine routing; covered by integration tests)
+
+---
 
 | File | Count | Reason excluded |
 |---|---|---|
@@ -493,6 +526,7 @@ unit-test job.
 
 - **Owner**: QA / CI team
 - **Status**: active (392 unit tests with xdist parallelization as of 2026-03-02)
+- **Coverage**: 88% line coverage (5,223 / 5,933 statements)
 - **Last reviewed**: 2026-03-02
-- **Last change**: Added `test_llm_factory.py` (9 tests); refactored `make_client()` and `make_llm()` to registry pattern
+- **Last change**: Added `test_llm_factory.py` (9 tests); measured line coverage at 88%
 - **Next review due**: 2026-04-01 (monthly, or on significant test changes)
