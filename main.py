@@ -19,28 +19,9 @@ The --generate-test-cert option generates a self-signed certificate (does not co
 from __future__ import annotations
 
 import argparse
-import logging
 import sys
 from typing import Any
 
-import structlog
-
-# ── Logging setup ─────────────────────────────────────────────────────────────
-
-structlog.configure(
-    processors=[
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.dev.ConsoleRenderer(),
-    ],
-    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-    context_class=dict,
-    logger_factory=structlog.PrintLoggerFactory(),
-)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 from logger import logger as log
 
 CA_PROVIDER_CHOICES = [
