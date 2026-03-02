@@ -266,7 +266,6 @@ acme-agent/
 │
 ├── main.py                          # CLI entry point (run agent, schedule)
 ├── config.py                        # Pydantic settings (env vars, domains)
-├── requirements.txt
 ├── .env                             # ACME credentials and settings (gitignored)
 │
 ├── agent/
@@ -525,7 +524,7 @@ class Settings(BaseSettings):
 
 ---
 
-## 9. Dependencies (`requirements.txt`)
+## 9. Dependencies (`pyproject.toml`)
 
 ```
 # LangGraph / LangChain

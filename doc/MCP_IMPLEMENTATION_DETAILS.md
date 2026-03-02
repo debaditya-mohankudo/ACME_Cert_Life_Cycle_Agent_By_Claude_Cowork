@@ -117,8 +117,6 @@ The MCP layer reuses existing `main.py` entrypoints and does not alter graph top
 
 - `pyproject.toml`
   - Added `mcp>=1.6` in `dependency-groups.dev`.
-- `requirements.txt`
-  - Added `mcp>=1.6`.
 - `uv.lock`
   - Updated by `uv sync`.
 

@@ -5,7 +5,6 @@ FROM python:3.12-slim AS base
 COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /bin/uv
 
 WORKDIR /app
-ENV PATH="/app/.venv/bin:$PATH"
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --group dev --no-install-project
@@ -60,8 +59,7 @@ CMD ["--schedule"]
 
 # ── Stage 4: test ─────────────────────────────────────────────────────────────
 # Explicit test runner for CI / docker-compose.pebble.yml.
-# Runs the full suite including Pebble integration tests.
-# All test deps (pytest, pytest-asyncio, responses) are in requirements.txt.
+# Default CMD runs unit tests only; pass explicit args for integration tests.
 FROM base AS test
 
 COPY . .

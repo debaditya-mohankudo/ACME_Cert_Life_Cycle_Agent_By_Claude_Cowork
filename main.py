@@ -472,16 +472,15 @@ Examples:
         """Handler: print certificate status for specified domains."""
         statuses = get_domain_statuses(args.domain_status)
         for item in statuses:
-            log.info("Domain status: %s", item)
-    
+            print(item)
+
     def cmd_expiring_in_30_days() -> None:
         """Handler: list domains expiring within 30 days."""
         expiring_domains = list_domains_expiring_within(days=30, domains=args.domains)
         if expiring_domains:
-            for domain in expiring_domains:
-                log.info("Expiring domain: %s", domain)
+            print("\n".join(expiring_domains))
         else:
-            log.info("No domains expiring within 30 days.")
+            print("No domains expiring within 30 days.")
     
     def cmd_generate_test_cert() -> None:
         """Handler: generate a self-signed test certificate."""

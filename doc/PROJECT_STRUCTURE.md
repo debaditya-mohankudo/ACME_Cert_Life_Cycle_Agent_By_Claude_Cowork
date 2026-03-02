@@ -23,7 +23,6 @@
 acme-agent/
 ├── main.py                      # CLI entry point
 ├── config.py                    # Pydantic settings (all env vars)
-├── requirements.txt
 ├── .env.example                 # Copy to .env and fill in credentials
 ├── CLAUDE.md                    # Development guide and conventions
 │

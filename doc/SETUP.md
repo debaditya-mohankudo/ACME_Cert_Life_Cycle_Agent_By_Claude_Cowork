@@ -22,12 +22,7 @@
 git clone <repo-url>
 cd acme-agent
 
-# Using uv (recommended)
 uv sync
-
-# Or with pip in a virtualenv
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 ## 2. Configure environment
