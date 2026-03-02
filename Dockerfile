@@ -22,7 +22,7 @@ COPY . .
 # unit tests mock all LLM calls and never actually reach the API.
 ENV ANTHROPIC_API_KEY=dummy-build-key
 
-RUN pytest tests/test_unit_acme.py -v
+RUN uv run pytest tests/test_unit_acme.py -v
 
 
 # ── Stage 3: production ───────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ USER 1001
 # each renewal window). Map the host's port 80 to this port via docker-compose.
 EXPOSE 80
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["uv", "run", "python", "main.py"]
 CMD ["--schedule"]
 
 
@@ -67,4 +67,4 @@ FROM base AS test
 COPY . .
 
 ENTRYPOINT []
-CMD ["pytest", "-v", "-n", "auto", "-m", "not integration"]
+CMD ["uv", "run", "pytest", "-v", "-n", "auto", "-m", "not integration"]

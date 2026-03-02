@@ -87,7 +87,7 @@ docker run --rm acme-test
 The `test` image runs:
 
 ```bash
-pytest -v -n auto -m "not integration"
+uv run pytest -v -n auto -m "not integration"
 ```
 
 This matches the canonical CI command documented in [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md).
@@ -96,7 +96,7 @@ This matches the canonical CI command documented in [CI_TEST_COVERAGE.md](CI_TES
 
 ```bash
 docker compose -f docker-compose.pebble.yml up -d --build
-docker compose -f docker-compose.pebble.yml run --rm acme-test pytest -v -m "integration"
+docker compose -f docker-compose.pebble.yml run --rm acme-test uv run pytest -v -m "integration"
 ```
 
 **Compose default run (still excludes integration):**

@@ -18,7 +18,7 @@ By default, this runs the same non-integration selection as CI. Integration test
 can be run explicitly with:
 
 ```bash
-docker compose -f docker-compose.pebble.yml run --rm acme-test pytest -v -m "integration"
+docker compose -f docker-compose.pebble.yml run --rm acme-test uv run pytest -v -m "integration"
 ```
 
 ---
@@ -54,7 +54,7 @@ then starts the test runner container.
 FROM base AS test
 COPY . .          # full source tree including tests/
 ENTRYPOINT []
-CMD ["pytest", "-v", "-n", "auto", "-m", "not integration"]
+CMD ["uv", "run", "pytest", "-v", "-n", "auto", "-m", "not integration"]
 ```
 
 This is an **independent path** from the `production` stage. It does not go through
