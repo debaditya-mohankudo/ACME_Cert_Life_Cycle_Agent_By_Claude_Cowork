@@ -159,7 +159,7 @@ def test_get_domain_statuses_exits_when_empty_domains():
     assert exc.value.code == 1
 
 
-def test_cli_domain_status_prints_results(monkeypatch, capsys):
+def test_cli_domain_status_prints_results(monkeypatch, caplog):
     received_domains = []
 
     def _fake_statuses(domains):
@@ -176,14 +176,11 @@ def test_cli_domain_status_prints_results(monkeypatch, capsys):
     main.main()
 
     assert received_domains == ["a.example.com", "b.example.com"]
-    stdout = capsys.readouterr().out.strip().splitlines()
-    assert stdout == [
-        "{'domain': 'a.example.com', 'status': 'valid'}",
-        "{'domain': 'b.example.com', 'status': 'expired'}",
-    ]
+    assert "Domain status: {'domain': 'a.example.com', 'status': 'valid'}" in caplog.text
+    assert "Domain status: {'domain': 'b.example.com', 'status': 'expired'}" in caplog.text
 
 
-def test_cli_expiring_in_30_days_uses_domains_override(monkeypatch, capsys):
+def test_cli_expiring_in_30_days_uses_domains_override(monkeypatch, caplog):
     calls = []
 
     def _fake_list(days, domains=None):
@@ -207,10 +204,8 @@ def test_cli_expiring_in_30_days_uses_domains_override(monkeypatch, capsys):
     main.main()
 
     assert calls == [(30, ["a.example.com", "b.example.com"])]
-    assert capsys.readouterr().out.strip().splitlines() == [
-        "b.example.com",
-        "a.example.com",
-    ]
+    assert "Expiring domain: b.example.com" in caplog.text
+    assert "Expiring domain: a.example.com" in caplog.text
 
 
 def test_cli_applies_runtime_overrides_before_action(monkeypatch):

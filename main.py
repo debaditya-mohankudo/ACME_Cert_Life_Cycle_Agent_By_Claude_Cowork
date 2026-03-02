@@ -241,8 +241,6 @@ def generate_test_cert(
             cert_path,
             key_path,
         )
-        print(f"✓ Test certificate generated: {cert_path}")
-        print(f"✓ Private key: {key_path}")
     except Exception as exc:
         log.error("Failed to generate test certificate: %s", exc)
         sys.exit(1)
@@ -474,15 +472,16 @@ Examples:
         """Handler: print certificate status for specified domains."""
         statuses = get_domain_statuses(args.domain_status)
         for item in statuses:
-            print(item)
+            log.info("Domain status: %s", item)
     
     def cmd_expiring_in_30_days() -> None:
         """Handler: list domains expiring within 30 days."""
         expiring_domains = list_domains_expiring_within(days=30, domains=args.domains)
         if expiring_domains:
-            print("\n".join(expiring_domains))
+            for domain in expiring_domains:
+                log.info("Expiring domain: %s", domain)
         else:
-            print("No domains expiring within 30 days.")
+            log.info("No domains expiring within 30 days.")
     
     def cmd_generate_test_cert() -> None:
         """Handler: generate a self-signed test certificate."""
