@@ -64,3 +64,4 @@ debug | pyproject | add coverage>=7.0 and pytest-cov>=5.0 to [dependency-groups]
 test | agent/nodes/router,storage,finalizer,error_handler | added 50 unit tests for low-coverage routing, storage guard paths, finalizer guards, and error_handler action paths; 442 unit tests total
 refactor | logger | implement decorator pattern: extract RunIDFilter and LoggerDecorator classes; composition over inheritance; LoggerWithRunID now delegates to LoggerDecorator; backward compatible
 test | tests/test_logger_singleton | add 6 new tests for decorator pattern: RunIDFilter, LoggerDecorator wrapping/delegation, integration with LoggerWithRunID; 8 logger tests total (448 unit tests)
+feature | docker | switch Docker dependency install from pip to uv sync; align test stage CMD with CI pytest -v -n auto -m "not integration" and document explicit integration invocation

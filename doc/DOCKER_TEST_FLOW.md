@@ -1,4 +1,4 @@
-# How Pebble Integration Tests Run with the Docker Image
+# How Docker Test Execution Works with Pebble
 
 ## See also
 
@@ -12,6 +12,13 @@ This document explains end-to-end what happens when you run:
 
 ```bash
 docker compose -f docker-compose.pebble.yml up --build --exit-code-from acme-test
+```
+
+By default, this runs the same non-integration selection as CI. Integration tests
+can be run explicitly with:
+
+```bash
+docker compose -f docker-compose.pebble.yml run --rm acme-test pytest -v -m "integration"
 ```
 
 ---
@@ -47,7 +54,7 @@ then starts the test runner container.
 FROM base AS test
 COPY . .          # full source tree including tests/
 ENTRYPOINT []
-CMD ["pytest", "tests/", "-v"]
+CMD ["pytest", "-v", "-n", "auto", "-m", "not integration"]
 ```
 
 This is an **independent path** from the `production` stage. It does not go through
@@ -74,7 +81,7 @@ time pytest starts, the whole agent stack already believes it is talking to `peb
 
 ---
 
-## Step 3 — `conftest.py` decides which tests to run
+## Step 3 — `conftest.py` controls integration test eligibility
 
 `tests/conftest.py` at module load time:
 
@@ -94,14 +101,14 @@ requires_pebble = pytest.mark.skipif(not _pebble_running(), ...)
 Inside the container, `_PEBBLE_HOST = "pebble"` (from the env var injected by
 Compose). The socket probe connects to `pebble:14000` on the Docker bridge — Pebble
 is already up (`depends_on`), so `_pebble_running()` returns `True` and
-`requires_pebble` becomes a no-op mark: **all integration tests run**.
+`requires_pebble` becomes a no-op mark when integration tests are explicitly selected.
 
 Without Docker (local development with no Pebble), `_PEBBLE_HOST = "localhost"`,
 the probe fails, and those tests are **automatically skipped** rather than failing.
 
 ---
 
-## Step 4 — `pebble_settings` fixture redirects the settings singleton
+## Step 4 — `pebble_settings` fixture redirects the settings singleton (integration runs)
 
 Every integration test declares `pebble_settings` as a fixture argument.
 Before each test the fixture:
@@ -143,7 +150,7 @@ Replacing it with a mock means:
 
 ---
 
-## Step 6 — The full ACME flow runs against Pebble
+## Step 6 — The full ACME flow runs against Pebble (integration runs)
 
 `test_full_renewal_flow` calls `graph.invoke(state)`. The LangGraph node chain
 executes in sequence:

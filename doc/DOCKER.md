@@ -77,21 +77,36 @@ restarts and image rebuilds.
 
 ## Tests in Docker
 
-**Unit tests** (no external services needed):
+**Default test command (matches CI exactly):**
 
 ```bash
 docker build --target test -t acme-test .
-docker run --rm acme-test pytest tests/test_unit_acme.py -v
+docker run --rm acme-test
 ```
 
-**Full suite — unit + integration** (spins up Pebble automatically):
+The `test` image runs:
+
+```bash
+pytest -v -n auto -m "not integration"
+```
+
+This matches the canonical CI command documented in [CI_TEST_COVERAGE.md](CI_TEST_COVERAGE.md).
+
+**Integration tests against Pebble (explicit run):**
+
+```bash
+docker compose -f docker-compose.pebble.yml up -d --build
+docker compose -f docker-compose.pebble.yml run --rm acme-test pytest -v -m "integration"
+```
+
+**Compose default run (still excludes integration):**
 
 ```bash
 docker compose -f docker-compose.pebble.yml up --build --exit-code-from acme-test
 ```
 
 This builds the `test` image, starts a local [Pebble](https://github.com/letsencrypt/pebble)
-ACME server alongside it, and runs all 23 tests. Pebble auto-approves HTTP-01
-challenges so no DNS or real port-80 access is needed.
+ACME server alongside it, and runs the CI-aligned non-integration test selection.
+Use the explicit integration command above when you want Pebble-only integration coverage.
 
 See also: [Docker test flow](./DOCKER_TEST_FLOW.md) for a detailed walkthrough.

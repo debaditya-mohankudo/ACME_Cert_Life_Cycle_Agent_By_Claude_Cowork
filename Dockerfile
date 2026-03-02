@@ -2,10 +2,13 @@
 # Installs all Python dependencies (shared by all stages).
 FROM python:3.12-slim AS base
 
-WORKDIR /app
+COPY --from=ghcr.io/astral-sh/uv:0.8.22 /uv /bin/uv
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /app
+ENV PATH="/app/.venv/bin:$PATH"
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --group dev --no-install-project
 
 
 # ── Stage 2: test-runner ──────────────────────────────────────────────────────
@@ -64,6 +67,4 @@ FROM base AS test
 COPY . .
 
 ENTRYPOINT []
-# test_kb.py requires faiss-cpu + sentence-transformers which are not in the
-# main requirements.txt (KB is an optional offline feature).  Skip it here.
-CMD ["pytest", "tests/", "-v", "--ignore=tests/test_kb.py"]
+CMD ["pytest", "-v", "-n", "auto", "-m", "not integration"]
