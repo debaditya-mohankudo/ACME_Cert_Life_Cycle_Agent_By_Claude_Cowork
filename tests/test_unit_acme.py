@@ -24,6 +24,7 @@ from acme.client import (
     SectigoAcmeClient,
     LetsEncryptAcmeClient,
     make_client,
+    _client_registry,
 )
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography import x509
@@ -1078,3 +1079,146 @@ def test_config_rejects_ecc_without_curve():
             ECC_CURVE="",
             MANAGED_DOMAINS=["example.com"],
         )
+
+
+# ─── _client_registry() — factory dispatch and settings binding ────────────────
+#
+# Tests call _client_registry() directly with a lightweight settings stub so the
+# real singleton and network stack are never touched.  Three groups:
+#   1. Type dispatch  — one test per provider key, verifying the concrete class.
+#   2. Settings binding — attributes from settings reach the constructed client.
+#   3. Unknown provider — ValueError raised with an informative message.
+
+class _FakeSettings:
+    """Minimal settings stub that satisfies _client_registry's attribute access."""
+    ACME_EAB_KEY_ID    = "test-kid"
+    ACME_EAB_HMAC_KEY  = "dGVzdGtleXRlc3RrZXl0ZXN0a2V5"
+    ACME_CA_BUNDLE     = ""
+    ACME_INSECURE      = False
+    ACME_DIRECTORY_URL = "https://custom.acme.test/directory"
+
+
+# ─── Group 1: Type dispatch ────────────────────────────────────────────────────
+
+def test_client_registry_digicert_returns_correct_type():
+    """digicert provider returns a DigiCertAcmeClient instance."""
+    client = _client_registry("digicert", _FakeSettings())
+    assert isinstance(client, DigiCertAcmeClient)
+
+
+def test_client_registry_letsencrypt_returns_correct_type():
+    """letsencrypt provider returns a LetsEncryptAcmeClient instance."""
+    client = _client_registry("letsencrypt", _FakeSettings())
+    assert isinstance(client, LetsEncryptAcmeClient)
+
+
+def test_client_registry_letsencrypt_staging_returns_correct_type():
+    """letsencrypt_staging provider returns a LetsEncryptAcmeClient instance."""
+    client = _client_registry("letsencrypt_staging", _FakeSettings())
+    assert isinstance(client, LetsEncryptAcmeClient)
+
+
+def test_client_registry_zerossl_returns_correct_type():
+    """zerossl provider returns a ZeroSSLAcmeClient instance."""
+    client = _client_registry("zerossl", _FakeSettings())
+    assert isinstance(client, ZeroSSLAcmeClient)
+
+
+def test_client_registry_sectigo_returns_correct_type():
+    """sectigo provider returns a SectigoAcmeClient instance."""
+    client = _client_registry("sectigo", _FakeSettings())
+    assert isinstance(client, SectigoAcmeClient)
+
+
+def test_client_registry_custom_returns_base_acme_client():
+    """custom provider returns a plain AcmeClient, not an EAB subclass."""
+    client = _client_registry("custom", _FakeSettings())
+    assert type(client) is AcmeClient
+
+
+# ─── Group 2: Settings binding ─────────────────────────────────────────────────
+
+def test_client_registry_digicert_eab_credentials_bound():
+    """digicert: eab_key_id and eab_hmac_key are read from settings."""
+    s = _FakeSettings()
+    s.ACME_EAB_KEY_ID   = "unique-digicert-kid"
+    s.ACME_EAB_HMAC_KEY = "dGVzdC1kaWdpY2VydC1obWFj"
+    client = _client_registry("digicert", s)
+    assert client.eab_key_id   == "unique-digicert-kid"
+    assert client.eab_hmac_key == "dGVzdC1kaWdpY2VydC1obWFj"
+
+
+def test_client_registry_zerossl_eab_credentials_bound():
+    """zerossl: eab_key_id and eab_hmac_key are read from settings."""
+    s = _FakeSettings()
+    s.ACME_EAB_KEY_ID   = "zero-kid"
+    s.ACME_EAB_HMAC_KEY = "emVyby1obWFj"
+    client = _client_registry("zerossl", s)
+    assert client.eab_key_id   == "zero-kid"
+    assert client.eab_hmac_key == "emVyby1obWFj"
+
+
+def test_client_registry_letsencrypt_staging_sets_staging_url():
+    """letsencrypt_staging: directory_url is the staging endpoint, not production."""
+    client = _client_registry("letsencrypt_staging", _FakeSettings())
+    assert client.directory_url == LetsEncryptAcmeClient.STAGING_DIRECTORY_URL
+    assert client.directory_url != LetsEncryptAcmeClient.PRODUCTION_DIRECTORY_URL
+
+
+def test_client_registry_letsencrypt_sets_production_url():
+    """letsencrypt: directory_url is the production endpoint."""
+    client = _client_registry("letsencrypt", _FakeSettings())
+    assert client.directory_url == LetsEncryptAcmeClient.PRODUCTION_DIRECTORY_URL
+
+
+def test_client_registry_ca_bundle_propagated_to_session():
+    """ACME_CA_BUNDLE is forwarded to the underlying requests session (verify path)."""
+    s = _FakeSettings()
+    s.ACME_CA_BUNDLE = "/etc/ssl/custom-bundle.pem"
+    client = _client_registry("letsencrypt", s)
+    assert client._session.verify == "/etc/ssl/custom-bundle.pem"
+
+
+def test_client_registry_insecure_flag_disables_tls_verification():
+    """ACME_INSECURE=True sets session.verify=False (TLS verification disabled)."""
+    s = _FakeSettings()
+    s.ACME_INSECURE = True
+    client = _client_registry("letsencrypt", s)
+    assert client._session.verify is False
+
+
+def test_client_registry_custom_uses_directory_url_from_settings():
+    """custom provider uses ACME_DIRECTORY_URL from settings as the directory endpoint."""
+    s = _FakeSettings()
+    s.ACME_DIRECTORY_URL = "https://private-ca.example.com/acme/directory"
+    client = _client_registry("custom", s)
+    assert client.directory_url == "https://private-ca.example.com/acme/directory"
+
+
+# ─── Group 3: Unknown provider → ValueError ─────────────────────────────────
+
+def test_client_registry_unknown_provider_raises_value_error():
+    """Unrecognised ca_provider raises ValueError, not KeyError."""
+    with pytest.raises(ValueError, match="Unknown CA_PROVIDER"):
+        _client_registry("nonexistent_ca", _FakeSettings())
+
+
+def test_client_registry_error_message_lists_all_valid_providers():
+    """ValueError message enumerates every registry key so users can self-correct."""
+    with pytest.raises(ValueError) as exc_info:
+        _client_registry("bad_provider", _FakeSettings())
+    msg = str(exc_info.value)
+    for provider in ("digicert", "letsencrypt", "letsencrypt_staging", "zerossl", "sectigo", "custom"):
+        assert provider in msg, f"Expected '{provider}' in error message, got: {msg}"
+
+
+def test_client_registry_empty_string_provider_raises():
+    """Empty string ca_provider raises ValueError (not a silent KeyError)."""
+    with pytest.raises(ValueError, match="Unknown CA_PROVIDER"):
+        _client_registry("", _FakeSettings())
+
+
+def test_client_registry_case_sensitive_provider_raises():
+    """Registry is case-sensitive: 'DigiCert' (mixed case) is not a valid key."""
+    with pytest.raises(ValueError, match="Unknown CA_PROVIDER"):
+        _client_registry("DigiCert", _FakeSettings())
