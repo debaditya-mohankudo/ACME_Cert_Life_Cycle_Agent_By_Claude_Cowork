@@ -86,13 +86,26 @@ def test_llm_disabled_works_with_any_ca_provider():
     """LLM_DISABLED is independent of CA_PROVIDER selection."""
     from config import Settings
 
-    for ca in ["digicert", "letsencrypt", "zerossl", "sectigo", "custom"]:
+    for ca in ["digicert", "letsencrypt", "zerossl", "sectigo"]:
         settings = Settings(
             LLM_DISABLED=True,
             CA_PROVIDER=ca,
         )
         assert settings.LLM_DISABLED is True
         assert settings.CA_PROVIDER == ca
+
+
+def test_llm_disabled_works_with_custom_ca_provider():
+    """LLM_DISABLED works with custom CA provider (requires ACME_DIRECTORY_URL)."""
+    from config import Settings
+
+    settings = Settings(
+        LLM_DISABLED=True,
+        CA_PROVIDER="custom",
+        ACME_DIRECTORY_URL="https://custom-acme.example.com/directory",
+    )
+    assert settings.LLM_DISABLED is True
+    assert settings.CA_PROVIDER == "custom"
 
 
 def test_llm_disabled_works_with_standalone_challenge_mode(tmp_path):
