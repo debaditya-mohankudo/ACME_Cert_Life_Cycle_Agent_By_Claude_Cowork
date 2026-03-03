@@ -14,6 +14,7 @@ from langchain_core.messages import AIMessage
 import pytest
 
 from agent.nodes.planner import _parse_and_validate, renewal_planner
+import config
 
 
 # ── Constants ──────────────────────────────────────────────────────────────
@@ -28,6 +29,15 @@ def _mock_llm_response(content: str) -> MagicMock:
     llm = MagicMock()
     llm.invoke.return_value = AIMessage(content=content)
     return llm
+
+
+@pytest.fixture(autouse=True)
+def _ensure_llm_enabled():
+    """Ensure LLM_DISABLED is False for all tests in this module (LLM-based tests)."""
+    original = config.settings.LLM_DISABLED
+    config.settings.LLM_DISABLED = False
+    yield
+    config.settings.LLM_DISABLED = original
 
 
 def _make_state(domains: list[str], threshold: int = 30) -> dict:

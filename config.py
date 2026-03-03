@@ -166,6 +166,37 @@ class Settings(BaseSettings):
             raise ValueError(f"KEY_TYPE must be one of {allowed}")
         return normalized
 
+    @field_validator("LLM_DISABLED", mode="before")
+    @classmethod
+    def validate_llm_disabled(cls, v: object) -> bool:
+        """Validate LLM_DISABLED is a boolean flag.
+
+        Accepts truthy/falsy values and converts to bool:
+        - True values: True, "true", "1", "yes", "on"
+        - False values: False, "false", "0", "no", "off"
+        """
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            normalized = v.strip().lower()
+            true_vals = {"true", "1", "yes", "on"}
+            false_vals = {"false", "0", "no", "off"}
+            if normalized in true_vals:
+                return True
+            elif normalized in false_vals:
+                return False
+            else:
+                raise ValueError(
+                    f"LLM_DISABLED must be a boolean (true/false), got: {v!r}"
+                )
+        # Pydantic will coerce int/int-like values
+        try:
+            return bool(v)
+        except Exception:
+            raise ValueError(
+                f"LLM_DISABLED must be a boolean, got: {type(v).__name__}"
+            )
+
     @model_validator(mode="after")
     def validate_key_type_settings(self) -> "Settings":
         """Validate key-type dependent settings for RSA and ECC."""
