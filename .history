@@ -3,6 +3,7 @@ feature | acme/client | Add ZeroSSL (acme.zerossl.com) and Sectigo (acme.sectigo
 test | tests/test_unit_acme | Add 9 unit tests: EAB class hierarchy, factory dispatch, credential injection for new CA providers
 test | agent/nodes/planner | Add 12 validation tests for LLM hallucinated domain filtering in planner output
 test | agent/graph | Add 10 checkpoint/interrupt/resume tests using LangGraph MemorySaver; cover thread isolation and state integrity
+feature | config,planner,error_handler,reporter | Add LLM_DISABLED config flag for deterministic renewal (no API calls required)
 feature | agent/revocation_graph | Implement certificate revocation as independent subgraph: account setup → domain loop → revoke → reporter
 feature | agent/nodes/revoker | Add revoker node: POST /revokeCert with reason code; RFC 8555 compliant
 feature | agent/nodes/revocation_router | Add revocation_router node: domain picking and routing for revocation subgraph

@@ -22,6 +22,17 @@ class SummaryReporterNode:
         return self.run(state)
 
     def run(self, state: AgentState) -> dict:
+        """
+        Summary reporter: generate final renewal summary.
+        Uses LLM if LLM_DISABLED=False, otherwise deterministic formatting.
+        """
+        if config.settings.LLM_DISABLED:
+            return self._run_deterministic(state)
+        else:
+            return self._run_llm(state)
+
+    def _run_llm(self, state: AgentState) -> dict:
+        """LLM-based summary reporter (original implementation)."""
         completed = state.get("completed_renewals", [])
         failed = state.get("failed_renewals", [])
         managed = state.get("managed_domains", [])
@@ -66,6 +77,23 @@ class SummaryReporterNode:
         print("=" * 50)
 
         return {"messages": messages + [response]}
+
+    def _run_deterministic(self, state: AgentState) -> dict:
+        """
+        Deterministic summary reporter when LLM is disabled.
+        Generates plain-text formatted summary.
+        """
+        completed = state.get("completed_renewals", [])
+        failed = state.get("failed_renewals", [])
+        managed = state.get("managed_domains", [])
+        error_log = state.get("error_log", [])
+        
+        summary = _summary_reporter_deterministic(completed, failed, managed, error_log)
+        
+        logger.info("\n=== Certificate Renewal Summary ===\n%s\n===================================", summary)
+        print(summary)
+
+        return {"messages": []}  # No LLM messages in deterministic mode
 
 
 class RevocationReporterNode:
@@ -116,6 +144,44 @@ class RevocationReporterNode:
         print("=" * 50)
 
         return {"messages": messages + [response]}
+
+
+def _summary_reporter_deterministic(completed, failed, managed_domains, error_log):
+    """
+    Deterministic summary reporter when LLM is disabled.
+    
+    Args:
+        completed: List of successfully renewed domains
+        failed: List of failed renewal domains  
+        managed_domains: List of all domains under management
+        error_log: List of error messages
+    
+    Returns:
+        summary: Plain-text formatted summary
+    """
+    renewed_and_failed = set(completed) | set(failed)
+    skipped = [d for d in managed_domains if d not in renewed_and_failed]
+    
+    # Determine status
+    if not failed:
+        status = "SUCCESS"
+    elif completed:
+        status = "PARTIAL"
+    else:
+        status = "FAILED"
+    
+    summary = (
+        "═" * 50 + "\n" +
+        "ACME Certificate Renewal Summary\n" +
+        "═" * 50 + "\n" +
+        f"Renewed:   {len(completed)}: {', '.join(completed) or '(none)'}\n" +
+        f"Failed:    {len(failed)}: {', '.join(failed) or '(none)'}\n" +
+        f"Skipped:   {len(skipped)}: {', '.join(skipped) or '(none)'}\n" +
+        f"Errors:    {len(error_log)}\n" +
+        f"Status:    {status}\n" +
+        "═" * 50
+    )
+    return summary
 
 
 def summary_reporter(state: AgentState) -> dict:

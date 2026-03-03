@@ -2,6 +2,8 @@
 
 An intelligent, agentic TLS certificate manager built on **LangGraph** and **Claude**. It monitors certificate expiry across multiple domains, uses an LLM to plan and prioritize renewals, executes the full **ACME RFC 8555** flow against **any RFC 8555-compliant CA** (DigiCert, Let's Encrypt, or custom), and stores issued certificates as PEM files on the local filesystem — all on a configurable daily schedule.
 
+**Deterministic mode** (`LLM_DISABLED=true`): No LLM API calls; fully auditable renewal logic for air-gapped installations and cost optimization.
+
 Designed for the coming **47-day TLS mandate (2029)**, where automated renewal is not optional.
 
 ---
@@ -57,6 +59,8 @@ python main.py --expiring-in-30-days
 python main.py --domain-status my.local api.example.com
 python main.py --generate-test-cert example.com --days 90
 python main.py --revoke-cert example.com --reason 4
+# Deterministic mode (no LLM API calls)
+LLM_DISABLED=true python main.py --once
 python mcp_server.py
 ```
 

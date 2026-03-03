@@ -99,6 +99,7 @@ class Settings(BaseSettings):
     GOOGLE_CLOUD_DNS_ZONE_NAME: str = ""     # GCP managed zone name
 
     # ── LLM ────────────────────────────────────────────────────────────────
+    LLM_DISABLED: bool = False  # If True, use deterministic fallbacks instead of LLM
     LLM_PROVIDER: Literal["anthropic", "openai", "ollama"] = "anthropic"
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""

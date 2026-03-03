@@ -40,6 +40,7 @@ backoff, retry, exponential, scheduler, error handler, integration, protocol, bo
 | `HTTP_CHALLENGE_MODE` | `standalone` | `standalone` or `webroot` |
 | `HTTP_CHALLENGE_PORT` | `80` | Port for the standalone HTTP-01 server |
 | `WEBROOT_PATH` | — | Required when `HTTP_CHALLENGE_MODE=webroot` |
+| `LLM_DISABLED` | `false` | If `true`, disables all LLM calls and uses deterministic fallbacks for planner/error_handler/reporter nodes |
 | `LLM_PROVIDER` | `anthropic` | LLM vendor: `anthropic` · `openai` · `ollama` |
 | `ANTHROPIC_API_KEY` | — | Claude API key (required when `LLM_PROVIDER=anthropic`) |
 | `OPENAI_API_KEY` | — | OpenAI API key (required when `LLM_PROVIDER=openai`) |
@@ -57,9 +58,41 @@ backoff, retry, exponential, scheduler, error handler, integration, protocol, bo
 
 ---
 
+## LLM_DISABLED Configuration
+
+- **Type:** `bool`
+- **Default:** `false`
+- **Description:** When `true`, disables all LLM calls and uses deterministic fallbacks.
+
+### Deterministic Behavior
+
+When `LLM_DISABLED=true`:
+
+- **Renewal Planner:** Renews ALL domains with certificates expiring within `RENEWAL_THRESHOLD_DAYS`, plus all domains missing certificates. No prioritization.
+- **Error Handler:** Retries up to `MAX_RETRIES` times with exponential backoff (capped at 300s). After max retries, skips the domain.
+- **Summary Reporter:** Outputs plain-text formatted summary (no LLM-generated prose).
+- **No LLM API calls:** No `LLM_PROVIDER`, `LLM_MODEL_*`, or API key validation required.
+
+### Use Cases
+
+- Air-gapped environments without LLM API access
+- Cost optimization (no API calls)  
+- Reproducible, auditable renewal logic
+- Development/testing environments
+
+### Example
+
+```env
+LLM_DISABLED=true
+CA_PROVIDER=letsencrypt
+MANAGED_DOMAINS=api.example.com,shop.example.com
+```
+
+---
+
 ## Metadata
 
 - **Owner**: DevOps / Operations team
 - **Status**: active (runtime configuration reference)
-- **Last reviewed**: 2026-02-27
-- **Next review due**: 2026-05-27 (quarterly, or on new config options)
+- **Last reviewed**: 2026-03-03
+- **Next review due**: 2026-06-03 (quarterly, or on new config options)
