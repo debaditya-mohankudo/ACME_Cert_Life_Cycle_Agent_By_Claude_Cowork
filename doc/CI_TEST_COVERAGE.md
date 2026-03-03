@@ -1,6 +1,6 @@
 # CI Test Coverage
 
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#code-coverage)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#code-coverage)
 [![Unit Tests](https://img.shields.io/badge/unit_tests-527_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-527-total)
 [![Integration Tests](https://img.shields.io/badge/integration_tests-9_pebble-blue?style=for-the-badge&logo=docker&logoColor=white)](#can-we-add-pebble-tests-to-ci)
 [![CI Runtime](https://img.shields.io/badge/CI_runtime-~9s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](#workflow-githubworkflowstestsyml)
@@ -459,7 +459,7 @@ Deterministic summary reporter logic (when `LLM_DISABLED=true`); plain-text form
 - `agent/nodes/account.py` — 97%
 - `agent/nodes/order.py` — 96%
 - `agent/nodes/retry_scheduler.py` — 97%
-- `agent/nodes/error_handler.py` — 98% ↑ (was 26%)
+- `agent/nodes/error_handler.py` — 99% ↑ (was 26%)
 - `agent/nodes/storage.py` — 96% ↑ (was 23%)
 - `agent/nodes/csr.py` — 95%
 - `logger.py` — 98% ↑ (new: decorator pattern refactor with 6 new unit tests)
@@ -470,7 +470,7 @@ Deterministic summary reporter logic (when `LLM_DISABLED=true`); plain-text form
 - `acme/dns_challenge.py` — 93%
 - `llm/factory.py` — 80%
 - `storage/atomic.py` — 76%
-- `agent/nodes/reporter.py` — 86%
+- `agent/nodes/reporter.py` — 89% ↑ (was 86%)
 - `agent/nodes/scanner.py` — 93%
 - `agent/nodes/finalizer.py` — 88% ↑ (was 22%)
 - `agent/nodes/revoker.py` — 94%
@@ -493,7 +493,7 @@ Deterministic summary reporter logic (when `LLM_DISABLED=true`); plain-text form
 
 **Total test count: 536 tests (527 unit tests in CI + 9 Pebble integration tests excluded; 3 skipped)**
 
-**Overall line coverage: 90%** (5,745 / 6,381 statements)
+**Overall line coverage: 92%** (6,338 / 6,884 statements)
 
 ---
 
@@ -669,7 +669,7 @@ unit-test job.
 
 - **Owner**: QA / CI team
 - **Status**: active (527 unit tests with xdist parallelization as of 2026-03-03)
-- **Coverage**: 90% line coverage (5,745 / 6,381 statements); router 60%→100%, storage 23%→96%, finalizer 22%→88%, error_handler 26%→98%
+- **Coverage**: 92% line coverage (6,338 / 6,884 statements); +4 new test files at 100%; router 60%→100%, storage 23%→96%, finalizer 22%→88%, error_handler 26%→99%
 - **Last reviewed**: 2026-03-03
 - **Last change**: Added 78 unit tests for LLM_DISABLED config validator and deterministic node implementations; 527 unit tests passing (449→527), 0 regressions
 - **Next review due**: 2026-04-03 (monthly, or on significant test changes)
