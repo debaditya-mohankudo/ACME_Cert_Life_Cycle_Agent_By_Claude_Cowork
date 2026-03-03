@@ -11,16 +11,16 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 ## Quality & Testing
 
 [![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](doc/CI_TEST_COVERAGE.md)
-[![Unit Tests](https://img.shields.io/badge/unit_tests-449_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](doc/CI_TEST_COVERAGE.md)
+[![Unit Tests](https://img.shields.io/badge/unit_tests-527_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](doc/CI_TEST_COVERAGE.md)
 [![Integration Tests](https://img.shields.io/badge/integration_tests-9_pebble-blue?style=for-the-badge&logo=docker&logoColor=white)](doc/CI_TEST_COVERAGE.md)
-[![CI Runtime](https://img.shields.io/badge/CI_runtime-~8s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](doc/CI_TEST_COVERAGE.md)
+[![CI Runtime](https://img.shields.io/badge/CI_runtime-~9s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](doc/CI_TEST_COVERAGE.md)
 
 | Metric | Value |
 |---|---|
 | Line coverage | **90%** — 5,745 / 6,381 statements |
-| Unit tests (CI) | 449 · parallel via `xdist` · ~9 s |
+| Unit tests (CI) | 527 · parallel via `xdist` · ~9 s |
 | Integration tests | 9 against Pebble ACME mock server |
-| Total | 458 tests |
+| Total | 536 tests |
 | Modules at 100% | `router` · `planner` · `registry` · `state` · `graph` · `crypto` · `prompts` · `revocation_graph` |
 
 Coverage lifts from targeted tests: `router` 60%→**100%** · `storage` 23%→**96%** · `error_handler` 26%→**98%** · `finalizer` 22%→**88%**

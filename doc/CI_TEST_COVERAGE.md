@@ -1,9 +1,9 @@
 # CI Test Coverage
 
 [![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#code-coverage)
-[![Unit Tests](https://img.shields.io/badge/unit_tests-449_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-449-total)
+[![Unit Tests](https://img.shields.io/badge/unit_tests-527_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-527-total)
 [![Integration Tests](https://img.shields.io/badge/integration_tests-9_pebble-blue?style=for-the-badge&logo=docker&logoColor=white)](#can-we-add-pebble-tests-to-ci)
-[![CI Runtime](https://img.shields.io/badge/CI_runtime-~8s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](#workflow-githubworkflowstestsyml)
+[![CI Runtime](https://img.shields.io/badge/CI_runtime-~9s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](#workflow-githubworkflowstestsyml)
 
 This document describes what the GitHub Actions workflow runs on every push and
 pull request to `main`, and analyses whether Pebble integration tests can be
@@ -64,7 +64,7 @@ Impact:
 uv run pytest -v -n auto -m "not integration"
 ```
 
-**449 tests, 3 skips, no external services required.**
+**527 tests, 3 skips, no external services required.**
 
 Parallel execution via xdist (8 concurrent workers on typical GitHub runners).
 Unit tests are isolated and mocked — safe to parallelize.
@@ -72,7 +72,7 @@ Integration tests (Pebble) excluded from CI by marker.
 
 ---
 
-## Tests Currently in CI (449 total)
+## Tests Currently in CI (527 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -375,6 +375,69 @@ Decorator pattern implementation for logger with run_id tracking; all tests run 
 
 ---
 
+### `tests/test_config_llm_disabled.py` — 20 tests
+Configuration validation for `LLM_DISABLED` feature flag; tests config validator with multiple input formats.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| Defaults | 1 test | `LLM_DISABLED` defaults to `False` |
+| Boolean handling | 4 tests | Accepts `true`, `false`, case-insensitive environment variables |
+| String aliases | 2 tests | Accepts `yes`/`no`, `on`/`off` (case-insensitive) |
+| Integer values | 3 tests | Accepts `0`, `1`, with/without whitespace |
+| Validation | 2 tests | Rejects invalid strings (`maybe`); error messages clear |
+| File loading | 1 test | Can be set via `.env` file |
+| Compatibility | 4 tests | Works with any CA provider (preset or custom); works with challenge modes (standalone, webroot) |
+| Singleton mutation | 1 test | Config singleton can be mutated in tests with fixture restoration |
+| Integration | 2 tests | Works alongside other LLM settings without conflict; singleton mutation preserved |
+
+---
+
+### `tests/test_planner_deterministic.py` — 15 tests
+Deterministic renewal planner logic (when `LLM_DISABLED=true`); no LLM calls made.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| No-cert domains | 2 tests | Domains with no certificate always renewed; prioritized before expiring domains |
+| Expiring domains | 3 tests | Domains within threshold renewed; domains beyond threshold skipped; boundary conditions |
+| Sorting | 3 tests | Expiring domains sorted by `days_until_expiry` (ascending); ties broken by expiry date |
+| Mixed scenarios | 3 tests | No-cert + expiring mixed correctly; empty records; all fresh certs skipped |
+| Helper function | 1 test | `_renewal_planner_deterministic()` pure function works in isolation |
+| Output | 3 tests | `renewal_plan` contains readable text; no LLM messages; summary documents decision |
+
+---
+
+### `tests/test_error_handler_deterministic.py` — 23 tests
+Deterministic error handler logic (when `LLM_DISABLED=true`); exponential backoff, no LLM calls.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| Retry action | 4 tests | Retries while `retry_count < max_retries`; increments count; sets backoff timing |
+| Exponential backoff | 5 tests | Formula: `delay = base * 2^(retry_count+1)` for each retry count; respects different base delays |
+| Delay cap | 2 tests | Delay capped at 300 seconds regardless of exponent |
+| Skip action | 3 tests | Skip when max retries exceeded; adds to failed_renewals; no retry fields set |
+| No abort | 1 test | Deterministic mode never aborts (only retry/skip) |
+| Error analysis | 4 tests | Plain text format (not JSON); includes domain, error, retry count, action |
+| Output | 4 tests | No LLM messages in deterministic mode; helper function isolated |
+
+---
+
+### `tests/test_reporter_deterministic.py` — 20 tests
+Deterministic summary reporter logic (when `LLM_DISABLED=true`); plain-text formatting, no LLM calls.
+
+| Group | Tests | What is verified |
+|---|---|---|
+| Completed domains | 2 tests | All completed renewals reported; empty case shows `(none)` |
+| Failed domains | 2 tests | All failed domains reported; empty case handled |
+| Skipped domains | 3 tests | Correctly identifies domains not in completed or failed; handles boundary cases |
+| Status field | 4 tests | SUCCESS (no failures), PARTIAL (mixed), FAILED (all failures), empty run |
+| Error log | 2 tests | Error count reported; empty log handled |
+| Formatting | 5 tests | Plain text (not JSON); box borders (═══); title included; colon-separated fields |
+| Node integration | 2 tests | Reporter node returns empty messages; handles complex state |
+| Edge cases | 2 tests | Duplicate domains in lists; empty error log |
+| Helper function | 1 test | `_summary_reporter_deterministic()` pure function isolated |
+
+---
+
 ## Code Coverage
 
 ### 100% Coverage
@@ -428,7 +491,7 @@ Decorator pattern implementation for logger with run_id tracking; all tests run 
 | `tests/test_revocation_pebble.py` | 3 | Requires Pebble ACME stub server |
 **Pebble total: 9 integration tests.**
 
-**Total test count: 458 tests (449 unit tests in CI + 9 Pebble integration tests excluded; 3 skipped)**
+**Total test count: 536 tests (527 unit tests in CI + 9 Pebble integration tests excluded; 3 skipped)**
 
 **Overall line coverage: 90%** (5,745 / 6,381 statements)
 
@@ -605,8 +668,8 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (449 unit tests with xdist parallelization as of 2026-03-03)
+- **Status**: active (527 unit tests with xdist parallelization as of 2026-03-03)
 - **Coverage**: 90% line coverage (5,745 / 6,381 statements); router 60%→100%, storage 23%→96%, finalizer 22%→88%, error_handler 26%→98%
 - **Last reviewed**: 2026-03-03
-- **Last change**: Added LLM_DISABLED deterministic mode implementation; validated all 458 tests pass (449 unit + 9 integration)
+- **Last change**: Added 78 unit tests for LLM_DISABLED config validator and deterministic node implementations; 527 unit tests passing (449→527), 0 regressions
 - **Next review due**: 2026-04-03 (monthly, or on significant test changes)
