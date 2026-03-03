@@ -1,7 +1,7 @@
 # CI Test Coverage
 
-[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#code-coverage)
-[![Unit Tests](https://img.shields.io/badge/unit_tests-448_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-448-total)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#code-coverage)
+[![Unit Tests](https://img.shields.io/badge/unit_tests-449_passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](#tests-currently-in-ci-449-total)
 [![Integration Tests](https://img.shields.io/badge/integration_tests-9_pebble-blue?style=for-the-badge&logo=docker&logoColor=white)](#can-we-add-pebble-tests-to-ci)
 [![CI Runtime](https://img.shields.io/badge/CI_runtime-~8s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](#workflow-githubworkflowstestsyml)
 
@@ -64,7 +64,7 @@ Impact:
 uv run pytest -v -n auto -m "not integration"
 ```
 
-**448 tests, 3 skips, no external services required.**
+**449 tests, 3 skips, no external services required.**
 
 Parallel execution via xdist (8 concurrent workers on typical GitHub runners).
 Unit tests are isolated and mocked — safe to parallelize.
@@ -72,7 +72,7 @@ Integration tests (Pebble) excluded from CI by marker.
 
 ---
 
-## Tests Currently in CI (448 total)
+## Tests Currently in CI (449 total)
 
 ### `tests/test_unit_acme.py` — 55 tests
 Core ACME RFC 8555 protocol layer. All HTTP calls mocked with the `responses`
@@ -428,9 +428,9 @@ Decorator pattern implementation for logger with run_id tracking; all tests run 
 | `tests/test_revocation_pebble.py` | 3 | Requires Pebble ACME stub server |
 **Pebble total: 9 integration tests.**
 
-**Total test count: 457 tests (448 unit tests in CI + 9 Pebble integration tests excluded; 3 skipped)**
+**Total test count: 458 tests (449 unit tests in CI + 9 Pebble integration tests excluded; 3 skipped)**
 
-**Overall line coverage: 91%** (5,720 / 6,288 statements)
+**Overall line coverage: 90%** (5,745 / 6,381 statements)
 
 ---
 
@@ -605,8 +605,8 @@ unit-test job.
 ## Metadata
 
 - **Owner**: QA / CI team
-- **Status**: active (442 unit tests with xdist parallelization as of 2026-03-02)
-- **Coverage**: 91% line coverage (5,651 / 6,220 statements); router 60%→100%, storage 23%→96%, finalizer 22%→88%, error_handler 26%→98%
-- **Last reviewed**: 2026-03-02
-- **Last change**: Added `test_router.py` (25), `test_storage_manager.py` (10), `test_finalizer_guards.py` (7), `test_error_handler.py` (8) — 50 new tests targeting previously low-coverage files
-- **Next review due**: 2026-04-01 (monthly, or on significant test changes)
+- **Status**: active (449 unit tests with xdist parallelization as of 2026-03-03)
+- **Coverage**: 90% line coverage (5,745 / 6,381 statements); router 60%→100%, storage 23%→96%, finalizer 22%→88%, error_handler 26%→98%
+- **Last reviewed**: 2026-03-03
+- **Last change**: Added LLM_DISABLED deterministic mode implementation; validated all 458 tests pass (449 unit + 9 integration)
+- **Next review due**: 2026-04-03 (monthly, or on significant test changes)
