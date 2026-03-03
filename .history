@@ -68,3 +68,4 @@ test | tests/test_logger_singleton | add 6 new tests for decorator pattern: RunI
 feature | docker | switch Docker dependency install from pip to uv sync; align test stage CMD with CI pytest -v -n auto -m "not integration" and document explicit integration invocation
 test | tests/test_cli_overrides | add CLI help guard test asserting all supported flags are present to catch accidental argument removals/renames
 refactor | main,docker | restore print() stdout for --domain-status/--expiring-in-30-days (scripting compatibility); remove requirements.txt (superseded by pyproject.toml+uv.lock); drop ENV PATH from Dockerfile base (uv run handles venv resolution)
+test | config,agent/nodes | Add field_validator for LLM_DISABLED + 77 unit tests for deterministic planner/error_handler/reporter nodes (526 total tests passing)
