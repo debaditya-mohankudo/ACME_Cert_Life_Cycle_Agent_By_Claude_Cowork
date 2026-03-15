@@ -86,6 +86,7 @@ def checkpoint_settings(tmp_path: Path):
         "ACME_INSECURE": settings.ACME_INSECURE,
         "ANTHROPIC_API_KEY": settings.ANTHROPIC_API_KEY,
         "MAX_RETRIES": settings.MAX_RETRIES,
+        "LLM_DISABLED": settings.LLM_DISABLED,
     }
 
     cert_store = tmp_path / "certs"
@@ -104,6 +105,7 @@ def checkpoint_settings(tmp_path: Path):
     settings.ACME_INSECURE = True
     settings.ANTHROPIC_API_KEY = "dummy-key"
     settings.MAX_RETRIES = 1
+    settings.LLM_DISABLED = False  # checkpoint tests use mock_checkpoint_llm
 
     yield settings
 

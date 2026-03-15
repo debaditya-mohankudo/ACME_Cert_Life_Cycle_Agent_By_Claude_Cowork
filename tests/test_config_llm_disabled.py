@@ -13,12 +13,12 @@ import pytest
 from pathlib import Path
 
 
-def test_llm_disabled_default_is_false():
-    """LLM_DISABLED defaults to False (LLM enabled)."""
+def test_llm_disabled_default_is_true():
+    """LLM_DISABLED defaults to True (deterministic mode, no LLM packages required)."""
     from config import Settings
 
     settings = Settings()
-    assert settings.LLM_DISABLED is False
+    assert settings.LLM_DISABLED is True
 
 
 def test_llm_disabled_can_be_set_true(monkeypatch):
@@ -181,13 +181,13 @@ def test_llm_disabled_with_other_llm_settings(monkeypatch):
 
 def test_llm_disabled_singleton_mutation(pebble_settings):
     """LLM_DISABLED can be mutated on the singleton in tests."""
+    assert pebble_settings.LLM_DISABLED is True  # default is True
+
+    pebble_settings.LLM_DISABLED = False
     assert pebble_settings.LLM_DISABLED is False
 
     pebble_settings.LLM_DISABLED = True
     assert pebble_settings.LLM_DISABLED is True
-
-    pebble_settings.LLM_DISABLED = False
-    assert pebble_settings.LLM_DISABLED is False
 
 
 def test_llm_disabled_accepts_yes_no_strings(monkeypatch):

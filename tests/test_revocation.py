@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage
 
+import config
 from acme.client import AcmeError
 from agent.nodes.reporter import revocation_reporter
 from agent.nodes.revocation_router import pick_next_revocation_domain, revocation_loop_router
@@ -20,6 +21,15 @@ from agent.state import AgentState
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _ensure_llm_enabled():
+    """Ensure LLM_DISABLED is False for all tests in this module (LLM-based tests)."""
+    original = config.settings.LLM_DISABLED
+    config.settings.LLM_DISABLED = False
+    yield
+    config.settings.LLM_DISABLED = original
 
 
 @pytest.fixture
@@ -196,7 +206,7 @@ def test_cert_revoker_acme_error(mock_make_client, mock_load_key, mock_read_cert
 # ── revocation_reporter tests ──────────────────────────────────────────────
 
 
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_revocation_reporter_success(mock_make_llm):
     """Should call LLM and return summary."""
     mock_llm = MagicMock()
@@ -218,7 +228,7 @@ def test_revocation_reporter_success(mock_make_llm):
     mock_llm.invoke.assert_called_once()
 
 
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_revocation_reporter_with_failures(mock_make_llm):
     """Should include failed revocations in the report."""
     mock_llm = MagicMock()
@@ -242,7 +252,7 @@ def test_revocation_reporter_with_failures(mock_make_llm):
     assert "unauthorized" in user_message_content
 
 
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_revocation_reporter_llm_failure(mock_make_llm):
     """Should fall back to simple summary on LLM error."""
     mock_llm = MagicMock()
@@ -282,7 +292,7 @@ def test_revocation_graph_topology():
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_revocation_graph_single_domain_flow(
     mock_reporter_llm,
     mock_key_exists,
@@ -343,7 +353,7 @@ def test_revocation_graph_single_domain_flow(
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_revocation_graph_multi_domain_flow(
     mock_reporter_llm,
     mock_key_exists,
@@ -405,7 +415,7 @@ def test_revocation_graph_multi_domain_flow(
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_revocation_graph_partial_failure(
     mock_reporter_llm,
     mock_key_exists,
@@ -487,7 +497,7 @@ def test_nonce_cleared_between_domains():
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_nonce_flow_multi_domain_sequence(
     mock_reporter_llm,
     mock_key_exists,
@@ -623,7 +633,7 @@ def test_revocation_invalid_reason_code(mock_read_cert, mock_load_key, mock_make
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_state_message_accumulation_across_flow(
     mock_reporter_llm,
     mock_key_exists,
@@ -771,7 +781,7 @@ def test_revocation_graph_with_checkpointing():
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_revocation_state_resumption_after_interrupt(
     mock_reporter_llm,
     mock_key_exists,
@@ -833,7 +843,7 @@ def test_revocation_state_resumption_after_interrupt(
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_account_creation_failure_handling(
     mock_reporter_llm,
     mock_key_exists,
@@ -918,7 +928,7 @@ def test_duplicate_domains_in_targets():
 
 # ── Reporter & Message Flow Tests ──────────────────────────────────────────
 
-@patch("agent.nodes.reporter.make_llm")
+@patch("llm.factory.make_llm")
 def test_reporter_message_content_structure(mock_make_llm):
     """Verify reporter message has correct structure with revocation context."""
     mock_llm = MagicMock()

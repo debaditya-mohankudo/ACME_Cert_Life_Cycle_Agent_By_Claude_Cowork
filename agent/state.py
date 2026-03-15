@@ -14,9 +14,13 @@ from __future__ import annotations
 
 from typing import Annotated, Dict, List, Optional
 
-from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
+
+try:
+    from langchain_core.messages import BaseMessage as _BaseMessage
+except ImportError:
+    _BaseMessage = dict  # type: ignore[assignment,misc]
 
 
 class CertRecord(TypedDict):
@@ -76,7 +80,7 @@ class AgentState(TypedDict):
     current_nonce: Optional[str]      # Last-used ACME nonce (refreshed each request)
 
     # ── LLM reasoning ──────────────────────────────────────────────────────
-    messages: Annotated[List[BaseMessage], add_messages]
+    messages: Annotated[List[_BaseMessage], add_messages]
     renewal_plan: Optional[str]       # LLM's JSON renewal strategy
     error_analysis: Optional[str]     # LLM's failure reasoning
 

@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     GOOGLE_CLOUD_DNS_ZONE_NAME: str = ""     # GCP managed zone name
 
     # ── LLM ────────────────────────────────────────────────────────────────
-    LLM_DISABLED: bool = False  # If True, use deterministic fallbacks instead of LLM
+    LLM_DISABLED: bool = True   # Default: deterministic mode; set False + install llm extra to enable LLM
     LLM_PROVIDER: Literal["anthropic", "openai", "ollama"] = "anthropic"
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
@@ -196,6 +196,20 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"LLM_DISABLED must be a boolean, got: {type(v).__name__}"
             )
+
+    @model_validator(mode="after")
+    def validate_llm_available(self) -> "Settings":
+        """If LLM is enabled, verify langchain packages are installed."""
+        if not self.LLM_DISABLED:
+            try:
+                import langchain.chat_models  # noqa: F401
+            except ImportError:
+                raise ValueError(
+                    "LLM_DISABLED=false but langchain is not installed. "
+                    "Run: uv sync --extra llm-anthropic  (or llm-openai / llm-ollama)\n"
+                    "Or set LLM_DISABLED=true in .env to run without LLM."
+                )
+        return self
 
     @model_validator(mode="after")
     def validate_key_type_settings(self) -> "Settings":

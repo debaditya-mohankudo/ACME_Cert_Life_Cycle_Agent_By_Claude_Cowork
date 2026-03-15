@@ -3,15 +3,28 @@ LLM factory for the ACME Certificate Lifecycle Agent.
 
 Centralises chat model construction so all nodes share one code path.
 Provider is selected by LLM_PROVIDER in settings (anthropic | openai | ollama).
+
+This module is only imported when LLM_DISABLED=False. To use LLM features,
+install one of the optional extras:
+    uv sync --extra llm-anthropic
+    uv sync --extra llm-openai
+    uv sync --extra llm-ollama
+    uv sync --extra llm-all
 """
 from __future__ import annotations
 
 from typing import Any
 
-from langchain.chat_models import init_chat_model
-from langchain_core.language_models.chat_models import BaseChatModel
-
 from config import settings
+
+try:
+    from langchain.chat_models import init_chat_model
+    from langchain_core.language_models.chat_models import BaseChatModel
+    _LANGCHAIN_AVAILABLE = True
+except ImportError:
+    _LANGCHAIN_AVAILABLE = False
+    init_chat_model = None  # type: ignore[assignment]
+    BaseChatModel = object  # type: ignore[assignment,misc]
 
 
 def _llm_kwargs_registry(provider: str, api_key: str, base_url: str, max_tokens: int) -> dict[str, Any]:
@@ -38,8 +51,25 @@ def _llm_kwargs_registry(provider: str, api_key: str, base_url: str, max_tokens:
     return registry[provider]
 
 
-def make_llm(model: str, max_tokens: int) -> BaseChatModel:
-    """Return a chat model for the configured LLM_PROVIDER."""
+def make_llm(model: str, max_tokens: int) -> "BaseChatModel":
+    """Return a chat model for the configured LLM_PROVIDER.
+
+    Raises ImportError if langchain packages are not installed.
+    Install with:
+        uv sync --extra llm-anthropic   (Anthropic / Claude)
+        uv sync --extra llm-openai      (OpenAI)
+        uv sync --extra llm-ollama      (local Ollama)
+        uv sync --extra llm-all         (all providers)
+
+    Or set LLM_DISABLED=true in .env to run without any LLM.
+    """
+    if not _LANGCHAIN_AVAILABLE:
+        raise ImportError(
+            "LLM packages are not installed. "
+            "Install with: uv sync --extra llm-anthropic\n"
+            "Or set LLM_DISABLED=true in .env to run without LLM."
+        )
+
     provider = settings.LLM_PROVIDER
 
     # Validate required API keys

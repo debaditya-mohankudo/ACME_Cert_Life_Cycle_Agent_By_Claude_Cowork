@@ -67,6 +67,7 @@ def pebble_settings(tmp_path: Path):
         "ACME_CA_BUNDLE": settings.ACME_CA_BUNDLE,
         "MAX_RETRIES": settings.MAX_RETRIES,
         "ANTHROPIC_API_KEY": settings.ANTHROPIC_API_KEY,
+        "LLM_DISABLED": settings.LLM_DISABLED,
     }
 
     webroot = tmp_path / "webroot"

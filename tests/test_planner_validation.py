@@ -191,7 +191,7 @@ class TestRenewalPlannerNode:
 
         state = _make_state([DOMAIN_A])
 
-        with patch("agent.nodes.planner.make_llm", return_value=_mock_llm_response(llm_response)):
+        with patch("llm.factory.make_llm", return_value=_mock_llm_response(llm_response)):
             result = renewal_planner(state)
 
         assert result["pending_renewals"] == [DOMAIN_A]
@@ -203,7 +203,7 @@ class TestRenewalPlannerNode:
 
         state = _make_state([DOMAIN_A, DOMAIN_B])
 
-        with patch("agent.nodes.planner.make_llm", return_value=_mock_llm_response(llm_response)):
+        with patch("llm.factory.make_llm", return_value=_mock_llm_response(llm_response)):
             result = renewal_planner(state)
 
         assert set(result["pending_renewals"]) == {DOMAIN_A, DOMAIN_B}
@@ -218,7 +218,7 @@ class TestRenewalPlannerNode:
 
         state = _make_state([DOMAIN_A, DOMAIN_B])
 
-        with patch("agent.nodes.planner.make_llm", return_value=_mock_llm_response(llm_response)):
+        with patch("llm.factory.make_llm", return_value=_mock_llm_response(llm_response)):
             result = renewal_planner(state)
 
         assert result["pending_renewals"] == [DOMAIN_B, DOMAIN_A]

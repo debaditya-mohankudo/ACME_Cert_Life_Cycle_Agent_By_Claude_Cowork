@@ -7,11 +7,7 @@ import config
 import json
 import time
 
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from agent.prompts import ERROR_HANDLER_SYSTEM, ERROR_HANDLER_USER
 from agent.state import AgentState
-from llm.factory import make_llm
 
 from logger import logger
 
@@ -34,6 +30,11 @@ class ErrorHandlerNode:
 
     def _run_llm(self, state: AgentState) -> dict:
         """LLM-based error handler (original implementation)."""
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        from agent.prompts import ERROR_HANDLER_SYSTEM, ERROR_HANDLER_USER
+        from llm.factory import make_llm
+
         domain = state.get("current_domain", "unknown")
         order = state.get("current_order") or {}
         error_log = state.get("error_log", [])

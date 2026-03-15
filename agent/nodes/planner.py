@@ -10,11 +10,7 @@ import config
 import json
 from typing import Any
 
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from agent.prompts import PLANNER_SYSTEM, PLANNER_USER
 from agent.state import AgentState
-from llm.factory import make_llm
 
 from logger import logger
 
@@ -38,6 +34,11 @@ class RenewalPlannerNode:
 
     def _run_llm(self, state: AgentState) -> dict:
         """LLM-based renewal planner (original implementation)."""
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        from agent.prompts import PLANNER_SYSTEM, PLANNER_USER
+        from llm.factory import make_llm
+
         cert_records = state["cert_records"]
         managed_domains = set(state["managed_domains"])
         threshold = state["renewal_threshold_days"]

@@ -12,8 +12,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage
 
+import config
 from agent.nodes.error_handler import ErrorHandlerNode
 from agent.state import AgentState
+
+
+@pytest.fixture(autouse=True)
+def _ensure_llm_enabled():
+    """Ensure LLM_DISABLED is False for all tests in this module (LLM-based tests)."""
+    original = config.settings.LLM_DISABLED
+    config.settings.LLM_DISABLED = False
+    yield
+    config.settings.LLM_DISABLED = original
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -46,7 +56,7 @@ def _base_state(**overrides) -> dict:
 
 def test_error_handler_retry_increments_retry_count(monkeypatch):
     """LLM returning 'retry' increments retry_count and sets retry timing."""
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: _mock_llm(
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: _mock_llm(
         {"action": "retry", "suggested_delay_seconds": 10}
     ))
 
@@ -59,7 +69,7 @@ def test_error_handler_retry_increments_retry_count(monkeypatch):
 
 def test_error_handler_retry_uses_doubled_delay_when_suggested_zero(monkeypatch):
     """When suggested_delay is 0, fallback is min(retry_delay*2, 300)."""
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: _mock_llm(
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: _mock_llm(
         {"action": "retry", "suggested_delay_seconds": 0}
     ))
 
@@ -74,7 +84,7 @@ def test_error_handler_retry_uses_doubled_delay_when_suggested_zero(monkeypatch)
 
 def test_error_handler_skip_adds_domain_to_failed_renewals(monkeypatch):
     """LLM returning 'skip' adds domain to failed_renewals."""
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: _mock_llm(
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: _mock_llm(
         {"action": "skip"}
     ))
 
@@ -85,7 +95,7 @@ def test_error_handler_skip_adds_domain_to_failed_renewals(monkeypatch):
 
 
 def test_error_handler_skip_preserves_existing_failed_renewals(monkeypatch):
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: _mock_llm(
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: _mock_llm(
         {"action": "skip"}
     ))
 
@@ -100,7 +110,7 @@ def test_error_handler_skip_preserves_existing_failed_renewals(monkeypatch):
 
 def test_error_handler_abort_clears_pending_renewals(monkeypatch):
     """LLM returning 'abort' moves current + all pending to failed_renewals."""
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: _mock_llm(
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: _mock_llm(
         {"action": "abort"}
     ))
 
@@ -123,7 +133,7 @@ def test_error_handler_malformed_json_falls_back_to_skip(monkeypatch):
     """Non-JSON LLM response falls back to 'skip' action."""
     llm = MagicMock()
     llm.invoke.return_value = AIMessage(content="I cannot help with that.")
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: llm)
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: llm)
 
     result = ErrorHandlerNode().run(_base_state())
 
@@ -136,7 +146,7 @@ def test_error_handler_stores_raw_llm_response_in_error_analysis(monkeypatch):
     raw = json.dumps({"action": "skip"})
     llm = MagicMock()
     llm.invoke.return_value = AIMessage(content=raw)
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: llm)
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: llm)
 
     result = ErrorHandlerNode().run(_base_state())
 
@@ -148,7 +158,7 @@ def test_error_handler_stores_raw_llm_response_in_error_analysis(monkeypatch):
 
 def test_error_handler_appends_messages(monkeypatch):
     """error_handler adds system + human + AI messages to state."""
-    monkeypatch.setattr("agent.nodes.error_handler.make_llm", lambda **_kw: _mock_llm(
+    monkeypatch.setattr("llm.factory.make_llm", lambda **_kw: _mock_llm(
         {"action": "skip"}
     ))
 
