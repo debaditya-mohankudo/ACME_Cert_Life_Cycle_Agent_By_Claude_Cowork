@@ -43,3 +43,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Team memory POC — generated artifacts
+team_memory.sqlite
+# rag_index/ intentionally tracked on feat/team-memory-poc for POC; restore before merging to main

@@ -1,0 +1,33 @@
+name: Update Code Graph
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  update-code-graph:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Extract code graph
+        run: python tools/graph_extractor.py --output code_graph.sqlite --exclude .venv --exclude venv --exclude env
+
+      - name: Commit updated graph
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add code_graph.sqlite
+          git diff --cached --quiet || git commit -m "chore: update code graph after PR #${{ github.event.pull_request.number }} [skip ci]"
+          git push
