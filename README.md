@@ -8,6 +8,65 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 
 ---
 
+## Team Memory POC (`feat/team-memory-poc`)
+
+A three-layer context memory system that gives Claude persistent, structured knowledge about this codebase — surviving across sessions without re-deriving context from scratch.
+
+| Layer | What | Signal |
+| ----- | ---- | ------ |
+| 2 — SQLite memory | 10 curated facts, gotchas, decisions | Keyword scoring |
+| 3b — Code graph | 1,027 symbols · 3,943 call edges | Structural (ast) |
+| 3a — RAG | 186 chunks from `doc/` + merged PRs | Semantic (embeddings) |
+
+All three layers are unified behind a single CLI:
+
+```bash
+# Install extra dependencies
+uv sync --extra team-memory
+
+# Query all 3 layers at once
+uv run python tools/context_query.py "how does JWS signing work"
+```
+
+**Example output for `"JWS signing nonce"`:**
+
+```text
+────────────────────────────────────────────────────────────
+## Layer 2 — SQLite Memory (curated facts)
+────────────────────────────────────────────────────────────
+### [feedback] acme-jws-signing
+JWS signing requires a fresh nonce for every ACME POST — nonces are single-use and server-issued.
+Why: ACME RFC 8555 §6.5 — replay attack prevention. Reusing a nonce causes a `badNonce` error.
+How to apply: Never cache or reuse `current_nonce`. It flows through `AgentState`...
+
+────────────────────────────────────────────────────────────
+## Layer 3b — Code Graph (structural)
+────────────────────────────────────────────────────────────
+Symbols matching 'JWS':
+  acme/client.py:424  method _post_jws
+  acme/jws.py:148     function create_eab_jws
+  tests/test_unit_acme.py:360  function test_post_as_get_empty_payload_jws
+  ...
+
+────────────────────────────────────────────────────────────
+## Layer 3a — RAG (semantic / docs + PRs)
+────────────────────────────────────────────────────────────
+### [1] doc/SECURITY.md — SECURITY (score: 0.065)
+...nonce replay protection. Fresh nonce per request; `badNonce` retry logic...
+```
+
+Target specific layers, or get Claude-injection-ready output:
+
+```bash
+uv run python tools/context_query.py "RenewalPlannerNode" --layers graph
+uv run python tools/context_query.py "atomic storage write" --layers memory rag
+uv run python tools/context_query.py "nonce signing" --inject
+```
+
+See [memory/acme_team_memory_poc.md](memory/acme_team_memory_poc.md) for full setup, usage, and how to add new memories.
+
+---
+
 ## Quality & Testing
 
 [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](doc/CI_TEST_COVERAGE.md)
@@ -16,7 +75,7 @@ Designed for the coming **47-day TLS mandate (2029)**, where automated renewal i
 [![CI Runtime](https://img.shields.io/badge/CI_runtime-~9s-blue?style=for-the-badge&logo=githubactions&logoColor=white)](doc/CI_TEST_COVERAGE.md)
 
 | Metric | Value |
-|---|---|
+| --- | --- |
 | Line coverage | **92%** — 6,338 / 6,884 statements |
 | Unit tests (CI) | 527 · parallel via `xdist` · ~9 s |
 | Integration tests | 9 against Pebble ACME mock server |
@@ -30,7 +89,7 @@ See [CI_TEST_COVERAGE.md](doc/CI_TEST_COVERAGE.md) for the full per-file breakdo
 ## Documentation
 
 | Topic | Link |
-|---|---|
+| --- | --- |
 | Docs wiki home | [WIKI_HOME.md](doc/WIKI_HOME.md) |
 | How it works | [HOW_IT_WORKS.md](doc/HOW_IT_WORKS.md) |
 | Project structure | [PROJECT_STRUCTURE.md](doc/PROJECT_STRUCTURE.md) |
@@ -63,7 +122,6 @@ python main.py --revoke-cert example.com --reason 4
 LLM_DISABLED=true python main.py --once
 python mcp_server.py
 ```
-
 
 ## License
 
