@@ -43,3 +43,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Team memory POC — generated artifacts
+team_memory.sqlite
+rag_index/
