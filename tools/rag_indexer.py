@@ -106,7 +106,7 @@ def build_index(pr_limit: int = 50, docs_only: bool = False):
 
     print(f"Embedding {len(all_chunks)} chunks...")
     texts = [c["text"] for c in all_chunks]
-    embeddings = model.encode(texts, show_progress_bar=True, convert_to_list=True)
+    embeddings = model.encode(texts, show_progress_bar=True).tolist()
 
     ids = [f"{c['source']}__chunk{c['chunk_index']}" for c in all_chunks]
     metadatas = [{"source": c["source"], "title": c["title"]} for c in all_chunks]

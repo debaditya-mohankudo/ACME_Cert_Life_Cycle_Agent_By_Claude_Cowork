@@ -29,7 +29,7 @@ def query(prompt: str, top_k: int = 5) -> str:
         return "RAG index is empty. Run tools/rag_indexer.py first."
 
     model = SentenceTransformer(EMBED_MODEL)
-    embedding = model.encode(prompt, convert_to_list=True)
+    embedding = model.encode(prompt).tolist()
 
     results = collection.query(
         query_embeddings=[embedding],
