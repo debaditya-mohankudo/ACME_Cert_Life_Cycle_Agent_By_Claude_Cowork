@@ -28,4 +28,28 @@ Team memory POC lives on branch `feat/team-memory-poc`. Three layers implemented
 - Query: `uv run python tools/rag_query.py "how does JWS signing work" --top 3`
 - GitHub Action: `.github/workflows/rag-index.yml` — nightly cron 01:00 UTC
 
+**Unified query** (`tools/context_query.py`):
+
+- Single entry point across all 3 layers
+- Auto-extracts CamelCase and snake_case symbols from the prompt for graph layer
+- Usage:
+
+  ```bash
+  uv run python tools/context_query.py "how does JWS signing work"
+  uv run python tools/context_query.py "RenewalPlannerNode" --layers graph
+  uv run python tools/context_query.py "atomic storage write" --layers memory rag
+  uv run python tools/context_query.py "nonce signing" --inject   # injection-ready for Claude
+  ```
+
+**GitHub Actions:**
+
+- `.github/workflows/code-graph.yml` — rebuilds `code_graph.sqlite` on every PR merge
+- `.github/workflows/rag-index.yml` — rebuilds RAG index nightly at 01:00 UTC
+
+**Pre-merge checklist (before merging to main):**
+
+- Restore `rag_index/` exclusion in `.gitignore`
+- Decide whether to commit `code_graph.sqlite` to main or keep on a separate branch
+- Add `context_query.py` usage note to `CLAUDE.md`
+
 **Note:** `rag_index/` is tracked on the POC branch only — restore `.gitignore` exclusion before merging to main.
