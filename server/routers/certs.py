@@ -21,6 +21,8 @@ def read_cert_details(domain: str) -> dict[str, Any]:
 
     try:
         from mcp_server import _extract_cert_details
-        return _extract_cert_details(pem, domain, cert_store_path)
+        details = _extract_cert_details(pem, domain, cert_store_path)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to parse certificate: {exc}")
+    else:
+        return details

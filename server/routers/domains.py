@@ -6,10 +6,10 @@ This is an explicit architectural decision — see server/main.py for rationale.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypedDict
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 router = APIRouter(prefix="/domains", tags=["domains"])
 
@@ -24,11 +24,46 @@ class RevokeRequest(BaseModel):
     reason: int = 0
     checkpoint: bool = False
 
+    @field_validator("reason")
+    @classmethod
+    def reason_must_be_valid(cls, v: int) -> int:
+        if v not in {0, 1, 4, 5}:
+            raise ValueError("reason must be one of: 0, 1, 4, 5")
+        return v
+
+
+# ── Response schemas ────────────────────────────────────────────────────────
+
+class ManagedDomainsResponse(TypedDict):
+    managed_domains: list[str]
+    count: int
+
+
+class ExpiringDomainsResponse(TypedDict):
+    window_days: int
+    expiring_domains: list[str]
+
+
+class RenewResponse(TypedDict):
+    domain: str
+    status: str
+    completed_renewals: list[str]
+    failed_renewals: list[str]
+    error_log: list[str]
+
+
+class RevokeResponse(TypedDict):
+    domain: str
+    status: str
+    revoked_domains: list[str]
+    failed_revocations: list[str]
+    error_log: list[str]
+
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
 
 @router.get("")
-def list_managed_domains() -> dict[str, Any]:
+def list_managed_domains() -> ManagedDomainsResponse:
     """Return the list of domains currently configured in MANAGED_DOMAINS."""
     import config
     domains = list(config.settings.MANAGED_DOMAINS)
@@ -36,7 +71,7 @@ def list_managed_domains() -> dict[str, Any]:
 
 
 @router.get("/expiring")
-def expiring_within(days: int = Query(default=30, ge=1, le=3650)) -> dict[str, Any]:
+def expiring_within(days: int = Query(default=30, ge=1, le=3650)) -> ExpiringDomainsResponse:
     """List domains whose current cert expires within N days (read-only)."""
     from main import list_domains_expiring_within
     expiring = list_domains_expiring_within(days=days)
@@ -54,7 +89,7 @@ def domain_status(domain: str) -> dict[str, Any]:
 
 
 @router.post("/{domain}/renew")
-def renew_domain(domain: str, body: RenewRequest = RenewRequest()) -> dict[str, Any]:
+def renew_domain(domain: str, body: RenewRequest = RenewRequest()) -> RenewResponse:
     """
     Run one renewal cycle for a single domain.
 
@@ -90,7 +125,7 @@ def renew_domain(domain: str, body: RenewRequest = RenewRequest()) -> dict[str, 
 
 
 @router.delete("/{domain}/cert")
-def revoke_domain_cert(domain: str, body: RevokeRequest = RevokeRequest()) -> dict[str, Any]:
+def revoke_domain_cert(domain: str, body: RevokeRequest = RevokeRequest()) -> RevokeResponse:
     """
     Revoke the certificate for a single domain.
 
@@ -99,9 +134,6 @@ def revoke_domain_cert(domain: str, body: RevokeRequest = RevokeRequest()) -> di
     from logger import set_domain
     from main import run_revocation
     from server.session import session
-
-    if body.reason not in {0, 1, 4, 5}:
-        raise HTTPException(status_code=422, detail="reason must be one of: 0, 1, 4, 5")
 
     set_domain(domain)
 
