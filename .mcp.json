@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "acme": {
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "mcp_server.py"
+      ],
+      "cwd": "/Users/debaditya/workspace/acme_poc"
+    }
+  }
+}

@@ -7,12 +7,14 @@ license = { file = "LICENSE" }
 requires-python = ">=3.12"
 dependencies = [
     "cryptography>=44.0",
+    "fastapi>=0.115",
     "josepy>=1.14",
     "langgraph>=0.2",
     "langgraph-checkpoint>=2.1",
     "pydantic-settings>=2.8",
     "schedule>=1.2",
     "structlog>=25.1",
+    "uvicorn>=0.34",
 ]
 
 [project.optional-dependencies]
