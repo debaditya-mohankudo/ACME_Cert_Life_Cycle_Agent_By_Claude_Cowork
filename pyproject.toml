@@ -41,6 +41,12 @@ dev = [
     "responses>=0.25",
 ]
 
+rag = [
+    "numpy>=1.26",
+    "turbovec>=0.1",
+    "llama-index-embeddings-ollama>=0.3",
+]
+
 [tool.pytest.ini_options]
 markers = [
     "integration: tests that require Pebble ACME server (run sequentially only)",

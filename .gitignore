@@ -43,3 +43,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Code RAG index
+.code_embeddings.tvim
+.code_embeddings.meta.json
