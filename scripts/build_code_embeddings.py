@@ -206,6 +206,9 @@ def _full_build() -> None:
     import turbovec
 
     chunks = build_chunks()
+    # Deduplicate by id (keeps first occurrence)
+    seen: set[int] = set()
+    chunks = [c for c in chunks if not (c["id"] in seen or seen.add(c["id"]))]
     print(f"  {len(chunks)} chunks across {len(_collect_files())} files")
 
     vectors = _embed([c["text"] for c in chunks])
