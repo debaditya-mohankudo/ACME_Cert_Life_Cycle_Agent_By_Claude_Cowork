@@ -17,7 +17,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
-from langchain_core.messages import AIMessage
 import pytest
 
 from agent.graph import build_graph, initial_state
@@ -57,14 +56,6 @@ MOCK_ORDER_CERT = {
     "certificate_url": "https://mock.acme/cert/1",  # After cert_downloader
 }
 
-# LLM response for checkpoint tests
-PLANNER_RESPONSE = json.dumps({
-    "urgent": [],
-    "routine": [DOMAIN],
-    "skip": [],
-    "notes": "Checkpoint test run",
-})
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -84,9 +75,7 @@ def checkpoint_settings(tmp_path: Path):
         "HTTP_CHALLENGE_MODE": settings.HTTP_CHALLENGE_MODE,
         "WEBROOT_PATH": settings.WEBROOT_PATH,
         "ACME_INSECURE": settings.ACME_INSECURE,
-        "ANTHROPIC_API_KEY": settings.ANTHROPIC_API_KEY,
         "MAX_RETRIES": settings.MAX_RETRIES,
-        "LLM_DISABLED": settings.LLM_DISABLED,
     }
 
     cert_store = tmp_path / "certs"
@@ -103,24 +92,13 @@ def checkpoint_settings(tmp_path: Path):
     settings.HTTP_CHALLENGE_MODE = "webroot"
     settings.WEBROOT_PATH = str(webroot)
     settings.ACME_INSECURE = True
-    settings.ANTHROPIC_API_KEY = "dummy-key"
     settings.MAX_RETRIES = 1
-    settings.LLM_DISABLED = False  # checkpoint tests use mock_checkpoint_llm
 
     yield settings
 
     for k, v in originals.items():
         setattr(settings, k, v)
 
-
-@pytest.fixture()
-def mock_checkpoint_llm():
-    """Mock LLM factory to return a checkpoint-test-aware planner response."""
-    mock_llm = MagicMock()
-    mock_llm.invoke.return_value = AIMessage(content=PLANNER_RESPONSE)
-
-    with patch("llm.factory.init_chat_model", return_value=mock_llm):
-        yield
 
 
 def _mock_storage_manager_side_effect(state: dict) -> dict:
@@ -253,7 +231,6 @@ class TestBasicCheckpointing:
     def test_complete_run_creates_checkpoint(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that a complete run creates a valid checkpoint."""
@@ -270,7 +247,6 @@ class TestBasicCheckpointing:
     def test_checkpoint_history_non_empty(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that checkpoint history contains all node executions."""
@@ -307,7 +283,6 @@ class TestInterruptResume:
     def test_interrupt_before_acme_account_setup(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that interrupt_before pauses before the specified node."""
@@ -328,7 +303,6 @@ class TestInterruptResume:
     def test_resume_after_interrupt_completes(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that resuming from an interrupt completes the run."""
@@ -353,7 +327,6 @@ class TestInterruptResume:
     def test_interrupt_before_challenge_verifier(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify interrupt at a deep node in the renewal pipeline."""
@@ -383,7 +356,6 @@ class TestStateIntegrity:
     def test_critical_config_fields_preserved_through_checkpoint(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that configuration fields never mutate during checkpoint history."""
@@ -405,7 +377,6 @@ class TestStateIntegrity:
     def test_completed_renewals_in_final_checkpoint(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that progress tracking is correct at run completion."""
@@ -421,7 +392,6 @@ class TestStateIntegrity:
     def test_messages_accumulate_across_checkpoints(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that LLM messages accumulate via add_messages reducer."""
@@ -431,9 +401,8 @@ class TestStateIntegrity:
 
         snapshot = graph.get_state(config)
         messages = snapshot.values["messages"]
-        assert len(messages) > 0
-        # Both planner and reporter add messages
-        assert len(messages) >= 2
+        # Planner and reporter are deterministic — messages list stays empty
+        assert isinstance(messages, list)
 
 
 # ── Tests: Thread Isolation ────────────────────────────────────────────────
@@ -445,7 +414,6 @@ class TestThreadIsolation:
     def test_two_threads_are_independent(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that different thread_ids don't share checkpoint history."""
@@ -482,7 +450,6 @@ class TestAdvancedCheckpoint:
     def test_update_state_injects_domain_before_resume(
         self,
         checkpoint_settings,
-        mock_checkpoint_llm,
         mocked_acme_nodes,
     ):
         """Verify that update_state can inject modified state for resume."""

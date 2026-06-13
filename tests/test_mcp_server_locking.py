@@ -47,9 +47,6 @@ def test_mutating_tools_always_request_operation_lock(monkeypatch):
     original_settings = config.settings
     try:
         config.settings = SimpleNamespace(
-            LLM_PROVIDER="anthropic",
-            ANTHROPIC_API_KEY="key",
-            OPENAI_API_KEY="",
             MANAGED_DOMAINS=["a.example.com"],
             HTTP_CHALLENGE_MODE="webroot",
             HTTP_CHALLENGE_PORT=80,

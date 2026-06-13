@@ -12,9 +12,6 @@ Tests the deterministic revocation reporter logic:
 from __future__ import annotations
 
 from typing import cast
-from unittest.mock import patch
-
-import pytest
 
 from agent.nodes.reporter import RevocationReporterNode, _revocation_reporter_deterministic
 from agent.state import AgentState
@@ -192,9 +189,8 @@ def test_reason_code_shown_numerically():
 # ─── Tests: RevocationReporterNode routing ─────────────────────────────────
 
 
-def test_run_uses_deterministic_when_llm_disabled(pebble_settings):
+def test_run_uses_deterministic_when_llm_disabled():
     """RevocationReporterNode.run() calls _run_deterministic when LLM_DISABLED=True."""
-    pebble_settings.LLM_DISABLED = True
 
     state = _base_revocation_state(
         revoked_domains=["api.example.com"],
@@ -206,36 +202,15 @@ def test_run_uses_deterministic_when_llm_disabled(pebble_settings):
     assert result == {"messages": []}  # deterministic path returns no LLM messages
 
 
-def test_run_deterministic_never_calls_make_llm(pebble_settings):
-    """make_llm is never imported or called when LLM_DISABLED=True."""
-    pebble_settings.LLM_DISABLED = True
-
+def test_run_always_returns_empty_messages():
+    """Reporter is fully deterministic — always returns empty messages list."""
     state = _base_revocation_state(revoked_domains=["a.com"])
-
-    with patch("agent.nodes.reporter.RevocationReporterNode._run_llm") as mock_llm:
-        RevocationReporterNode().run(state)
-        mock_llm.assert_not_called()
+    result = RevocationReporterNode().run(state)
+    assert result["messages"] == []
 
 
-def test_run_uses_llm_when_llm_enabled(pebble_settings, mock_llm_nodes):
-    """RevocationReporterNode.run() calls _run_llm when LLM_DISABLED=False."""
-    pebble_settings.LLM_DISABLED = False
-    pebble_settings.ANTHROPIC_API_KEY = "dummy-key"
-
-    state = _base_revocation_state(
-        revoked_domains=["api.example.com"],
-        failed_revocations=[],
-        revocation_reason=0,
-    )
-
-    with patch.object(RevocationReporterNode, "_run_llm", return_value={"messages": []}) as mock:
-        RevocationReporterNode().run(state)
-        mock.assert_called_once_with(state)
-
-
-def test_callable_interface_delegates_to_run(pebble_settings):
+def test_callable_interface_delegates_to_run():
     """__call__ delegates to run()."""
-    pebble_settings.LLM_DISABLED = True
 
     state = _base_revocation_state()
     node = RevocationReporterNode()

@@ -26,7 +26,7 @@ pytestmark = pytest.mark.integration
 
 
 @requires_pebble
-def test_full_renewal_flow(pebble_settings, mock_llm_nodes):
+def test_full_renewal_flow(pebble_settings):
     """
     Happy-path: agent renews acme-test.localhost against Pebble and writes
     PEM files to the temp cert store.
@@ -108,7 +108,7 @@ def test_second_run_reuses_account(pebble_settings, mock_llm_nodes, tmp_path):
 
 
 @requires_pebble
-def test_no_renewal_needed(pebble_settings, mock_llm_nodes):
+def test_no_renewal_needed(pebble_settings):
     """
     When renewal_threshold_days is very low (0) and a fresh cert was just
     issued, the planner should put the domain in 'skip' and the agent exits
@@ -134,35 +134,24 @@ def test_no_renewal_needed(pebble_settings, mock_llm_nodes):
     )
     assert "acme-test.localhost" in result["completed_renewals"]
 
-    # Second run: planner says skip (cert just renewed, plenty of time left)
-    skip_response = json.dumps({
-        "urgent": [],
-        "routine": [],
-        "skip": ["acme-test.localhost"],
-        "notes": "Certificate is fresh — nothing to do",
-    })
-
-    mock_planner_llm = MagicMock()
-    mock_planner_llm.invoke.return_value = AIMessage(content=skip_response)
-
-    with patch("llm.factory.init_chat_model", return_value=mock_planner_llm):
-        result2 = graph.invoke(
-            initial_state(
-                managed_domains=pebble_settings.MANAGED_DOMAINS,
-                cert_store_path=pebble_settings.CERT_STORE_PATH,
-                account_key_path=pebble_settings.ACCOUNT_KEY_PATH,
-                renewal_threshold_days=30,
-                max_retries=1,
-                webroot_path=pebble_settings.WEBROOT_PATH,
-            )
+    # Second run: threshold=0 so the freshly issued cert (90 days) is outside renewal window
+    result2 = graph.invoke(
+        initial_state(
+            managed_domains=pebble_settings.MANAGED_DOMAINS,
+            cert_store_path=pebble_settings.CERT_STORE_PATH,
+            account_key_path=pebble_settings.ACCOUNT_KEY_PATH,
+            renewal_threshold_days=0,
+            max_retries=1,
+            webroot_path=pebble_settings.WEBROOT_PATH,
         )
+    )
 
     assert result2["completed_renewals"] == []
     assert result2["failed_renewals"] == []
 
 
 @requires_pebble
-def test_full_renewal_flow_dns01(dns_settings, mock_llm_nodes):
+def test_full_renewal_flow_dns01(dns_settings):
     """
     Happy-path for DNS-01: agent renews acme-test.localhost against Pebble
     with a mocked DNS provider.

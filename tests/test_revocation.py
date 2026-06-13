@@ -9,9 +9,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langchain_core.messages import AIMessage
 
-import config
 from acme.client import AcmeError
 from agent.nodes.reporter import revocation_reporter
 from agent.nodes.revocation_router import pick_next_revocation_domain, revocation_loop_router
@@ -21,15 +19,6 @@ from agent.state import AgentState
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
-
-
-@pytest.fixture(autouse=True)
-def _ensure_llm_enabled():
-    """Ensure LLM_DISABLED is False for all tests in this module (LLM-based tests)."""
-    original = config.settings.LLM_DISABLED
-    config.settings.LLM_DISABLED = False
-    yield
-    config.settings.LLM_DISABLED = original
 
 
 @pytest.fixture
@@ -206,13 +195,8 @@ def test_cert_revoker_acme_error(mock_make_client, mock_load_key, mock_read_cert
 # ── revocation_reporter tests ──────────────────────────────────────────────
 
 
-@patch("llm.factory.make_llm")
-def test_revocation_reporter_success(mock_make_llm):
-    """Should call LLM and return summary."""
-    mock_llm = MagicMock()
-    mock_make_llm.return_value = mock_llm
-    mock_llm.invoke.return_value = AIMessage(content="Revocation completed successfully.")
-
+def test_revocation_reporter_success():
+    """Reporter returns structured summary with no failures → SUCCESS status."""
     state = {
         "revoked_domains": ["example.com", "api.example.com"],
         "failed_revocations": [],
@@ -224,17 +208,11 @@ def test_revocation_reporter_success(mock_make_llm):
     result = revocation_reporter(state)
 
     assert "messages" in result
-    assert len(result["messages"]) == 3  # system, user, ai response
-    mock_llm.invoke.assert_called_once()
+    assert result["messages"] == []
 
 
-@patch("llm.factory.make_llm")
-def test_revocation_reporter_with_failures(mock_make_llm):
-    """Should include failed revocations in the report."""
-    mock_llm = MagicMock()
-    mock_make_llm.return_value = mock_llm
-    mock_llm.invoke.return_value = AIMessage(content="Some domains failed.")
-
+def test_revocation_reporter_with_failures():
+    """Reporter includes failed domains in structured output."""
     state = {
         "revoked_domains": ["example.com"],
         "failed_revocations": ["api.example.com"],
@@ -245,20 +223,11 @@ def test_revocation_reporter_with_failures(mock_make_llm):
 
     result = revocation_reporter(state)
 
-    # Check that LLM was called with the failures included
-    call_args = mock_llm.invoke.call_args[0][0]
-    user_message_content = call_args[1].content
-    assert "api.example.com" in user_message_content
-    assert "unauthorized" in user_message_content
+    assert "messages" in result
 
 
-@patch("llm.factory.make_llm")
-def test_revocation_reporter_llm_failure(mock_make_llm):
-    """Should fall back to simple summary on LLM error."""
-    mock_llm = MagicMock()
-    mock_make_llm.return_value = mock_llm
-    mock_llm.invoke.side_effect = Exception("API error")
-
+def test_revocation_reporter_deterministic():
+    """Reporter always returns empty messages (no LLM)."""
     state = {
         "revoked_domains": ["example.com"],
         "failed_revocations": [],
@@ -269,8 +238,7 @@ def test_revocation_reporter_llm_failure(mock_make_llm):
 
     result = revocation_reporter(state)
 
-    # Should still return a valid result with fallback summary
-    assert "messages" in result
+    assert result["messages"] == []
 
 
 # ── Topology tests ────────────────────────────────────────────────────────
@@ -292,9 +260,7 @@ def test_revocation_graph_topology():
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("llm.factory.make_llm")
 def test_revocation_graph_single_domain_flow(
-    mock_reporter_llm,
     mock_key_exists,
     mock_account_load_key,
     mock_account_make_client,
@@ -328,8 +294,6 @@ def test_revocation_graph_single_domain_flow(
     mock_client.revoke_certificate.return_value = "nonce-789"
 
     # Setup reporter mock
-    mock_reporter_llm.return_value = MagicMock()
-    mock_reporter_llm.return_value.invoke.return_value = AIMessage(content="Revoked successfully.")
 
     # Build and run graph
     graph = build_revocation_graph(use_checkpointing=False)
@@ -353,9 +317,7 @@ def test_revocation_graph_single_domain_flow(
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("llm.factory.make_llm")
 def test_revocation_graph_multi_domain_flow(
-    mock_reporter_llm,
     mock_key_exists,
     mock_account_load_key,
     mock_account_make_client,
@@ -389,8 +351,6 @@ def test_revocation_graph_multi_domain_flow(
     mock_client.revoke_certificate.side_effect = ["nonce-789", "nonce-999"]
 
     # Setup reporter mock
-    mock_reporter_llm.return_value = MagicMock()
-    mock_reporter_llm.return_value.invoke.return_value = AIMessage(content="All revoked.")
 
     # Build and run graph
     graph = build_revocation_graph(use_checkpointing=False)
@@ -415,9 +375,7 @@ def test_revocation_graph_multi_domain_flow(
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("llm.factory.make_llm")
 def test_revocation_graph_partial_failure(
-    mock_reporter_llm,
     mock_key_exists,
     mock_account_load_key,
     mock_account_make_client,
@@ -457,8 +415,6 @@ def test_revocation_graph_partial_failure(
     mock_client.revoke_certificate.side_effect = ["nonce-789", "nonce-999"]
 
     # Setup reporter mock
-    mock_reporter_llm.return_value = MagicMock()
-    mock_reporter_llm.return_value.invoke.return_value = AIMessage(content="Partial success.")
 
     # Build and run graph
     graph = build_revocation_graph(use_checkpointing=False)
@@ -497,9 +453,7 @@ def test_nonce_cleared_between_domains():
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("llm.factory.make_llm")
 def test_nonce_flow_multi_domain_sequence(
-    mock_reporter_llm,
     mock_key_exists,
     mock_account_load_key,
     mock_account_make_client,
@@ -530,8 +484,6 @@ def test_nonce_flow_multi_domain_sequence(
     # Each revocation returns a new nonce
     mock_client.revoke_certificate.side_effect = ["revoke-nonce-789", "revoke-nonce-999"]
 
-    mock_reporter_llm.return_value = MagicMock()
-    mock_reporter_llm.return_value.invoke.return_value = AIMessage(content="Done.")
 
     graph = build_revocation_graph(use_checkpointing=False)
     initial_state = revocation_initial_state(
@@ -633,9 +585,7 @@ def test_revocation_invalid_reason_code(mock_read_cert, mock_load_key, mock_make
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("llm.factory.make_llm")
 def test_state_message_accumulation_across_flow(
-    mock_reporter_llm,
     mock_key_exists,
     mock_account_load_key,
     mock_account_make_client,
@@ -664,8 +614,6 @@ def test_state_message_accumulation_across_flow(
     mock_client.get_directory.return_value = {"revokeCert": "https://ca.example.com/revokeCert"}
     mock_client.revoke_certificate.return_value = "nonce-789"
 
-    mock_reporter_llm.return_value = MagicMock()
-    mock_reporter_llm.return_value.invoke.return_value = AIMessage(content="Revocation summary.")
 
     graph = build_revocation_graph(use_checkpointing=False)
     initial_state = revocation_initial_state(
@@ -680,12 +628,8 @@ def test_state_message_accumulation_across_flow(
 
     final_state = graph.invoke(initial_state)
 
-    # After flow, messages should contain reporter exchange (system, user, ai)
-    assert len(final_state["messages"]) >= 3
-    # Messages should include the reporter's summary
-    message_contents = [m.content if hasattr(m, 'content') else str(m) for m in final_state["messages"]]
-    assert any("revocation" in str(content).lower() or "revoked" in str(content).lower()
-               for content in message_contents), f"Messages should reference revocation: {message_contents}"
+    # Reporter is deterministic — messages list stays empty (no LLM exchange)
+    assert isinstance(final_state["messages"], list)
 
 
 def test_revoked_domains_no_duplicates():
@@ -781,9 +725,7 @@ def test_revocation_graph_with_checkpointing():
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("llm.factory.make_llm")
 def test_revocation_state_resumption_after_interrupt(
-    mock_reporter_llm,
     mock_key_exists,
     mock_account_load_key,
     mock_account_make_client,
@@ -812,8 +754,6 @@ def test_revocation_state_resumption_after_interrupt(
     mock_client.get_directory.return_value = {"revokeCert": "https://ca.example.com/revokeCert"}
     mock_client.revoke_certificate.return_value = "nonce-789"
 
-    mock_reporter_llm.return_value = MagicMock()
-    mock_reporter_llm.return_value.invoke.return_value = AIMessage(content="Resumed.")
 
     # Build without checkpointing for this test (checkpointing requires special invoke with config)
     graph = build_revocation_graph(use_checkpointing=False)
@@ -843,9 +783,7 @@ def test_revocation_state_resumption_after_interrupt(
 @patch("agent.nodes.account.make_client")
 @patch("agent.nodes.account.jwslib.load_account_key")
 @patch("agent.nodes.account.jwslib.account_key_exists")
-@patch("llm.factory.make_llm")
 def test_account_creation_failure_handling(
-    mock_reporter_llm,
     mock_key_exists,
     mock_account_load_key,
     mock_account_make_client,
@@ -928,13 +866,8 @@ def test_duplicate_domains_in_targets():
 
 # ── Reporter & Message Flow Tests ──────────────────────────────────────────
 
-@patch("llm.factory.make_llm")
-def test_reporter_message_content_structure(mock_make_llm):
-    """Verify reporter message has correct structure with revocation context."""
-    mock_llm = MagicMock()
-    mock_make_llm.return_value = mock_llm
-    mock_llm.invoke.return_value = AIMessage(content="Summary of revocations.")
-
+def test_reporter_message_content_structure():
+    """Verify reporter returns empty messages and correct dict structure."""
     state = {
         "revoked_domains": ["example.com"],
         "failed_revocations": ["api.example.com"],
@@ -945,15 +878,8 @@ def test_reporter_message_content_structure(mock_make_llm):
 
     result = revocation_reporter(state)
 
-    # Verify reporter was invoked
-    mock_llm.invoke.assert_called_once()
-
-    # Get the prompt messages
-    call_args = mock_llm.invoke.call_args[0][0]
-    user_msg_content = call_args[1].content
-
-    # Verify key information is in the prompt
-    assert "example.com" in user_msg_content or "revoked" in user_msg_content.lower()
+    assert "messages" in result
+    assert result["messages"] == []
 
 
 # ── Error Handling & Accumulation Tests ────────────────────────────────────

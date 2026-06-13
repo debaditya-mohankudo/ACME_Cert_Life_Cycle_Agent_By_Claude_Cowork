@@ -12,9 +12,7 @@ Tests the deterministic summary reporter logic:
 from __future__ import annotations
 
 from typing import cast
-from unittest.mock import patch
 
-import pytest
 
 from agent.nodes.reporter import SummaryReporterNode, _summary_reporter_deterministic
 from agent.state import AgentState
@@ -39,9 +37,8 @@ def _base_state(**overrides) -> dict:
 # ─── Test: Completed renewals ──────────────────────────────────────────────
 
 
-def test_reports_all_completed_domains(pebble_settings):
+def test_reports_all_completed_domains():
     """Summary includes all completed renewals."""
-    pebble_settings.LLM_DISABLED = True
 
     state = _base_state(
         completed_renewals=["api.example.com", "shop.example.com"],
@@ -65,9 +62,8 @@ def test_reports_all_completed_domains(pebble_settings):
     assert "Renewed:   2" in summary
 
 
-def test_reports_no_completed_when_empty(pebble_settings):
+def test_reports_no_completed_when_empty():
     """Summary correctly shows (none) when no completions."""
-    pebble_settings.LLM_DISABLED = True
 
     state = _base_state(
         completed_renewals=[],
@@ -84,9 +80,8 @@ def test_reports_no_completed_when_empty(pebble_settings):
 # ─── Test: Failed domains ──────────────────────────────────────────────────
 
 
-def test_reports_all_failed_domains(pebble_settings):
+def test_reports_all_failed_domains():
     """Summary includes all failed domains."""
-    pebble_settings.LLM_DISABLED = True
 
     failed = ["api.example.com", "shop.example.com"]
     summary = _summary_reporter_deterministic([], failed, failed, [])
@@ -96,9 +91,8 @@ def test_reports_all_failed_domains(pebble_settings):
     assert "Failed:    2" in summary
 
 
-def test_reports_no_failed_when_empty(pebble_settings):
+def test_reports_no_failed_when_empty():
     """Summary correctly shows (none) when no failures."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic(["api.example.com"], [], ["api.example.com"], [])
 
@@ -108,9 +102,8 @@ def test_reports_no_failed_when_empty(pebble_settings):
 # ─── Test: Skipped domains ────────────────────────────────────────────────
 
 
-def test_correctly_identifies_skipped_domains(pebble_settings):
+def test_correctly_identifies_skipped_domains():
     """Skipped domains are those not in completed or failed."""
-    pebble_settings.LLM_DISABLED = True
 
     managed = ["api.example.com", "shop.example.com", "cdn.example.com"]
     completed = ["api.example.com"]
@@ -122,9 +115,8 @@ def test_correctly_identifies_skipped_domains(pebble_settings):
     assert "Skipped:   1" in summary
 
 
-def test_no_skipped_when_all_renewed_or_failed(pebble_settings):
+def test_no_skipped_when_all_renewed_or_failed():
     """No skipped domains when all are either completed or failed."""
-    pebble_settings.LLM_DISABLED = True
 
     managed = ["api.example.com", "shop.example.com"]
     completed = ["api.example.com"]
@@ -135,9 +127,8 @@ def test_no_skipped_when_all_renewed_or_failed(pebble_settings):
     assert "Skipped:   0: (none)" in summary
 
 
-def test_all_skipped_when_none_renewed_or_failed(pebble_settings):
+def test_all_skipped_when_none_renewed_or_failed():
     """All domains skipped when none were renewed or failed."""
-    pebble_settings.LLM_DISABLED = True
 
     managed = ["api.example.com", "shop.example.com"]
 
@@ -151,9 +142,8 @@ def test_all_skipped_when_none_renewed_or_failed(pebble_settings):
 # ─── Test: Status field ────────────────────────────────────────────────────
 
 
-def test_status_is_success_when_no_failures(pebble_settings):
+def test_status_is_success_when_no_failures():
     """Status is SUCCESS when failed list is empty."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic(
         ["api.example.com", "shop.example.com"],
@@ -165,9 +155,8 @@ def test_status_is_success_when_no_failures(pebble_settings):
     assert "Status:    SUCCESS" in summary
 
 
-def test_status_is_partial_when_some_failures(pebble_settings):
+def test_status_is_partial_when_some_failures():
     """Status is PARTIAL when both completed and failed have entries."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic(
         ["api.example.com"],
@@ -179,9 +168,8 @@ def test_status_is_partial_when_some_failures(pebble_settings):
     assert "Status:    PARTIAL" in summary
 
 
-def test_status_is_failed_when_all_failures(pebble_settings):
+def test_status_is_failed_when_all_failures():
     """Status is FAILED when completed is empty and failed has entries."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic(
         [],
@@ -193,9 +181,8 @@ def test_status_is_failed_when_all_failures(pebble_settings):
     assert "Status:    FAILED" in summary
 
 
-def test_status_is_success_when_empty_run(pebble_settings):
+def test_status_is_success_when_empty_run():
     """Status is SUCCESS for empty run (no domains to renew)."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic([], [], [], [])
 
@@ -205,9 +192,8 @@ def test_status_is_success_when_empty_run(pebble_settings):
 # ─── Test: Error log count ────────────────────────────────────────────────
 
 
-def test_error_count_reported_correctly(pebble_settings):
+def test_error_count_reported_correctly():
     """Summary includes count of error_log entries."""
-    pebble_settings.LLM_DISABLED = True
 
     errors = ["Error 1", "Error 2", "Error 3"]
     summary = _summary_reporter_deterministic([], [], [], errors)
@@ -215,9 +201,8 @@ def test_error_count_reported_correctly(pebble_settings):
     assert "Errors:    3" in summary
 
 
-def test_no_errors_reported_when_empty(pebble_settings):
+def test_no_errors_reported_when_empty():
     """Summary shows 0 errors when error_log is empty."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic([], [], [], [])
 
@@ -227,9 +212,8 @@ def test_no_errors_reported_when_empty(pebble_settings):
 # ─── Test: Plain text formatting ──────────────────────────────────────────
 
 
-def test_summary_is_plain_text_no_json(pebble_settings):
+def test_summary_is_plain_text_no_json():
     """Summary is formatted text, not JSON."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic(
         ["api.example.com"],
@@ -243,9 +227,8 @@ def test_summary_is_plain_text_no_json(pebble_settings):
     assert not summary.endswith("}")
 
 
-def test_summary_has_box_borders(pebble_settings):
+def test_summary_has_box_borders():
     """Summary uses box-drawing characters (═════)."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic([], [], [], [])
 
@@ -253,18 +236,16 @@ def test_summary_has_box_borders(pebble_settings):
     assert summary.count("═") >= 2  # Top and bottom
 
 
-def test_summary_includes_title(pebble_settings):
+def test_summary_includes_title():
     """Summary includes the title line."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic([], [], [], [])
 
     assert "ACME Certificate Renewal Summary" in summary
 
 
-def test_summary_has_colon_separated_fields(pebble_settings):
+def test_summary_has_colon_separated_fields():
     """Summary uses 'Field: value' format."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic([], [], [], [])
 
@@ -278,9 +259,8 @@ def test_summary_has_colon_separated_fields(pebble_settings):
 # ─── Test: Reporter node integration ──────────────────────────────────────
 
 
-def test_reporter_node_returns_empty_messages(pebble_settings):
+def test_reporter_node_returns_empty_messages():
     """Reporter node returns empty messages in deterministic mode."""
-    pebble_settings.LLM_DISABLED = True
 
     state = _base_state(
         completed_renewals=["api.example.com"],
@@ -293,9 +273,8 @@ def test_reporter_node_returns_empty_messages(pebble_settings):
     assert result["messages"] == []
 
 
-def test_reporter_node_with_complex_state(pebble_settings):
+def test_reporter_node_with_complex_state():
     """Reporter node handles complex state correctly."""
-    pebble_settings.LLM_DISABLED = True
 
     state = _base_state(
         completed_renewals=["api.example.com", "shop.example.com"],
@@ -313,9 +292,8 @@ def test_reporter_node_with_complex_state(pebble_settings):
 # ─── Test: Edge cases ──────────────────────────────────────────────────────
 
 
-def test_duplicate_domains_in_lists(pebble_settings):
+def test_duplicate_domains_in_lists():
     """Handles duplicate entries gracefully (shouldn't happen, but be safe)."""
-    pebble_settings.LLM_DISABLED = True
 
     # Note: In practice, this shouldn't happen, but we test robustness
     summary = _summary_reporter_deterministic(
@@ -329,9 +307,8 @@ def test_duplicate_domains_in_lists(pebble_settings):
     assert "Status:" in summary
 
 
-def test_empty_error_log(pebble_settings):
+def test_empty_error_log():
     """Handles empty error log correctly."""
-    pebble_settings.LLM_DISABLED = True
 
     summary = _summary_reporter_deterministic(
         ["api.example.com"],
@@ -343,7 +320,7 @@ def test_empty_error_log(pebble_settings):
     assert "Errors:    0" in summary
 
 
-def test_deterministic_function_directly(pebble_settings):
+def test_deterministic_function_directly():
     """Test _summary_reporter_deterministic helper function."""
     summary = _summary_reporter_deterministic(
         completed=["api.example.com"],
